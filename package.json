@@ -1,0 +1,38 @@
+{
+  "name": "hoizr-client",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3009",
+    "build": "next build",
+    "start": "next start -p 3009",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@react-oauth/google": "^0.13.5",
+    "clsx": "^2.1.1",
+    "firebase": "^12.13.0",
+    "graphql": "^16.9.0",
+    "graphql-request": "^7.1.2",
+    "lucide-react": "^0.469.0",
+    "next": "14.2.18",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.5",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.18",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

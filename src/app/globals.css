@@ -1,0 +1,2914 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   Hoizr — textured dark theme
+   - True floating glass sidebar (over content, no flow gap)
+   - Content scrolls under the sidebar
+   - Apple Music collections (text-on-color cards)
+   - Glass event tiles
+   - React Bits canvas grain over a softened dark surface
+   - SF Pro-style font stack (Inter as the cleanest fallback)
+   ============================================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700;6..96,800&family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+:root {
+  --h-bg: #141316;
+  --h-bg-2: #1a181d;
+  --h-bg-3: #222027;
+  --h-bg-4: #2b2931;
+  --h-bg-5: #383540;
+
+  --h-ink: #ffffff;
+  --h-ink-2: rgba(255, 255, 255, 0.78);
+  --h-ink-3: rgba(255, 255, 255, 0.56);
+  --h-ink-4: rgba(255, 255, 255, 0.36);
+
+  --h-line: rgba(255, 255, 255, 0.07);
+  --h-line-2: rgba(255, 255, 255, 0.14);
+
+  /* Hoizr neon. Same tonal weight as Apple Music's red, swapped to the
+     business-client volt so the consumer + business sides feel like one
+     brand. Text on this MUST be near-black — never white — for contrast. */
+  --h-accent: #c5ff3d;
+  --h-accent-h: #d9ff6e;
+  --h-accent-ink: #0a0a0e;
+
+  /* `--h-volt` is the same value, kept as an alias so older selectors that
+     reference it (price chips, badges, live dots) don't have to change. */
+  --h-volt: #c5ff3d;
+
+  --h-font-serif: "Bodoni Moda", "Didot", Georgia, serif;
+  --h-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  --h-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --h-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --h-sidebar: 256px;
+  --h-sidebar-edge: 14px;
+  --h-content-pad: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+html {
+  background: var(--h-bg);
+  color-scheme: dark;
+}
+body {
+  background:
+    linear-gradient(180deg, #19171b 0%, #121418 52%, #171219 100%);
+  color: var(--h-ink);
+  font-family: var(--h-font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: 0;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Subtle non-black wash. Animated grain is rendered by the React Bits Noise canvas.
+   Blob strength dialed down per spec — same hue, less brightness. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(197, 255, 61, 0.035) 0%, transparent 36%),
+    linear-gradient(250deg, rgba(63, 224, 255, 0.022) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018) 0%, transparent 42%);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.014), transparent 22%, rgba(255, 255, 255, 0.012) 72%, transparent);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font-family: inherit;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
+::selection {
+  background: var(--h-accent);
+  color: var(--h-accent-ink);
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* =============================================================================
+   Wordmark — HOIZR, slim serif (matches attached logo)
+   ============================================================================= */
+.h-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--h-font-serif);
+  font-weight: 500;
+  font-size: 26px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  color: var(--h-ink);
+}
+.h-wordmark--small {
+  font-size: 20px;
+}
+
+/* =============================================================================
+   Buttons & chips
+   ============================================================================= */
+.h-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+.h-btn:active {
+  transform: scale(0.98);
+}
+.h-btn-primary {
+  background: var(--h-ink);
+  color: var(--h-bg);
+}
+.h-btn-primary:hover {
+  background: #fff;
+}
+.h-btn-accent {
+  background: var(--h-accent);
+  color: var(--h-accent-ink);
+}
+.h-btn-accent:hover {
+  background: var(--h-accent-h);
+}
+.h-btn-text {
+  padding: 6px 4px;
+  font-family: var(--h-font-display);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--h-ink-2);
+  border-radius: 0;
+}
+.h-btn-text:hover {
+  color: var(--h-ink);
+}
+.h-btn-outline {
+  background: transparent;
+  color: var(--h-ink);
+  border: 1px solid var(--h-line-2);
+}
+.h-btn-outline:hover {
+  border-color: var(--h-ink);
+}
+.h-btn-lg {
+  padding: 14px 22px;
+  font-size: 15px;
+}
+
+.h-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--h-line);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--h-ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.h-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--h-ink);
+}
+.h-chip.active {
+  background: var(--h-ink);
+  color: var(--h-bg);
+  border-color: var(--h-ink);
+  font-weight: 600;
+}
+
+/* =============================================================================
+   LAYOUT — floating glass sidebar over the content
+   ============================================================================= */
+.h-shell {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Apple-Music-style content column: full viewport width (no left padding
+   for the sidebar) so horizontal rails inside scroll UNDER the floating
+   glass sidebar on the left. Readable text/grid blocks indent themselves
+   via `.h-page` / `.h-page-head` / `.h-evt-grid` rules below.
+   Flex column with min-height: 100vh so the footer pins to the bottom
+   when the page content is shorter than the viewport ("sticky-when-short"
+   pattern). The .h-content-grow wrapper around children absorbs remaining
+   space; the footer is a flex sibling that hugs the bottom. */
+.h-content {
+  min-width: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.h-content-grow {
+  flex: 1 0 auto;
+  padding-bottom: 140px;
+  min-width: 0;
+}
+/* Pages that don't use `.h-page` (e.g. /me/profile, /checkout, legacy
+   light-theme screens) still need the desktop sidebar indent so their
+   content doesn't slide under the floating glass panel. The `.h-page`
+   rule above already applies its own indent — these direct children
+   inherit a fallback from .h-content-grow instead. */
+@media (min-width: 1101px) {
+  .h-content-grow > :not(.h-page):not(.h-dome-section) {
+    padding-left: var(--h-content-indent);
+    padding-right: var(--h-content-pad);
+  }
+}
+.h-content > .h-footer {
+  flex-shrink: 0;
+}
+
+/* Helper: any block that needs to indent past the sidebar uses this
+   var as its left padding. Page heads, footers, and detail layouts apply
+   it directly. */
+:root {
+  --h-content-indent: calc(var(--h-sidebar) + var(--h-sidebar-edge) + var(--h-content-pad) + 8px);
+}
+
+/* Floating glass sidebar wrapper — fixed position with edge gap so the
+   GlassSurface inside reads as a true floating panel (like Apple Music's
+   liquid-glass mac app). The sidebar wrap doesn't get a background of
+   its own; everything visible comes from the SVG glass underneath. */
+.h-side-wrap {
+  position: fixed;
+  top: var(--h-sidebar-edge);
+  left: var(--h-sidebar-edge);
+  bottom: var(--h-sidebar-edge);
+  width: var(--h-sidebar);
+  z-index: 50;
+  display: flex;
+  pointer-events: none;
+}
+.h-side-wrap > .glass-surface {
+  pointer-events: auto;
+}
+
+/* Inner content layout — sits inside the GlassSurface and provides the
+   actual list-of-links UI. NOT scrollable on the outer container; we use
+   .h-side-scroll for the middle region so header/footer stay pinned. */
+.h-side {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px 12px;
+  color: var(--h-ink);
+}
+
+.h-side-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.h-side-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.h-side-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.h-side-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px 12px;
+}
+.h-side-header .city {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--h-ink-3);
+  text-transform: uppercase;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.h-side-header .city:hover {
+  color: var(--h-ink);
+}
+.h-city-picker {
+  position: relative;
+  max-width: 132px;
+}
+.h-city-picker .city {
+  max-width: 132px;
+}
+.h-city-picker .city {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h-city-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 70;
+  width: 220px;
+  max-height: min(360px, 72vh);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--h-line-2);
+  border-radius: 10px;
+  background: rgba(26, 24, 29, 0.92);
+  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.45);
+}
+.h-city-menu button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  color: var(--h-ink-2);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+}
+.h-city-menu button:hover,
+.h-city-menu button.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--h-ink);
+}
+.h-city-menu small {
+  color: var(--h-ink-4);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.h-side-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.h-side-group h4 {
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--h-ink-3);
+  font-weight: 600;
+  margin: 14px 12px 6px 12px;
+  text-transform: none;
+}
+.h-side-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--h-ink-2);
+  cursor: pointer;
+  font-family: var(--h-font-display);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  transition: background 0.12s, color 0.12s;
+  text-align: left;
+  background: none;
+  border: 0;
+  width: 100%;
+}
+.h-side-item:hover {
+  background: rgba(197, 255, 61, 0.06);
+  color: var(--h-accent);
+  text-shadow: 0 0 14px rgba(197, 255, 61, 0.45);
+}
+.h-side-item:hover .ic {
+  filter: drop-shadow(0 0 8px rgba(197, 255, 61, 0.55));
+}
+.h-side-item.active {
+  color: var(--h-accent);
+  background: transparent;
+  text-shadow: 0 0 14px rgba(197, 255, 61, 0.45);
+}
+.h-side-item.active:hover {
+  background: rgba(197, 255, 61, 0.12);
+}
+.h-side-item .ic {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: currentColor;
+  display: inline-flex;
+}
+.h-side-item .pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.h-side-item .right-meta {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--h-ink-3);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.h-side-foot {
+  margin-top: auto;
+  padding: 8px 8px 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.h-side-foot .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fa2d48, #ff8fb1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 12px;
+  color: #fff;
+}
+.h-side-foot .who {
+  font-size: 13px;
+  color: var(--h-ink);
+  font-weight: 500;
+}
+
+.h-side-biz {
+  margin-top: 12px;
+  padding: 10px 12px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+/* Bottom-rail variant: sits ABOVE the sign-in button instead of inside
+   the scrolling nav. Keeps the link list compact and out of the scroll. */
+.h-side-biz--foot {
+  margin: 0 6px 8px;
+  padding: 10px 8px 4px;
+}
+.h-side-biz h5 {
+  font-family: var(--h-font-display);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--h-ink-4);
+  font-weight: 700;
+  margin: 4px 0 8px;
+}
+.h-side-biz a {
+  display: block;
+  padding: 4px 0;
+  font-size: 11px;
+  color: var(--h-ink-3);
+  cursor: pointer;
+  transition: color 160ms ease, text-shadow 160ms ease;
+}
+.h-side-biz a:hover {
+  color: var(--h-accent);
+  text-shadow: 0 0 12px rgba(197, 255, 61, 0.5);
+}
+
+/* =============================================================================
+   Floating auth chip — replaces the old top bar.
+   Pinned top-right, transparent until hover. Lives outside the content
+   column so it doesn't compete with .h-page-head.
+   ============================================================================= */
+.h-float-auth {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 60;
+  pointer-events: none;
+}
+.h-float-auth__btn,
+.h-float-auth__avatar {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  color: var(--h-ink);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+  cursor: pointer;
+}
+.h-float-auth__btn:hover,
+.h-float-auth__avatar:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.h-float-auth__avatar {
+  width: 36px;
+  padding: 0;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fa2d48, #ff8fb1);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .h-float-auth {
+    top: 12px;
+    right: 12px;
+  }
+}
+
+/* =============================================================================
+   Page header per route
+   ============================================================================= */
+/* Page wrapper. Indents text/grid content past the sidebar; rails and
+   sections that want to bleed under the sidebar opt out via .h-bleed. */
+.h-page {
+  padding: 4px var(--h-content-pad) 0 var(--h-content-indent);
+}
+.h-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin: 12px 0 28px;
+  gap: 24px;
+}
+/* Section helper: lets a child of .h-page bleed full-width (under the
+   sidebar on the left, off the screen on the right). Used by rails so
+   tiles scroll under the floating sidebar — the Apple Music effect. */
+.h-bleed {
+  margin-left: calc(-1 * var(--h-content-indent));
+  margin-right: calc(-1 * var(--h-content-pad));
+  padding-left: var(--h-content-indent);
+  padding-right: var(--h-content-pad);
+}
+.h-page-head .label {
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--h-ink-3);
+  margin-bottom: 8px;
+}
+.h-page-head h1 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  font-size: clamp(34px, 4vw, 48px);
+  margin: 0;
+}
+@media (max-width: 1100px) {
+  .h-page {
+    padding-top: 12px;
+  }
+  .h-page-head {
+    align-items: flex-start;
+    margin: 4px 0 20px;
+  }
+  .h-page-head h1 {
+    font-size: clamp(32px, 9vw, 44px);
+    letter-spacing: -0.02em;
+  }
+  .h-page-head .label {
+    font-size: 10.5px;
+    margin-bottom: 6px;
+  }
+}
+.h-page-head .right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* =============================================================================
+   Rail
+   ============================================================================= */
+.h-rail-sec {
+  margin: 32px 0 12px;
+}
+.h-rail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 16px;
+}
+.h-rail-head h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.h-rail-head h2 .chev {
+  color: var(--h-ink-3);
+  transition: color 0.15s, transform 0.15s;
+  font-size: 14px;
+  display: inline-flex;
+}
+.h-rail-head h2:hover .chev {
+  color: var(--h-ink);
+  transform: translateX(2px);
+}
+.h-rail-head .right-link {
+  font-family: var(--h-font-display);
+  font-size: 12px;
+  color: var(--h-accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Rail section gets a `.h-bleed` wrapper class applied at render time
+   (set in templates that need scroll-under-sidebar). The rail itself
+   extends viewport edge-to-edge: negative margin on both sides cancels
+   .h-page's indent + .h-content's right pad, then we re-apply matching
+   padding to keep the first/last tile readable. The result: cards
+   scroll UNDER the sidebar on the left, off the screen on the right. */
+.h-rail-sec.h-bleed .h-rail-head {
+  /* head text stays in the readable column */
+  padding-left: 0;
+  padding-right: 0;
+}
+.h-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 1fr);
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  /* Bleed the scroll container edge-to-edge so cards visually pass UNDER
+     the sidebar as the rail scrolls. Padding (and matching scroll-padding)
+     keeps the first/last card inside the readable column at rest. */
+  margin-left: calc(-1 * var(--h-content-indent));
+  margin-right: calc(-1 * var(--h-content-pad));
+  padding-left: var(--h-content-indent);
+  padding-right: var(--h-content-pad);
+  scroll-padding-left: var(--h-content-indent);
+}
+.h-rail::-webkit-scrollbar {
+  display: none;
+}
+.h-rail > * {
+  scroll-snap-align: start;
+}
+.h-rail-5 {
+  grid-auto-columns: minmax(200px, 1fr);
+}
+.h-rail-6 {
+  grid-auto-columns: minmax(170px, 1fr);
+}
+
+/* =============================================================================
+   Collection cards — Apple Music curated row
+   ============================================================================= */
+.h-col {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  background: var(--h-bg-3);
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s;
+  display: block;
+  width: 100%;
+}
+.h-col:hover {
+  transform: translateY(-4px);
+}
+.h-col .head {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  right: 24px;
+  z-index: 3;
+  color: #fff;
+}
+.h-col .head .h-title {
+  font-family: var(--h-font-display);
+  font-weight: 800;
+  font-size: clamp(28px, 2.6vw, 42px);
+  letter-spacing: 0;
+  line-height: 0.92;
+}
+.h-col .desc {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 22px;
+  z-index: 3;
+  color: #fff;
+}
+.h-col .desc .kind {
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+  opacity: 0.78;
+}
+.h-col .desc .nm {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 18px;
+  margin-top: 2px;
+  letter-spacing: 0;
+}
+.h-col .desc .sub {
+  font-size: 12px;
+  opacity: 0.78;
+  margin-top: 6px;
+  line-height: 1.45;
+  max-width: 32ch;
+}
+
+.h-col .art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Heavy Rotation */
+.h-col-heavy-rotation .art {
+  background: radial-gradient(120% 80% at 50% 100%, #ffb347 0%, #f77925 50%, #c04a0a 100%);
+}
+.h-col-heavy-rotation .art::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  bottom: -50%;
+  width: 120%;
+  height: 80%;
+  border-radius: 50%;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
+  filter: blur(20px);
+}
+/* Energy */
+.h-col-energy .art {
+  background: #c5ff3d;
+}
+.h-col-energy .art::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  aspect-ratio: 1;
+  clip-path: polygon(56% 0, 14% 56%, 42% 56%, 28% 100%, 86% 38%, 58% 38%);
+  background: #fff;
+  opacity: 0.22;
+}
+.h-col-energy .head .h-title,
+.h-col-energy .desc {
+  color: rgba(0, 0, 0, 0.92);
+}
+.h-col-energy .desc .kind,
+.h-col-energy .desc .sub {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+/* Dance Workout */
+.h-col-dance-workout .art {
+  background: radial-gradient(120% 90% at 30% 30%, #2a3550 0%, #11132a 60%, #060616 100%);
+}
+.h-col-dance-workout .art::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  top: 24%;
+  width: 60%;
+  aspect-ratio: 1;
+  background:
+    repeating-linear-gradient(45deg, #3fe0ff 0 4px, transparent 4px 8px),
+    repeating-linear-gradient(-45deg, #ff7aa6 0 4px, transparent 4px 8px);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  -webkit-mask: radial-gradient(60% 80% at 50% 50%, #000 50%, transparent 70%);
+  mask: radial-gradient(60% 80% at 50% 50%, #000 50%, transparent 70%);
+}
+
+/* India Debuts */
+.h-col-india-debuts .art {
+  background: linear-gradient(135deg, #ff2e8a 0%, #7a1fff 100%);
+}
+.h-col-india-debuts .art::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+}
+.h-col-india-debuts .art::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 30%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+}
+
+/* Weekend Hits */
+.h-col-weekend-hits .art {
+  background: linear-gradient(170deg, #5be08f 0%, #1f8a5b 70%, #073d26 100%);
+}
+.h-col-weekend-hits .art::before {
+  content: "★";
+  position: absolute;
+  right: -6%;
+  bottom: -8%;
+  font-size: 18rem;
+  color: rgba(255, 255, 255, 0.12);
+  font-family: serif;
+  line-height: 1;
+}
+
+/* =============================================================================
+   Genre collection card — Apple Music big-word-on-colour treatment.
+   Replaces the curated "Heavy Rotation" etc with one card per real
+   GenreTag from masters. Same rail container, simpler markup, much
+   bolder visual rhythm because every card is a different colour.
+   ============================================================================= */
+.h-genrecol {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  text-decoration: none;
+  overflow: hidden;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.4);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.h-genrecol:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5);
+}
+.h-genrecol__title {
+  font-family: var(--h-font-display);
+  font-weight: 800;
+  font-size: clamp(28px, 2.8vw, 40px);
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+  text-transform: capitalize;
+  word-break: break-word;
+}
+.h-genrecol__sub {
+  font-family: var(--h-font-display);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: 0;
+  max-width: 28ch;
+  margin-top: 8px;
+}
+
+/* =============================================================================
+   Featured horizontal rail — top-of-home 16:9 hero strip. Only mounts
+   when at least one event has a `horizontalFlyer`. Cards are cinematic:
+   full-bleed landscape art, gradient scrim, overlaid title + meta.
+   ============================================================================= */
+.h-feat__rail {
+  grid-auto-columns: minmax(560px, 1fr);
+  gap: 18px;
+}
+@media (max-width: 720px) {
+  .h-feat__rail {
+    grid-auto-columns: minmax(320px, 1fr);
+  }
+}
+.h-feat__card {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--h-ink);
+  background: var(--h-bg-3);
+  isolation: isolate;
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.32s ease;
+}
+.h-feat__card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.h-feat__media {
+  position: absolute;
+  inset: 0;
+}
+.h-feat__media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.h-feat__card:hover .h-feat__media img {
+  transform: scale(1.04);
+}
+.h-feat__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 30%),
+    linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.8) 100%);
+  pointer-events: none;
+}
+.h-feat__badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 3;
+  font-family: var(--h-font-display);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  color: var(--h-volt);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  text-transform: uppercase;
+}
+.h-feat__overlay {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 18px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #fff;
+}
+.h-feat__date {
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--h-volt);
+}
+.h-feat__title {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.h-feat__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4px;
+}
+.h-feat__venue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.h-feat__venue svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+.h-feat__venue > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h-feat__price {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--h-volt);
+  color: var(--h-bg);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   Event tile — District-style tall poster with a glass info strip.
+   ============================================================================= */
+.h-tile {
+  display: block;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  width: 100%;
+  text-decoration: none;
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.h-tile:hover {
+  transform: translateY(-6px);
+}
+.h-tile .cover {
+  position: relative;
+  /* 4:5 vertical poster — District proportion. Tall enough to feel
+     like a flyer, narrow enough to fit four-per-row on desktop. */
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 14px;
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  background: var(--h-bg-3);
+  isolation: isolate;
+  transition: box-shadow 0.28s ease;
+}
+.h-tile:hover .cover {
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+.h-tile .cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.h-tile:hover .cover img {
+  transform: scale(1.04);
+}
+.h-tile .cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* Two-stop fade: top stays clean for the badge, bottom darkens hard so
+     the glass strip reads against any flyer. */
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, transparent 24%),
+    linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.78) 100%);
+}
+.h-tile .cover .meta-top {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.h-tile .cover .badge {
+  font-family: var(--h-font-display);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  color: var(--h-volt);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.h-tile .cover .fav {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, transform 0.15s;
+}
+.h-tile .cover .fav:hover {
+  color: var(--h-accent);
+  background: rgba(0, 0, 0, 0.72);
+  transform: scale(1.06);
+}
+
+/* Glass strip — pinned to the bottom of the poster with a real
+   backdrop-filter. Title + date on the left, price chip on the right. */
+.h-tile .cover .glass-strip {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 3;
+  padding: 11px 12px 12px;
+  border-radius: 12px;
+  background: rgba(10, 10, 14, 0.42);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.28);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.h-tile .cover .glass-strip .row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+.h-tile .cover .glass-strip .title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.h-tile .cover .glass-strip .date-tag {
+  font-family: var(--h-font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--h-volt);
+}
+.h-tile .cover .glass-strip .title {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.h-tile .cover .glass-strip .price {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--h-bg);
+  background: var(--h-volt);
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: -0.005em;
+}
+.h-tile .cover .glass-strip .venue {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.78);
+  min-width: 0;
+}
+.h-tile .cover .glass-strip .venue-ic {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: rgba(255, 255, 255, 0.6);
+}
+.h-tile .cover .glass-strip .venue-ic svg {
+  width: 12px;
+  height: 12px;
+}
+.h-tile .cover .glass-strip .venue-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================================================
+   Hero
+   ============================================================================= */
+.h-hero {
+  position: relative;
+  isolation: isolate;
+  border-radius: 14px;
+  overflow: hidden;
+  height: clamp(380px, 50vh, 540px);
+  margin: 8px 0 8px;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  background: var(--h-bg-3);
+  border: 0;
+  padding: 0;
+}
+.h-hero img.bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.h-hero .scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(110deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.45) 35%, transparent 65%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, transparent 60%);
+}
+.h-hero-tag {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.h-hero-tag i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--h-volt);
+  box-shadow: 0 0 0 0 var(--h-volt);
+  animation: hPulse 1.8s ease-out infinite;
+}
+@keyframes hPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(197, 255, 61, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(197, 255, 61, 0);
+  }
+}
+
+.h-hero-body {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 28px;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: flex-end;
+  color: #fff;
+  text-align: left;
+}
+.h-hero-body .eye {
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.h-hero-body h1 {
+  font-family: var(--h-font-display);
+  font-weight: 800;
+  font-size: clamp(40px, 5vw, 64px);
+  letter-spacing: 0;
+  line-height: 0.96;
+  margin: 6px 0 0;
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+}
+.h-hero-body p {
+  font-size: 14px;
+  opacity: 0.9;
+  max-width: 56ch;
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.h-hero-card {
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 22px;
+  min-width: 320px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(28px) saturate(200%) url(#glass-distortion);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 1.5px 1.5px 0 rgba(255, 255, 255, 0.22), inset -1px -1px 0 rgba(255, 255, 255, 0.05);
+}
+.h-hero-card .kv .k {
+  font-family: var(--h-font-display);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+.h-hero-card .kv .v {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: #fff;
+  margin-top: 2px;
+}
+.h-hero-card .h-btn {
+  grid-column: 1 / -1;
+  justify-content: center;
+}
+
+/* =============================================================================
+   Ticker
+   ============================================================================= */
+.h-ticker {
+  display: flex;
+  overflow: hidden;
+  border-top: 1px solid var(--h-line);
+  border-bottom: 1px solid var(--h-line);
+  padding: 10px 0;
+  margin: 28px 0 8px;
+}
+.h-ticker-track {
+  display: inline-flex;
+  gap: 48px;
+  align-items: center;
+  animation: hTickerScroll 38s linear infinite;
+  white-space: nowrap;
+}
+.h-ticker-track span {
+  font-family: var(--h-font-display);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--h-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.h-ticker-track .dot {
+  color: var(--h-volt);
+}
+@keyframes hTickerScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* =============================================================================
+   Artists row
+   ============================================================================= */
+.h-artist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+  transition: transform 0.25s;
+  border: 0;
+  color: inherit;
+}
+.h-artist:hover {
+  transform: translateY(-3px);
+}
+.h-artist .cover {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  background: var(--h-bg-3);
+}
+.h-artist .cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.h-artist .body {
+  padding: 0 2px;
+}
+.h-artist .body .name {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0;
+  color: var(--h-ink);
+}
+.h-artist .body .tag {
+  font-size: 12px;
+  color: var(--h-ink-3);
+}
+
+/* =============================================================================
+   Cart-resume bar — replaces the old music dock.
+   Mounts only when a live cart exists in localStorage. Floats centered
+   at the bottom of the content column with the same GlassSurface treatment
+   the sidebar uses, so it visually belongs to the rest of the chrome.
+   ============================================================================= */
+.h-cartbar-wrap {
+  position: fixed;
+  left: calc(var(--h-sidebar) + var(--h-sidebar-edge) + 24px);
+  right: 24px;
+  bottom: 18px;
+  z-index: 80;
+  height: 64px;
+  display: flex;
+  pointer-events: none;
+}
+.h-cartbar-wrap > .glass-surface {
+  pointer-events: auto;
+  margin: 0 auto;
+  width: min(760px, 100%);
+}
+.h-cartbar {
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--h-ink);
+}
+.h-cartbar__cover {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--h-bg-3);
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.h-cartbar__cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.h-cartbar__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.h-cartbar__title {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h-cartbar__meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.h-cartbar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.h-cartbar__dismiss {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--h-ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.h-cartbar__dismiss:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--h-ink);
+}
+.h-cartbar__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: var(--h-accent-ink);
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 13.5px;
+  text-decoration: none;
+  letter-spacing: -0.005em;
+  transition: background 0.15s, transform 0.12s;
+}
+.h-cartbar__cta:hover {
+  background: var(--h-accent-h);
+}
+.h-cartbar__cta:active {
+  transform: scale(0.98);
+}
+@media (max-width: 720px) {
+  .h-cartbar-wrap {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+  .h-cartbar__cta span:first-child {
+    display: none;
+  }
+  .h-cartbar__cta {
+    padding: 0 12px;
+  }
+}
+
+/* =============================================================================
+   /events page
+   ============================================================================= */
+.h-evt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin: 14px 0 16px;
+  gap: 18px;
+}
+.h-evt-head h1 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: clamp(34px, 4vw, 48px);
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0;
+}
+.h-evt-head p {
+  color: var(--h-ink-2);
+  font-size: 14px;
+  max-width: 52ch;
+  margin: 6px 0 0;
+}
+
+.h-evt-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 18px 0 24px;
+}
+.h-evt-filters .divider {
+  width: 1px;
+  height: 22px;
+  background: var(--h-line);
+  margin: 0 4px;
+}
+
+.h-evt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px 18px;
+}
+.h-evt-count {
+  font-size: 13px;
+  color: var(--h-ink-2);
+  margin-bottom: 14px;
+}
+.h-evt-count strong {
+  color: var(--h-ink);
+}
+.h-empty {
+  grid-column: 1 / -1;
+  padding: 48px;
+  text-align: center;
+  color: var(--h-ink-2);
+  border: 1px dashed var(--h-line-2);
+  border-radius: 10px;
+}
+
+/* Coming-soon / pre-launch hero card. Replaces the dashed empty state
+   when no events are live yet. */
+.h-coming-soon {
+  margin: 24px 0 64px;
+}
+.h-coming-soon__card {
+  position: relative;
+  overflow: hidden;
+  padding: 56px 40px;
+  border-radius: 28px;
+  border: 1px solid var(--h-line);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(214, 255, 63, 0.10), transparent 60%),
+    radial-gradient(80% 60% at 100% 100%, rgba(255, 46, 138, 0.08), transparent 60%),
+    rgba(15, 15, 18, 0.85);
+}
+.h-coming-soon__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(214, 255, 63, 0.12);
+  border: 1px solid rgba(214, 255, 63, 0.3);
+  color: var(--h-accent);
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.h-coming-soon__card h2 {
+  margin: 18px 0 14px;
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: clamp(26px, 3.6vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  color: var(--h-ink);
+}
+.h-coming-soon__card p {
+  margin: 0;
+  max-width: 56ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--h-ink-2);
+}
+@media (max-width: 720px) {
+  .h-coming-soon {
+    margin: 16px 0 40px;
+  }
+  .h-coming-soon__card h2 {
+    font-size: clamp(22px, 6.8vw, 30px);
+    line-height: 1.12;
+    margin: 14px 0 12px;
+  }
+  .h-coming-soon__card p {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .h-coming-soon__kicker {
+    font-size: 10px;
+    padding: 5px 10px;
+    letter-spacing: 0.16em;
+  }
+}
+@media (max-width: 420px) {
+  .h-coming-soon__card {
+    padding: 28px 18px;
+    border-radius: 18px;
+  }
+  .h-coming-soon__card h2 {
+    font-size: 22px;
+  }
+  .h-coming-soon__card p {
+    font-size: 13.5px;
+  }
+}
+.h-coming-soon__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.h-btn-coming {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding: 12px 18px;
+}
+.h-coming-cta-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.h-coming-cta-label__line {
+  font-weight: 700;
+  font-size: 14px;
+}
+.h-coming-cta-label__sub {
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+@media (max-width: 520px) {
+  .h-coming-soon__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .h-coming-soon__row .h-btn-coming {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+.h-coming-soon__meta {
+  margin-top: 20px;
+  font-size: 12.5px;
+  color: var(--h-ink-3);
+}
+.h-coming-soon__meta a {
+  color: var(--h-ink);
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .h-coming-soon__card {
+    padding: 36px 22px;
+    border-radius: 22px;
+  }
+}
+
+/* Live now */
+.h-live-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+.h-live-grid .h-tile .cover {
+  aspect-ratio: 16 / 9;
+}
+
+/* Search */
+.h-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--h-line);
+  margin: 8px 0 24px;
+  max-width: 720px;
+}
+.h-search-bar input {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--h-ink);
+  font-size: 16px;
+  width: 100%;
+  font-family: var(--h-font-body);
+}
+.h-search-bar input::placeholder {
+  color: var(--h-ink-3);
+}
+
+.h-search-advanced {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 720px;
+  margin-bottom: 24px;
+}
+.h-search-advanced .group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.h-search-advanced .group label {
+  font-family: var(--h-font-display);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--h-ink-3);
+}
+.h-search-advanced .group select {
+  background: var(--h-bg-3);
+  border: 1px solid var(--h-line);
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--h-ink);
+  font-size: 14px;
+  outline: 0;
+  font-family: var(--h-font-body);
+}
+
+/* =============================================================================
+   Event detail
+   ============================================================================= */
+.h-detail {
+  padding-top: 4px;
+}
+.h-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--h-ink);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.h-detail-back:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.h-detail-title {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: clamp(32px, 4vw, 48px);
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0;
+}
+.h-detail-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0 22px;
+  font-size: 14px;
+  color: var(--h-ink-2);
+}
+.h-detail-line .date {
+  color: var(--h-accent);
+  font-weight: 600;
+}
+.h-detail-line .sep {
+  color: var(--h-ink-4);
+}
+
+.h-banner {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  height: 440px;
+  background: var(--h-bg-3);
+  isolation: isolate;
+}
+.h-banner-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.h-banner-bg img {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  object-fit: cover;
+  filter: blur(60px) saturate(1.3);
+  opacity: 0.55;
+}
+.h-banner-poster {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: clamp(280px, 32%, 420px);
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.h-banner-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.h-detail-grid {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 48px;
+  margin-top: 32px;
+  align-items: flex-start;
+}
+.h-detail-section {
+  margin-bottom: 36px;
+}
+.h-detail-section h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0;
+  margin: 0 0 12px;
+}
+.h-detail-section p {
+  font-size: 14px;
+  color: var(--h-ink-2);
+  line-height: 1.65;
+  max-width: 60ch;
+  margin: 0 0 8px;
+}
+.h-detail-section .readmore {
+  font-family: var(--h-font-display);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--h-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  cursor: pointer;
+}
+.h-detail-section .readmore:hover {
+  color: var(--h-accent);
+}
+
+.h-things {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 24px;
+  max-width: 640px;
+}
+.h-thing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--h-ink-2);
+}
+.h-thing .ic {
+  width: 18px;
+  height: 18px;
+  color: var(--h-ink-3);
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.h-schedule {
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+}
+.h-schedule .row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--h-line);
+}
+.h-schedule .row:last-child {
+  border-bottom: 0;
+}
+.h-schedule .t {
+  font-family: var(--h-font-mono);
+  font-size: 13px;
+  color: var(--h-volt);
+}
+.h-schedule .w {
+  font-family: var(--h-font-display);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.h-lineup {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  max-width: 540px;
+}
+.h-line-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--h-bg-3);
+  border: 1px solid var(--h-line);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.h-line-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--h-volt);
+  flex-shrink: 0;
+}
+
+.h-book {
+  background: rgba(28, 28, 34, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--h-line-2);
+  border-radius: 14px;
+  padding: 22px;
+  position: sticky;
+  top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.h-book .row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--h-line);
+}
+.h-book .row:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.h-book .row .ic {
+  width: 18px;
+  height: 18px;
+  color: var(--h-ink-3);
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: inline-flex;
+}
+.h-book .row .body {
+  flex: 1;
+}
+.h-book .row .t {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--h-ink);
+}
+.h-book .row .s {
+  font-size: 12px;
+  color: var(--h-ink-3);
+  margin-top: 2px;
+}
+.h-book .row .chev {
+  color: var(--h-ink-3);
+  display: inline-flex;
+}
+
+.h-book-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 4px 0 4px;
+}
+.h-book-price .l {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--h-ink);
+}
+.h-book-price .l small {
+  font-family: var(--h-font-body);
+  font-size: 11px;
+  color: var(--h-ink-3);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.h-book .h-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* =============================================================================
+   Modal
+   ============================================================================= */
+.h-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: hScrimIn 0.2s ease-out;
+}
+@keyframes hScrimIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.h-modal {
+  position: relative;
+  background: var(--h-bg-2);
+  border: 1px solid var(--h-line-2);
+  border-radius: 16px;
+  padding: 30px;
+  width: 100%;
+  max-width: 420px;
+  animation: hModalIn 0.25s ease-out both;
+}
+.h-modal.wide {
+  max-width: 540px;
+}
+@keyframes hModalIn {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.h-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--h-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.h-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.h-signin h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 26px;
+  margin: 0 0 6px;
+  letter-spacing: 0;
+}
+.h-signin p {
+  color: var(--h-ink-2);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+.h-signin .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.h-signin .field label {
+  font-family: var(--h-font-display);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--h-ink-3);
+}
+.h-signin .field input {
+  background: var(--h-bg-3);
+  border: 1px solid var(--h-line);
+  padding: 11px 14px;
+  border-radius: 8px;
+  color: var(--h-ink);
+  font-size: 15px;
+  font-family: var(--h-font-body);
+  outline: 0;
+}
+.h-signin .field input:focus {
+  border-color: var(--h-accent);
+}
+.h-signin .h-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 6px;
+}
+.h-signin .or {
+  text-align: center;
+  color: var(--h-ink-3);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 18px 0;
+  position: relative;
+}
+.h-signin .or::before,
+.h-signin .or::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 30px);
+  height: 1px;
+  background: var(--h-line);
+}
+.h-signin .or::before {
+  left: 0;
+}
+.h-signin .or::after {
+  right: 0;
+}
+.h-signin .socials {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.h-signin .socials button {
+  padding: 9px;
+  border-radius: 8px;
+  background: var(--h-bg-3);
+  border: 1px solid var(--h-line);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--h-ink);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+.h-signin .socials button:hover {
+  background: var(--h-bg-4);
+}
+.h-signin .fine {
+  text-align: center;
+  font-size: 11px;
+  color: var(--h-ink-3);
+  margin-top: 12px;
+}
+
+.h-modal h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0 0 4px;
+  letter-spacing: 0;
+}
+.h-modal .when {
+  font-size: 12px;
+  color: var(--h-ink-2);
+  margin: 0 0 16px;
+}
+.h-tk-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.h-tier {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 8px;
+  background: var(--h-bg-3);
+  border: 1px solid var(--h-line);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s;
+  color: inherit;
+}
+.h-tier:hover {
+  border-color: var(--h-line-2);
+}
+.h-tier.active {
+  border-color: var(--h-accent);
+  background: rgba(197, 255, 61, 0.08);
+}
+.h-tier .nm {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+.h-tier .nt {
+  font-size: 11px;
+  color: var(--h-ink-3);
+  margin-top: 2px;
+}
+.h-tier .pr {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 15px;
+}
+.h-tier.active .pr {
+  color: var(--h-accent);
+}
+.h-modal .qty-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--h-line);
+  margin-top: 4px;
+}
+.h-modal .qty-buts {
+  display: inline-flex;
+  gap: 8px;
+}
+.h-modal .qty-buts button {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--h-bg-3);
+  border: 1px solid var(--h-line);
+  color: var(--h-ink);
+}
+.h-modal .qty-buts span {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+.h-modal .total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0 12px;
+}
+.h-modal .total-row .l {
+  font-size: 13px;
+  color: var(--h-ink-2);
+}
+.h-modal .total-row .t {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--h-accent);
+}
+
+/* =============================================================================
+   Responsive
+   ============================================================================= */
+@media (max-width: 1100px) {
+  :root {
+    --h-sidebar: 0px;
+    --h-sidebar-edge: 0px;
+    --h-content-pad: 16px;
+  }
+  .h-side-wrap {
+    display: none;
+  }
+  .h-content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .h-cartbar-wrap {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+  .h-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .h-book {
+    position: static;
+  }
+  .h-evt-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .h-search-advanced {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .h-hero-body {
+    grid-template-columns: 1fr;
+  }
+  .h-dome-section {
+    margin-left: 0;
+    padding-left: 24px;
+  }
+}
+@media (max-width: 720px) {
+  .h-evt-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .h-search-advanced {
+    grid-template-columns: 1fr;
+  }
+  .h-banner {
+    height: 300px;
+  }
+  .h-dome-section {
+    height: 480px;
+  }
+}
+
+/* =============================================================================
+   Dome Gallery
+   ============================================================================= */
+.h-dome-section {
+  position: relative;
+  height: 640px;
+  margin: 48px 0 56px;
+  /* Bleed full viewport width — dome passes under the sidebar on the
+     left and reaches the right edge of the viewport. */
+  margin-left: calc(-1 * var(--h-content-indent));
+  margin-right: calc(-1 * var(--h-content-pad));
+  overflow: hidden;
+  isolation: isolate;
+}
+.h-dome-section .h-dome-head {
+  position: absolute;
+  top: 24px;
+  left: var(--h-content-indent);
+  right: var(--h-content-pad);
+  z-index: 4;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  pointer-events: none;
+}
+.h-dome-section .h-dome-head h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0;
+  margin: 0;
+  color: #fff;
+}
+.h-dome-section .h-dome-head .sub {
+  font-family: var(--h-font-display);
+  font-size: 12px;
+  color: var(--h-ink-3);
+  font-weight: 500;
+}
+
+.dome-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  --radius: 600px;
+  --viewer-pad: 80px;
+  --circ: calc(var(--radius) * 3.14);
+  --segments-x: 30;
+  --segments-y: 30;
+  --rot-y: calc(360deg / var(--segments-x) / 2);
+  --rot-x: calc(360deg / var(--segments-y) / 2);
+  --item-width: calc(var(--circ) / var(--segments-x));
+  --item-height: calc(var(--circ) / var(--segments-y));
+  --overlay-blur-color: #0a0a0e;
+}
+.dome-root * {
+  box-sizing: border-box;
+}
+
+.dome-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.dome-stage:active {
+  cursor: grabbing;
+}
+
+.dome-perspective {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  perspective: calc(var(--radius) * 2);
+  perspective-origin: 50% 50%;
+}
+
+.dome-sphere {
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--radius) * -1));
+  will-change: transform;
+}
+
+.dome-item {
+  position: absolute;
+  top: -999px;
+  bottom: -999px;
+  left: -999px;
+  right: -999px;
+  margin: auto;
+  width: calc(var(--item-width) * var(--item-size-x));
+  height: calc(var(--item-height) * var(--item-size-y));
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  transform: rotateY(calc(var(--rot-y) * (var(--offset-x) + ((var(--item-size-x) - 1) / 2))))
+    rotateX(calc(var(--rot-x) * (var(--offset-y) - ((var(--item-size-y) - 1) / 2))))
+    translateZ(var(--radius));
+}
+
+.dome-tile {
+  position: absolute;
+  inset: 10px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--h-bg-3);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: block;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.25s;
+  border: 0;
+  padding: 0;
+}
+.dome-tile:hover {
+  transform: scale(1.04);
+}
+.dome-tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  filter: grayscale(0.6) contrast(1.05);
+  transition: filter 0.25s;
+}
+.dome-tile:hover img {
+  filter: grayscale(0) contrast(1.05);
+}
+.dome-tile .dome-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 6px 8px;
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0;
+  color: #fff;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.dome-tile:hover .dome-name {
+  opacity: 1;
+}
+
+.dome-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(70% 60% at 50% 50%, transparent 50%, var(--overlay-blur-color) 100%);
+}
+.dome-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 100px;
+  z-index: 5;
+  pointer-events: none;
+}
+.dome-edge--top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--h-bg) 0%, transparent 100%);
+}
+.dome-edge--bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--h-bg) 0%, transparent 100%);
+}
+
+/* =============================================================================
+   Footer
+   ============================================================================= */
+/* Footer lives INSIDE the .h-content column. On desktop it indents from
+   the left by --h-content-indent so it never bleeds under the floating
+   sidebar; on mobile (--h-content-indent collapses to ~24px) it spans
+   the full width of the page. */
+.h-footer {
+  margin-top: 56px;
+  border-top: 1px solid var(--h-line);
+  padding: 48px var(--h-content-pad) 60px var(--h-content-indent);
+}
+.h-footer-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(0, 2.2fr);
+  gap: 40px;
+  max-width: 1280px;
+}
+.h-footer-cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+@media (max-width: 880px) {
+  .h-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .h-footer-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 20px;
+  }
+}
+.h-footer-cols h4 {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--h-ink-3);
+  margin: 0 0 14px;
+}
+.h-footer-cols a {
+  display: block;
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--h-ink-2);
+  cursor: pointer;
+  transition: color 160ms ease, text-shadow 160ms ease;
+}
+.h-footer-cols a:hover {
+  color: var(--h-accent);
+  text-shadow: 0 0 14px rgba(197, 255, 61, 0.55);
+}
+.h-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 1;
+}
+.h-logo-mark img {
+  display: block;
+}
+.h-footer-tag {
+  font-size: 13px;
+  color: var(--h-ink-2);
+  max-width: 32ch;
+  margin-top: 14px;
+  line-height: 1.5;
+}
+.h-footer-socials {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.h-footer-socials a {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--h-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--h-ink);
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.h-footer-socials a:hover {
+  background: rgba(197, 255, 61, 0.10);
+  color: var(--h-accent);
+  border-color: rgba(197, 255, 61, 0.4);
+  box-shadow: 0 0 16px rgba(197, 255, 61, 0.35);
+}
+.h-footer-base {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 24px;
+  margin-top: 28px;
+  border-top: 1px solid var(--h-line);
+  font-size: 12px;
+  color: var(--h-ink-3);
+  max-width: 1280px;
+}
+.h-footer-family {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--h-line);
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--h-ink-4);
+  max-width: 1280px;
+}
+.h-footer-family a {
+  color: var(--h-ink-2);
+  transition: color 160ms ease;
+}
+.h-footer-family a:hover {
+  color: var(--h-accent);
+  text-shadow: 0 0 12px rgba(214, 255, 63, 0.45);
+}
+.h-footer-family__label {
+  color: var(--h-ink-3);
+  font-weight: 600;
+}
+
+/* =============================================================================
+   Mobile bottom tab bar — Apple Music style pill
+   Visible only ≤1100px; hidden on desktop where HSide takes over.
+   ============================================================================= */
+.h-mobile-tabs {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .h-mobile-tabs {
+    display: block;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 80;
+    pointer-events: none;
+  }
+  .h-mobile-tabs__row {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    /* Match the sidebar glass treatment — translucent fluid glass so
+       content underneath is faintly visible, with a subtle saturation
+       boost rather than heavy darkening. */
+    background: rgba(15, 15, 20, 0.32);
+    backdrop-filter: blur(28px) saturate(170%);
+    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 22px;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+    pointer-events: auto;
+  }
+  @supports not (backdrop-filter: blur(10px)) {
+    .h-mobile-tabs__row {
+      background: rgba(15, 15, 18, 0.82);
+    }
+  }
+  .h-mobile-tabs__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 56px;
+    border-radius: 999px;
+    color: var(--h-ink-3);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: color 160ms ease, background 160ms ease;
+  }
+  .h-mobile-tabs__btn:hover {
+    color: var(--h-ink);
+  }
+  .h-mobile-tabs__btn.is-active {
+    color: var(--h-accent);
+    background: rgba(197, 255, 61, 0.10);
+    text-shadow: 0 0 12px rgba(197, 255, 61, 0.45);
+  }
+  .h-mobile-tabs__btn.is-active .h-mobile-tabs__icon {
+    filter: drop-shadow(0 0 8px rgba(197, 255, 61, 0.5));
+  }
+  .h-mobile-tabs__btn:hover:not(.is-active) {
+    color: var(--h-accent);
+  }
+  .h-mobile-tabs__icon {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+  }
+  .h-mobile-tabs__icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  /* Make sure the cart bar doesn't sit on top of the tabs. */
+  .h-cartbar-wrap {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 1100px) {
+  .h-footer {
+    padding-bottom: 120px; /* leave room for the floating mobile tabs */
+    padding-left: 24px;
+  }
+  .h-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .h-footer-cols {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

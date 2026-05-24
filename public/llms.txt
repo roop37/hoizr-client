@@ -1,0 +1,34 @@
+# Hoizr — Find the night. Live event ticketing in India.
+
+> Hoizr is India's consumer ticketing surface for live entertainment. Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India. Tickets in 60 seconds with UPI checkout and instant QR at the door.
+
+## The Hoizr family
+Hoizr is one product in a nightlife-tech family operated by Hoizr Technologies Pvt. Ltd.
+
+- **Hoizr** — Consumer ticketing surface. https://hoizr.com
+- **Hoizr Business** — Tools for hosts: ticketing, marketing, ops, AI-quoted commissions. https://business.hoizr.com
+- **Hoizr Artist** — Profiles, fan CRM, merch, and rider management for performing artists. https://artist.hoizr.com
+- **Hoizr Promoters** — Coming soon. Tools for tour promoters and agency teams.
+
+## Core values
+- Owned, not rented. Customers and hosts both keep their data and direct relationships.
+- Transparent pricing. UPI checkout, GST invoices, no hidden convenience fees.
+- India-first. Built for cities like Mumbai, Delhi NCR, Bengaluru, Pune, Goa, Hyderabad — with regional language support on the roadmap.
+
+## Key surfaces
+
+- [Home](https://hoizr.com/): Featured event hero, curated collections, tonight, recently added, and the dome of artists you can follow.
+- [Events](https://hoizr.com/events): Full browsing with vertical chips (club, gigs, comedy, workshops, festivals) and city filters.
+- [Live tonight](https://hoizr.com/live): What's on tonight in your city.
+- [Search](https://hoizr.com/search): Advanced search across events, artists, venues, cities.
+- [Artists](https://hoizr.com/artists): 3D dome of every artist on Hoizr — drag to rotate, click to follow.
+- [Event detail](https://hoizr.com/events/{slug}): Per-event page with banner, about, line-up, schedule, things-to-know, and a sticky booking panel.
+
+## Audience
+Music fans, club-goers, festival attendees, comedy audiences, and general live-entertainment consumers across India.
+
+## Counterpart
+For hosting events, visit https://business.hoizr.com — Hoizr Business is where venues and organisers list events, manage ticketing, and run marketing.
+
+## Contact
+hello@hoizr.com · India
