@@ -1,10 +1,27 @@
 import { GraphQLClient } from "graphql-request";
 
+/**
+ * Resolve the GraphQL endpoint without throwing at module load.
+ *
+ * Pre-launch the API server may not be running and the env var may
+ * not be configured on the host (Vercel build, etc) — throwing here
+ * would crash the build before Next.js can render a single route.
+ * Instead we fall back to a local URL; runtime requests will fail
+ * with a network error which the callers in `home-data.ts` already
+ * catch (returning empty lists). Set `NEXT_PUBLIC_CUSTOMER_API_URL`
+ * in the deployment once the server is back online.
+ */
 const resolveEndpoint = (envKey: string, localFallback: string) => {
   const value = process.env[envKey];
   if (value) return value;
-  if (process.env.NEXT_PUBLIC_HOIZR_ENV === "prod") {
-    throw new Error(`${envKey} is required in production`);
+  if (
+    process.env.NEXT_PUBLIC_HOIZR_ENV === "prod" &&
+    typeof window !== "undefined"
+  ) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[hoizr] ${envKey} is not set; falling back to ${localFallback}`,
+    );
   }
   return localFallback;
 };

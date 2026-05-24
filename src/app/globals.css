@@ -2692,9 +2692,16 @@ img {
    sidebar; on mobile (--h-content-indent collapses to ~24px) it spans
    the full width of the page. */
 .h-footer {
-  margin-top: 56px;
+  /* Push the top border further down the page so it reads as a true
+     page-end separator rather than crowding the content above. */
+  margin-top: 120px;
   border-top: 1px solid var(--h-line);
   padding: 48px var(--h-content-pad) 60px var(--h-content-indent);
+}
+@media (max-width: 1100px) {
+  .h-footer {
+    margin-top: 80px;
+  }
 }
 .h-footer-grid {
   display: grid;

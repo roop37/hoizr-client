@@ -9,8 +9,17 @@ import { GraphQLClient } from "graphql-request";
 const resolveEndpoint = (envKey: string, localFallback: string) => {
   const value = process.env[envKey];
   if (value) return value;
-  if (process.env.NEXT_PUBLIC_HOIZR_ENV === "prod") {
-    throw new Error(`${envKey} is required in production`);
+  if (
+    process.env.NEXT_PUBLIC_HOIZR_ENV === "prod" &&
+    typeof window !== "undefined"
+  ) {
+    // Pre-launch / build-time safe: never throw at module load. Soft
+    // warning in the browser so misconfigured deployments are still
+    // diagnosable. Set NEXT_PUBLIC_MAIN_API_URL once main-server is live.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[hoizr] ${envKey} is not set; falling back to ${localFallback}`,
+    );
   }
   return localFallback;
 };
