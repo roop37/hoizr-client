@@ -50,6 +50,7 @@ export const OrganizationJsonLd = () =>
         "@type": "ContactPoint",
         contactType: "customer support",
         email: "contact@hoizr.com",
+        telephone: "+91-83695-72945",
         areaServed: "IN",
         availableLanguage: ["en", "hi"],
       },

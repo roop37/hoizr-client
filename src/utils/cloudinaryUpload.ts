@@ -14,7 +14,7 @@
  */
 
 const CLOUD_NAME =
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "choose-pos";
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "hoizr-uploads";
 
 const APP_ENV = (
   process.env.NEXT_PUBLIC_HOIZR_ENV ?? "dev"

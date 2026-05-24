@@ -345,6 +345,9 @@ export const HSide = ({ cities }: Props) => {
             <a href="https://business.hoizr.com" target="_blank" rel="noreferrer">
               Products ↗
             </a>
+            <a href="https://business.hoizr.com/resources#stickers" target="_blank" rel="noreferrer">
+              Sticker Downloads ↗
+            </a>
             <a href="https://business.hoizr.com/legal/privacy" target="_blank" rel="noreferrer">
               Privacy Policy ↗
             </a>

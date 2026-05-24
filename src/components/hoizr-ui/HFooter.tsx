@@ -16,6 +16,9 @@ import { HoizrLogo } from "./HoizrLogo";
 const BUSINESS_URL = "https://business.hoizr.com";
 // const ARTIST_URL = "https://artist.hoizr.com"; // pre-launch, see family bar
 const INSTAGRAM_URL = "https://www.instagram.com/hoizr.technologies";
+const CONTACT_PHONE_DISPLAY = "+91 83695 72945";
+const CONTACT_PHONE_TEL = "tel:+918369572945";
+const CONTACT_WHATSAPP = "https://wa.me/918369572945";
 
 export const HFooter = () => (
   <footer className="h-footer">
@@ -57,6 +60,9 @@ export const HFooter = () => (
           <a href={BUSINESS_URL} target="_blank" rel="noreferrer">
             Hoizr products ↗
           </a>
+          <a href={`${BUSINESS_URL}/resources#stickers`} target="_blank" rel="noreferrer">
+            Flyer stickers ↗
+          </a>
           <a href={`${BUSINESS_URL}/pricing`} target="_blank" rel="noreferrer">
             Pricing ↗
           </a>
@@ -64,6 +70,10 @@ export const HFooter = () => (
         <div>
           <h4>Contact</h4>
           <a href="mailto:contact@hoizr.com">contact@hoizr.com</a>
+          <a href={CONTACT_PHONE_TEL}>Call {CONTACT_PHONE_DISPLAY}</a>
+          <a href={CONTACT_WHATSAPP} target="_blank" rel="noreferrer">
+            WhatsApp ↗
+          </a>
           <a href="mailto:tech@hoizr.com">tech@hoizr.com</a>
           <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
             Instagram ↗

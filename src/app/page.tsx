@@ -85,7 +85,17 @@ export default async function HomePage() {
               </div>
               <div className="h-coming-soon__meta">
                 Questions? Email{" "}
-                <a href="mailto:contact@hoizr.com">contact@hoizr.com</a>
+                <a href="mailto:contact@hoizr.com">contact@hoizr.com</a>{" "}
+                · Call{" "}
+                <a href="tel:+918369572945">+91 83695 72945</a>{" "}
+                ·{" "}
+                <a
+                  href="https://wa.me/918369572945"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  WhatsApp
+                </a>
               </div>
             </div>
             <div className="h-coming-soon__preview" aria-label="Example Hoizr event cards">
