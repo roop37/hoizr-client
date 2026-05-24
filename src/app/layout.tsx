@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { PostHogAnalytics } from "@/components/analytics/PostHogProvider";
 import { WebPushPrompt } from "@/components/notifications/WebPushPrompt";
 import { GlassFilter } from "@/components/hoizr-ui/GlassFilter";
 import { HSide } from "@/components/hoizr-ui/HSide";
@@ -99,33 +100,35 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <OrganizationJsonLd />
-        <WebSiteJsonLd />
-        <GlassFilter />
-        <Noise
-          patternSize={250}
-          patternScaleX={2}
-          patternScaleY={2}
-          patternRefreshInterval={2}
-          patternAlpha={7}
-        />
-        <Suspense fallback={null}>
-          <PageViewTracker />
-        </Suspense>
-        <div className="h-shell">
-          <HSide cities={masters.cities} />
-          <div className="h-content">
-            <div className="h-content-grow">{children}</div>
-            <HFooter />
+        <PostHogAnalytics>
+          <OrganizationJsonLd />
+          <WebSiteJsonLd />
+          <GlassFilter />
+          <Noise
+            patternSize={250}
+            patternScaleX={2}
+            patternScaleY={2}
+            patternRefreshInterval={2}
+            patternAlpha={16}
+          />
+          <Suspense fallback={null}>
+            <PageViewTracker />
+          </Suspense>
+          <div className="h-shell">
+            <HSide cities={masters.cities} />
+            <div className="h-content">
+              <div className="h-content-grow">{children}</div>
+              <HFooter />
+            </div>
           </div>
-        </div>
-        {/* Pre-launch: floating auth + sign-in modal hidden.
-        <HFloatingAuth />
-        <SignInModal />
-        */}
-        <HCartBar />
-        <HMobileTabs />
-        <WebPushPrompt />
+          {/* Pre-launch: floating auth + sign-in modal hidden.
+          <HFloatingAuth />
+          <SignInModal />
+          */}
+          <HCartBar />
+          <HMobileTabs />
+          <WebPushPrompt />
+        </PostHogAnalytics>
       </body>
     </html>
   );

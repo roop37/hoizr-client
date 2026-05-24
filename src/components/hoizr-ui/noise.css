@@ -7,5 +7,7 @@
   height: 100vh;
   pointer-events: none;
   mix-blend-mode: overlay;
-  opacity: 0.42;
+  /* Boosted so the grain is visible against the dark surface. Combine
+     with the body::before/::after blob washes for the overall texture. */
+  opacity: 0.7;
 }
