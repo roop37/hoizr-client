@@ -1,7 +1,7 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { BlurImage } from "./BlurImage";
 
 type Props = {
   size?: "default" | "small";
@@ -24,7 +24,7 @@ export const HoizrLogo = ({ size = "default", href = "/", variant = "white" }: P
   const height = HEIGHT[size];
   const src = variant === "dark" ? "/logo/logoDark.png" : "/logo/logoWhite.png";
   const img = (
-    <BlurImage
+    <Image
       src={src}
       alt="Hoizr"
       width={size === "default" ? 132 : 96}
