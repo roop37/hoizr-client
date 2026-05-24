@@ -17,6 +17,30 @@ import { toDisplayEvent } from "@/lib/event-display";
 
 export const dynamic = "force-dynamic";
 
+const COMING_SOON_EVENT_EXAMPLES = [
+  {
+    title: "Neon Room Friday",
+    meta: "Club night · Andheri",
+    price: "From ₹799",
+    image:
+      "/eventflyers/ChatGPT%20Image%20May%2024%2C%202026%2C%2010_49_08%20PM%20(1).png",
+  },
+  {
+    title: "Laughs After Dark",
+    meta: "Comedy · Bandra",
+    price: "From ₹499",
+    image:
+      "/eventflyers/ChatGPT%20Image%20May%2024%2C%202026%2C%2010_49_09%20PM%20(2).png",
+  },
+  {
+    title: "Warehouse Social",
+    meta: "Party · Colaba",
+    price: "Guestlist live",
+    image:
+      "/eventflyers/ChatGPT%20Image%20May%2024%2C%202026%2C%2010_49_09%20PM%20(3).png",
+  },
+] as const;
+
 export default async function HomePage() {
   const [eventsRes, artistsRes, masters] = await Promise.all([
     fetchPublishedEvents({ pageSize: 24 }),
@@ -30,41 +54,52 @@ export default async function HomePage() {
       <div className="h-page">
         <div className="h-page-head">
           <div>
-            <div className="label">Hoizr · India</div>
             <h1>Find the night.</h1>
           </div>
         </div>
         <section className="h-coming-soon">
           <div className="h-coming-soon__card">
-            <div className="h-coming-soon__kicker">Coming soon</div>
-            <h2>The first nights drop here.</h2>
-            <p>
-              Hoizr is in pre-launch. We&rsquo;re onboarding India&rsquo;s
-              clubs, festivals, comedy promoters, and live-music hosts —
-              tickets land here the moment they go on sale.
-            </p>
-            <div className="h-coming-soon__row">
-              <Link
-                href="https://business.hoizr.com"
-                className="h-btn h-btn-accent h-btn-coming"
-              >
-                <span className="h-coming-cta-label">
-                  <span className="h-coming-cta-label__line">I&rsquo;m a host</span>
-                  <span className="h-coming-cta-label__sub">open business.hoizr.com ↗</span>
-                </span>
-              </Link>
-              <a
-                href="https://www.instagram.com/hoizr.technologies"
-                target="_blank"
-                rel="noreferrer"
-                className="h-btn h-btn-outline h-btn-coming"
-              >
-                Follow on Instagram
-              </a>
+            <div className="h-coming-soon__copy">
+              <div className="h-coming-soon__kicker">Coming soon</div>
+              <h2>The first nights drop here.</h2>
+              <p>
+                Hoizr is in pre-launch. We&rsquo;re onboarding India&rsquo;s
+                clubs, comedy rooms, party crews, festivals, and venues —
+                tickets land here the moment they go on sale.
+              </p>
+              <div className="h-coming-soon__row">
+                <Link
+                  href="https://business.hoizr.com"
+                  className="h-btn h-btn-accent h-btn-coming h-btn-coming--simple"
+                >
+                  List your event
+                </Link>
+                <a
+                  href="https://www.instagram.com/hoizr.technologies"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="h-btn h-btn-outline h-btn-coming"
+                >
+                  Follow on Instagram
+                </a>
+              </div>
+              <div className="h-coming-soon__meta">
+                Questions? Email{" "}
+                <a href="mailto:contact@hoizr.com">contact@hoizr.com</a>
+              </div>
             </div>
-            <div className="h-coming-soon__meta">
-              Questions? Email{" "}
-              <a href="mailto:contact@hoizr.com">contact@hoizr.com</a>
+            <div className="h-coming-soon__preview" aria-label="Example Hoizr event cards">
+              {COMING_SOON_EVENT_EXAMPLES.map((example) => (
+                <article className="h-coming-event-card" key={example.title}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={example.image} alt={`${example.title} event flyer preview`} />
+                  <div className="h-coming-event-card__body">
+                    <h3>{example.title}</h3>
+                    <p>{example.meta}</p>
+                    <span>{example.price}</span>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </section>

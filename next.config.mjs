@@ -26,6 +26,35 @@ loadLegacyPublicEnv();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: "/about-us",
+        destination: "https://business.hoizr.com/about",
+        permanent: true,
+      },
+      {
+        source: "/why-hoizr",
+        destination: "https://business.hoizr.com/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/blogs",
+        destination: "https://business.hoizr.com/blog",
+        permanent: true,
+      },
+      {
+        source: "/blogs/:path*",
+        destination: "https://business.hoizr.com/blog",
+        permanent: true,
+      },
+      {
+        source: "/artists-by-type/:path*",
+        destination: "/artists",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },

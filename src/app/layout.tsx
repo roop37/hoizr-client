@@ -12,6 +12,7 @@ import { HCartBar } from "@/components/hoizr-ui/HCartBar";
 // import { SignInModal } from "@/components/hoizr-ui/SignInModal";
 import { HFooter } from "@/components/hoizr-ui/HFooter";
 import { HMobileTabs } from "@/components/hoizr-ui/HMobileTabs";
+import { HMobileTopBar } from "@/components/hoizr-ui/HMobileTopBar";
 import Noise from "@/components/hoizr-ui/Noise";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { fetchCustomerMasters } from "@/lib/home-data";
@@ -56,6 +57,13 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "/",
+    languages: {
+      "en-IN": "/",
+      "x-default": "/",
+    },
+    types: {
+      "application/rss+xml": "/rss.xml",
+    },
   },
   formatDetection: {
     email: false,
@@ -70,6 +78,14 @@ export const metadata: Metadata = {
     description:
       "Concerts, festivals, club nights, comedy and live music across India. Tickets in 60 seconds.",
     url: SITE_URL,
+    images: [
+      {
+        url: "/opengraph-image.webp",
+        width: 1200,
+        height: 630,
+        alt: "Hoizr — discover concerts, festivals, comedy and club nights in India",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -77,6 +93,7 @@ export const metadata: Metadata = {
     creator: "@hoizr",
     title: "Hoizr — Find the night.",
     description: "Live music & event tickets across India.",
+    images: ["/opengraph-image.webp"],
   },
   robots: {
     index: true,
@@ -114,6 +131,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
+          <HMobileTopBar />
           <div className="h-shell">
             <HSide cities={masters.cities} />
             <div className="h-content">
