@@ -101,6 +101,8 @@ export const HSide = ({ cities }: Props) => {
   const city = useUIStore((s) => s.city);
   const setCity = useUIStore((s) => s.setCity);
   const openSignIn = useUIStore((s) => s.openSignIn);
+  const mobileSidebarOpen = useUIStore((s) => s.mobileSidebarOpen);
+  const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
   const cityMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -123,6 +125,27 @@ export const HSide = ({ cities }: Props) => {
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
+
+  useEffect(() => {
+    closeMobileSidebar();
+  }, [closeMobileSidebar, pathname]);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMobileSidebar();
+    };
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [closeMobileSidebar, mobileSidebarOpen]);
 
   useEffect(() => {
     // Pre-launch: city picker is disabled, so we skip persisted-city
@@ -190,7 +213,20 @@ export const HSide = ({ cities }: Props) => {
   };
 
   return (
-    <aside className="h-side-wrap">
+    <>
+      {mobileSidebarOpen ? (
+        <button
+          type="button"
+          className="h-side-mobile-backdrop"
+          aria-label="Close menu"
+          onClick={closeMobileSidebar}
+        />
+      ) : null}
+      <aside
+        id="hoizr-sidebar"
+        className={`h-side-wrap${mobileSidebarOpen ? " is-mobile-open" : ""}`}
+        aria-label="Sidebar navigation"
+      >
       <GlassSurface
         width="100%"
         height="100%"
@@ -205,6 +241,14 @@ export const HSide = ({ cities }: Props) => {
         <div className="h-side">
           <div className="h-side-header">
             <HoizrLogo size="small" href="/" />
+            <button
+              type="button"
+              className="h-side-close"
+              aria-label="Close menu"
+              onClick={closeMobileSidebar}
+            >
+              {HICONS.close}
+            </button>
             {/* Pre-launch: city picker hidden entirely. Restore the
                 block below when cities reopen.
             <div className="h-city-picker" ref={cityMenuRef}>
@@ -341,6 +385,7 @@ export const HSide = ({ cities }: Props) => {
           </div>
         </div>
       </GlassSurface>
-    </aside>
+      </aside>
+    </>
   );
 };

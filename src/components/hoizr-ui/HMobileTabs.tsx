@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUIStore } from "@/store/uiStore";
 import { HICONS } from "./icons";
 
 /**
@@ -35,6 +36,9 @@ const isActive = (pathname: string | null, href: string) => {
 
 export const HMobileTabs = () => {
   const pathname = usePathname();
+  const mobileSidebarOpen = useUIStore((s) => s.mobileSidebarOpen);
+  const toggleMobileSidebar = useUIStore((s) => s.toggleMobileSidebar);
+
   return (
     <nav className="h-mobile-tabs" aria-label="Primary">
       <ul className="h-mobile-tabs__row">
@@ -52,6 +56,19 @@ export const HMobileTabs = () => {
             </li>
           );
         })}
+        <li>
+          <button
+            type="button"
+            className={`h-mobile-tabs__btn${mobileSidebarOpen ? " is-active" : ""}`}
+            aria-label="Open menu"
+            aria-controls="hoizr-sidebar"
+            aria-expanded={mobileSidebarOpen}
+            onClick={toggleMobileSidebar}
+          >
+            <span className="h-mobile-tabs__icon">{HICONS.menu}</span>
+            <span className="h-mobile-tabs__label">Menu</span>
+          </button>
+        </li>
       </ul>
     </nav>
   );

@@ -48,6 +48,11 @@ export const HICONS = {
       <rect x="14" y="14" width="7" height="7" rx="1" />
     </Stroke>
   ),
+  menu: (
+    <Stroke strokeWidth={2}>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </Stroke>
+  ),
   radio: (
     <Stroke>
       <circle cx="12" cy="12" r="2" />

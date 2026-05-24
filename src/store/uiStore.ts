@@ -8,6 +8,7 @@ type UIUser = {
 
 type UIState = {
   signInOpen: boolean;
+  mobileSidebarOpen: boolean;
   user: UIUser;
   city: string;
   cityId?: string;
@@ -15,6 +16,9 @@ type UIState = {
   showDock: boolean;
   openSignIn: () => void;
   closeSignIn: () => void;
+  openMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
+  toggleMobileSidebar: () => void;
   signIn: (name?: string) => void;
   signOut: () => void;
   setCity: (city: string, cityId?: string) => void;
@@ -32,6 +36,7 @@ const initialsFrom = (name: string) =>
 
 export const useUIStore = create<UIState>((set) => ({
   signInOpen: false,
+  mobileSidebarOpen: false,
   user: { signedIn: false, name: "Guest", initials: "G" },
   city: "All cities",
   cityId: undefined,
@@ -39,6 +44,10 @@ export const useUIStore = create<UIState>((set) => ({
   showDock: true,
   openSignIn: () => set({ signInOpen: true }),
   closeSignIn: () => set({ signInOpen: false }),
+  openMobileSidebar: () => set({ mobileSidebarOpen: true }),
+  closeMobileSidebar: () => set({ mobileSidebarOpen: false }),
+  toggleMobileSidebar: () =>
+    set((s) => ({ mobileSidebarOpen: !s.mobileSidebarOpen })),
   signIn: (name = "Rohan Sharma") =>
     set({
       user: { signedIn: true, name, initials: initialsFrom(name) },

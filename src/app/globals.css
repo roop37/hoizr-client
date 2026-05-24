@@ -303,6 +303,10 @@ img {
 .h-side-wrap > .glass-surface {
   pointer-events: auto;
 }
+.h-side-mobile-backdrop,
+.h-side-close {
+  display: none;
+}
 
 /* Inner content layout — sits inside the GlassSurface and provides the
    actual list-of-links UI. NOT scrollable on the outer container; we use
@@ -2460,8 +2464,55 @@ img {
     --h-sidebar-edge: 0px;
     --h-content-pad: 16px;
   }
+  .h-side-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 990;
+    background: rgba(0, 0, 0, 0.52);
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
   .h-side-wrap {
     display: none;
+    top: 12px;
+    left: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: min(318px, calc(100vw - 24px));
+    z-index: 1000;
+    transform: translateX(-16px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .h-side-wrap.is-mobile-open {
+    display: flex;
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+    animation: h-side-mobile-in 180ms ease-out both;
+  }
+  .h-side-wrap.is-mobile-open > .glass-surface {
+    background: rgba(20, 20, 26, 0.92);
+    pointer-events: auto;
+  }
+  .h-side-close {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: var(--h-ink-2);
+    background: rgba(255, 255, 255, 0.06);
+    transition: color 160ms ease, background 160ms ease;
+  }
+  .h-side-close:hover {
+    color: var(--h-ink);
+    background: rgba(255, 255, 255, 0.12);
   }
   .h-content {
     padding-left: 20px;
@@ -2490,6 +2541,16 @@ img {
   .h-dome-section {
     margin-left: 0;
     padding-left: 24px;
+  }
+}
+@keyframes h-side-mobile-in {
+  from {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 @media (max-width: 720px) {
@@ -2856,7 +2917,7 @@ img {
     margin: 0;
     padding: 6px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 4px;
     /* Match the sidebar glass treatment — translucent fluid glass so
        content underneath is faintly visible, with a subtle saturation
@@ -2888,6 +2949,7 @@ img {
     font-weight: 600;
     letter-spacing: 0.01em;
     transition: color 160ms ease, background 160ms ease;
+    width: 100%;
   }
   .h-mobile-tabs__btn:hover {
     color: var(--h-ink);
