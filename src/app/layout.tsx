@@ -51,8 +51,8 @@ export const metadata: Metadata = {
   creator: "Hoizr",
   publisher: "Hoizr Technologies Pvt. Ltd.",
   icons: {
-    icon: "/favicon.svg",
-    apple: "/apple-touch-icon.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
   },
   alternates: {
     canonical: "/",
