@@ -23,6 +23,8 @@ Hoizr is one product in a nightlife-tech family operated by Hoizr Technologies P
 - [Search](https://hoizr.com/search): Advanced search across events, artists, venues, cities.
 - [Artists](https://hoizr.com/artists): 3D dome of every artist on Hoizr — drag to rotate, click to follow.
 - [Event detail](https://hoizr.com/events/{slug}): Per-event page with banner, about, line-up, schedule, things-to-know, and a sticky booking panel.
+- [RSS](https://hoizr.com/rss.xml): Fresh public event feed.
+- [Sitemap](https://hoizr.com/sitemap.xml): Canonical URL inventory for public discovery pages.
 
 ## Audience
 Music fans, club-goers, festival attendees, comedy audiences, and general live-entertainment consumers across India.
@@ -31,4 +33,4 @@ Music fans, club-goers, festival attendees, comedy audiences, and general live-e
 For hosting events, visit https://business.hoizr.com — Hoizr Business is where venues and organisers list events, manage ticketing, and run marketing.
 
 ## Contact
-hello@hoizr.com · India
+tech@hoizr.com · contact@hoizr.com · +91 83695 72945 · WhatsApp: https://wa.me/918369572945 · India

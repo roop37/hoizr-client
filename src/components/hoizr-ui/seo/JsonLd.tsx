@@ -1,11 +1,10 @@
-import Script from "next/script";
 import type { PublicEvent } from "@/types/event";
 import type { PublicArtistProfile } from "@/types/artist";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 const ORG_NAME = "Hoizr";
 const LEGAL_NAME = "Hoizr Technologies Pvt. Ltd.";
-const LOGO_URL = `${SITE_URL}/opengraph-image.png`;
+const LOGO_URL = `${SITE_URL}/logo/logoDark.png`;
 
 const HOIZR_FAMILY = [
   { "@type": "Organization", name: "Hoizr", url: "https://hoizr.com" },
@@ -15,9 +14,13 @@ const HOIZR_FAMILY = [
 ];
 
 const ldScript = (id: string, data: object) => (
-  <Script id={id} type="application/ld+json" strategy="afterInteractive">
-    {JSON.stringify(data)}
-  </Script>
+  <script
+    id={id}
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify(data).replace(/</g, "\\u003c"),
+    }}
+  />
 );
 
 export const OrganizationJsonLd = () =>
@@ -47,6 +50,7 @@ export const OrganizationJsonLd = () =>
         "@type": "ContactPoint",
         contactType: "customer support",
         email: "contact@hoizr.com",
+        telephone: "+91-83695-72945",
         areaServed: "IN",
         availableLanguage: ["en", "hi"],
       },

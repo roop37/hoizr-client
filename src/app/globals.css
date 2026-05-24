@@ -511,13 +511,14 @@ img {
 .h-side-biz {
   margin-top: 12px;
   padding: 10px 12px 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 0;
 }
 /* Bottom-rail variant: sits ABOVE the sign-in button instead of inside
    the scrolling nav. Keeps the link list compact and out of the scroll. */
 .h-side-biz--foot {
   margin: 0 6px 8px;
-  padding: 10px 8px 4px;
+  padding: 4px 8px;
+  border-top: 0;
 }
 .h-side-biz h5 {
   font-family: var(--h-font-display);
@@ -1729,6 +1730,10 @@ img {
 .h-coming-soon__card {
   position: relative;
   overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 380px);
+  align-items: center;
+  gap: 36px;
   padding: 56px 40px;
   border-radius: 28px;
   /* No 1px border — the radial gradient defines the card edge. A
@@ -1740,6 +1745,12 @@ img {
     radial-gradient(80% 60% at 100% 100%, rgba(255, 46, 138, 0.08), transparent 60%),
     rgba(15, 15, 18, 0.85);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+.h-coming-soon__copy,
+.h-coming-soon__preview {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
 .h-coming-soon__kicker {
   display: inline-flex;
@@ -1772,6 +1783,59 @@ img {
   line-height: 1.55;
   color: var(--h-ink-2);
 }
+.h-coming-soon__preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 14px 4px;
+}
+.h-coming-event-card {
+  overflow: hidden;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.38);
+}
+.h-coming-event-card:nth-child(1) {
+  transform: translateY(18px) rotate(-4deg);
+}
+.h-coming-event-card:nth-child(2) {
+  transform: translateY(-8px) scale(1.04);
+}
+.h-coming-event-card:nth-child(3) {
+  transform: translateY(22px) rotate(4deg);
+}
+.h-coming-event-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+.h-coming-event-card__body {
+  padding: 10px 10px 11px;
+}
+.h-coming-event-card__body h3 {
+  margin: 0;
+  font-family: var(--h-font-display);
+  font-size: 12px;
+  line-height: 1.1;
+  color: var(--h-ink);
+}
+.h-coming-event-card__body p {
+  margin-top: 4px;
+  max-width: none;
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--h-ink-3);
+}
+.h-coming-event-card__body span {
+  display: block;
+  margin-top: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--h-accent);
+}
 @media (max-width: 720px) {
   .h-coming-soon {
     margin: 16px 0 40px;
@@ -1791,6 +1855,16 @@ img {
     letter-spacing: 0.16em;
   }
 }
+@media (max-width: 900px) {
+  .h-coming-soon__card {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+  .h-coming-soon__preview {
+    max-width: 430px;
+    padding: 4px 0 12px;
+  }
+}
 @media (max-width: 420px) {
   .h-coming-soon__card {
     padding: 28px 18px;
@@ -1801,6 +1875,25 @@ img {
   }
   .h-coming-soon__card p {
     font-size: 13.5px;
+  }
+  .h-coming-soon__preview {
+    gap: 7px;
+  }
+  .h-coming-event-card {
+    border-radius: 14px;
+  }
+  .h-coming-event-card__body {
+    padding: 8px;
+  }
+  .h-coming-event-card__body h3 {
+    font-size: 10px;
+  }
+  .h-coming-event-card__body p {
+    font-size: 8px;
+    line-height: 1.18;
+  }
+  .h-coming-event-card__body span {
+    font-size: 9px;
   }
 }
 .h-coming-soon__row {
@@ -1815,6 +1908,10 @@ img {
   text-align: left;
   line-height: 1.25;
   padding: 12px 18px;
+}
+.h-btn-coming--simple {
+  justify-content: center;
+  text-align: center;
 }
 .h-coming-cta-label {
   display: inline-flex;
@@ -1832,6 +1929,10 @@ img {
   opacity: 0.85;
 }
 @media (max-width: 520px) {
+  .h-coming-soon__card .h-coming-event-card__body p {
+    font-size: 8.5px;
+    line-height: 1.18;
+  }
   .h-coming-soon__row {
     flex-direction: column;
     align-items: stretch;
@@ -1839,6 +1940,9 @@ img {
   .h-coming-soon__row .h-btn-coming {
     width: 100%;
     justify-content: flex-start;
+  }
+  .h-coming-soon__row .h-btn-coming--simple {
+    justify-content: center;
   }
 }
 .h-coming-soon__meta {
@@ -2896,6 +3000,44 @@ img {
 }
 
 /* =============================================================================
+   Mobile top bar — anchors the Hoizr wordmark on small screens where
+   the floating glass sidebar (which carries the brand on desktop) is
+   hidden. Visible only ≤1100px.
+   ============================================================================= */
+.h-mobile-topbar {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .h-mobile-topbar {
+    display: block;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02)),
+      rgba(10, 10, 14, 0.43);
+    backdrop-filter: blur(30px) saturate(190%) url(#glass-distortion);
+    -webkit-backdrop-filter: blur(30px) saturate(190%) url(#glass-distortion);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+  }
+  @supports not (backdrop-filter: blur(10px)) {
+    .h-mobile-topbar {
+      background: rgba(10, 10, 14, 0.55);
+    }
+  }
+  .h-mobile-topbar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px 16px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* =============================================================================
    Mobile bottom tab bar — Apple Music style pill
    Visible only ≤1100px; hidden on desktop where HSide takes over.
    ============================================================================= */
@@ -2917,7 +3059,7 @@ img {
     margin: 0;
     padding: 6px;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     /* Match the sidebar glass treatment — translucent fluid glass so
        content underneath is faintly visible, with a subtle saturation
