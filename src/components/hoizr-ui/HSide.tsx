@@ -340,13 +340,7 @@ export const HSide = ({ cities }: Props) => {
               List An Event ↗
             </a>
             <a href="https://business.hoizr.com" target="_blank" rel="noreferrer">
-              Marketing Tools ↗
-            </a>
-            <a href="https://business.hoizr.com" target="_blank" rel="noreferrer">
               Products ↗
-            </a>
-            <a href="https://business.hoizr.com/resources#stickers" target="_blank" rel="noreferrer">
-              Sticker Downloads ↗
             </a>
             <a href="https://business.hoizr.com/legal/privacy" target="_blank" rel="noreferrer">
               Privacy Policy ↗
