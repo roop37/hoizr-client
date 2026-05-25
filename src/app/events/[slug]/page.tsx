@@ -41,12 +41,6 @@ export async function generateMetadata({
       url: canonical,
       images: event.eventFlyer ? [{ url: event.eventFlyer, alt: event.title }] : undefined,
     },
-    twitter: {
-      card: "summary_large_image",
-      title: event.title,
-      description: desc,
-      images: event.eventFlyer ? [event.eventFlyer] : undefined,
-    },
   };
 }
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { HHero } from "@/components/hoizr-ui/HHero";
 import { RailHead } from "@/components/hoizr-ui/RailHead";
@@ -6,6 +7,19 @@ import { EventTile } from "@/components/hoizr-ui/EventTile";
 import { HTicker } from "@/components/hoizr-ui/HTicker";
 import { DomeGallery } from "@/components/hoizr-ui/DomeGallery";
 import { FeaturedHorizontalRail } from "@/components/hoizr-ui/FeaturedHorizontalRail";
+import { CollectionPageJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
+
+// Title + most metadata inherit from `app/layout.tsx`. The home page
+// only needs to add a CollectionPageJsonLd (below) and confirm the
+// canonical "/" + language alternates resolve to the right URL.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+    languages: { "en-IN": "/", "x-default": "/" },
+  },
+};
 // HFooter is now rendered once at the layout level so it can pin to the
 // bottom of short pages. Page-level renders removed.
 // import {
@@ -77,6 +91,11 @@ export default async function HomePage() {
   if (all.length === 0) {
     return (
       <div className="h-page">
+        <CollectionPageJsonLd
+          name="Hoizr — Live music, comedy, club nights & festivals across India"
+          description="Hoizr is in pre-launch — onboarding India's clubs, comedy rooms, party crews, festivals, and venues. Tickets land here the moment they go on sale."
+          href="/"
+        />
         <section className="h-coming-soon">
           <div className="h-coming-soon__card">
             <div className="h-coming-soon__copy">
@@ -168,6 +187,15 @@ export default async function HomePage() {
 
   return (
     <div className="h-page">
+      <CollectionPageJsonLd
+        name="Hoizr — Live music, comedy, club nights & festivals across India"
+        description="Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India on Hoizr."
+        href="/"
+        items={all.slice(0, 24).map((e) => ({
+          url: `${SITE_URL}/events/${e.slug}`,
+          name: e.title,
+        }))}
+      />
       {featuredHorizontal.length > 0 ? (
         <FeaturedHorizontalRail events={featuredHorizontal} />
       ) : null}

@@ -165,10 +165,17 @@ export const CollectionPageJsonLd = ({
   name,
   description,
   href,
+  items,
 }: {
   name: string;
   description: string;
   href: string;
+  /**
+   * Optional list of items to embed as a Schema.org ItemList under
+   * `mainEntity`. Used by index pages (/artists, /events, /) so the
+   * page advertises both the collection metadata and the entries.
+   */
+  items?: { url: string; name: string }[];
 }) =>
   ldScript(`hoizr-collection-${href.replace(/\W+/g, "-")}-jsonld`, {
     "@context": "https://schema.org",
@@ -178,4 +185,19 @@ export const CollectionPageJsonLd = ({
     url: `${SITE_URL}${href}`,
     isPartOf: { "@type": "WebSite", name: ORG_NAME, url: SITE_URL },
     inLanguage: "en-IN",
+    ...(items?.length
+      ? {
+          mainEntity: {
+            "@type": "ItemList",
+            name,
+            numberOfItems: items.length,
+            itemListElement: items.map((item, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              url: item.url,
+              name: item.name,
+            })),
+          },
+        }
+      : {}),
   });

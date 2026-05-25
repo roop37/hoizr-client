@@ -7,16 +7,39 @@ import { BreadcrumbJsonLd, CollectionPageJsonLd } from "@/components/hoizr-ui/se
 import { fetchPublishedEvents } from "@/lib/home-data";
 import { toDisplayEvent } from "@/lib/event-display";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
+
 export const metadata: Metadata = {
-  title: "Live tonight",
+  title: "Live tonight — events happening across India",
   description:
-    "Events happening tonight across India. Doors open in the next few hours — book now, scan at the gate.",
-  alternates: { canonical: "/live" },
+    "Events happening tonight across India. Doors open in the next few hours — book now, scan at the gate. Concerts, club nights, comedy and live music on Hoizr.",
+  keywords: [
+    "events tonight India",
+    "live music tonight",
+    "club nights tonight",
+    "comedy tonight India",
+    "Hoizr live",
+    "events happening now India",
+  ],
+  alternates: {
+    canonical: "/live",
+    languages: { "en-IN": "/live", "x-default": "/live" },
+  },
   openGraph: {
-    title: "Live tonight on Hoizr",
-    description: "Tonight's events across India.",
+    title: "Live tonight on Hoizr — events across India",
+    description: "Tonight's concerts, club nights, comedy, and live music across India.",
     url: "/live",
     type: "website",
+    siteName: "Hoizr",
+    locale: "en_IN",
+    images: [
+      {
+        url: "/opengraph-image.webp",
+        width: 1200,
+        height: 630,
+        alt: "Live tonight on Hoizr — concerts, club nights and comedy across India",
+      },
+    ],
   },
 };
 export const dynamic = "force-dynamic";
@@ -51,6 +74,10 @@ export default async function LivePage() {
         name="Live tonight on Hoizr"
         description="Events happening tonight across India."
         href="/live"
+        items={liveToday.slice(0, 24).map((e) => ({
+          url: `${SITE_URL}/events/${e.slug}`,
+          name: e.title,
+        }))}
       />
       <BreadcrumbJsonLd items={[{ name: "Hoizr", href: "/" }, { name: "Live tonight", href: "/live" }]} />
       <div className="h-page-head">
