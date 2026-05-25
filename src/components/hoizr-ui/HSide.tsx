@@ -332,22 +332,41 @@ export const HSide = ({ cities }: Props) => {
             */}
           </div>
 
-          {/* Bottom rail: business resources sit right above the sign-in
-              button so hosts can jump to business.hoizr.com from anywhere. */}
+          {/* Bottom rail: confident card for venues + event organizers.
+              Sits low against the sign-in pill so the sidebar reads as
+              one tight footer cluster instead of three loose blocks. */}
           <div className="h-side-biz h-side-biz--foot">
-            <h5>BUSINESS RESOURCES</h5>
-            <a href="https://business.hoizr.com" target="_blank" rel="noreferrer">
-              List An Event ↗
+            <a
+              href="https://business.hoizr.com"
+              target="_blank"
+              rel="noreferrer"
+              className="h-side-biz__card"
+            >
+              <span className="h-side-biz__kicker">For venues &amp; organizers</span>
+              <span className="h-side-biz__hed">
+                Own the room. <span className="h-side-biz__hed-accent">Own the repeat.</span>
+              </span>
+              <span className="h-side-biz__sub">Tickets, door, fans, payouts. Built for serious nights.</span>
+              <span className="h-side-biz__cta">
+                List on Hoizr
+                <span className="h-side-biz__arrow" aria-hidden>
+                  ↗
+                </span>
+              </span>
             </a>
-            <a href="https://business.hoizr.com" target="_blank" rel="noreferrer">
-              Products ↗
-            </a>
-            <a href="https://business.hoizr.com/legal/privacy" target="_blank" rel="noreferrer">
-              Privacy Policy ↗
-            </a>
-            <a href="https://business.hoizr.com/legal/terms" target="_blank" rel="noreferrer">
-              Terms &amp; Conditions ↗
-            </a>
+            <div className="h-side-biz__legal">
+              <a href="https://business.hoizr.com/about" target="_blank" rel="noreferrer">
+                About
+              </a>
+              <span aria-hidden>·</span>
+              <a href="https://business.hoizr.com/legal/privacy" target="_blank" rel="noreferrer">
+                Privacy
+              </a>
+              <span aria-hidden>·</span>
+              <a href="https://business.hoizr.com/legal/terms" target="_blank" rel="noreferrer">
+                Terms
+              </a>
+            </div>
           </div>
 
           {/* Pre-launch: sign-in entry hidden until accounts reopen.

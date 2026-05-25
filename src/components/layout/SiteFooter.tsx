@@ -32,7 +32,12 @@ export const SiteFooter = () => (
         </div>
         <ul className="mt-3 space-y-2">
           <li>
-            <a href="https://business.hoizr.com" className="hover:underline">
+            <a
+              href="https://business.hoizr.com"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:underline"
+            >
               For organisers
             </a>
           </li>

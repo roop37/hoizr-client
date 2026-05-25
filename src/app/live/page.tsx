@@ -61,20 +61,22 @@ export default async function LivePage() {
             Doors open in the next few hours. Book now, scan at the gate.
           </p>
         </div>
-        <div className="right">
-          <span className="h-chip active" style={{ padding: "7px 12px" }}>
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: 999,
-                background: "var(--h-volt)",
-                marginRight: 6,
-              }}
-            />
-            {liveToday.length} live tonight
-          </span>
-        </div>
+        {liveToday.length > 0 ? (
+          <div className="right">
+            <span className="h-chip active" style={{ padding: "7px 12px" }}>
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 999,
+                  background: "var(--h-volt)",
+                  marginRight: 6,
+                }}
+              />
+              {liveToday.length} live tonight
+            </span>
+          </div>
+        ) : null}
       </div>
 
       {liveToday.length === 0 ? (
