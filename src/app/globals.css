@@ -246,10 +246,8 @@ img {
    for the sidebar) so horizontal rails inside scroll UNDER the floating
    glass sidebar on the left. Readable text/grid blocks indent themselves
    via `.h-page` / `.h-page-head` / `.h-evt-grid` rules below.
-   Flex column with min-height: 100vh so the footer pins to the bottom
-   when the page content is shorter than the viewport ("sticky-when-short"
-   pattern). The .h-content-grow wrapper around children absorbs remaining
-   space; the footer is a flex sibling that hugs the bottom. */
+   The children wrapper owns at least one viewport, so on short pages the
+   footer begins exactly after the first screen instead of floating into it. */
 .h-content {
   min-width: 0;
   padding: 0;
@@ -261,7 +259,8 @@ img {
 }
 .h-content-grow {
   flex: 1 0 auto;
-  padding-bottom: 140px;
+  min-height: 100vh;
+  min-height: 100svh;
   min-width: 0;
 }
 /* Pages that don't use `.h-page` (e.g. /me/profile, /checkout, legacy
@@ -483,8 +482,10 @@ img {
 }
 
 .h-side-foot {
-  margin-top: auto;
-  padding: 8px 8px 4px;
+  /* margin-top:auto is no longer needed — the biz block above carries
+     it now and the foot follows naturally. Top padding kept tight so
+     the sign-in pill hugs the legal line above. */
+  padding: 2px 8px 4px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -508,38 +509,160 @@ img {
   font-weight: 500;
 }
 
+/* =============================================================================
+   Sidebar bottom cluster — card + legal + sign-in pill.
+   Pushed to the bottom of the sidebar (margin-top: auto on the biz
+   block) so it reads as one tight footer unit hugging the sign-in
+   button, not three loose blocks stranded mid-column.
+   ============================================================================= */
 .h-side-biz {
   margin-top: 12px;
   padding: 10px 12px 4px;
   border-top: 0;
 }
-/* Bottom-rail variant: sits ABOVE the sign-in button instead of inside
-   the scrolling nav. Keeps the link list compact and out of the scroll. */
 .h-side-biz--foot {
-  margin: 0 6px 8px;
-  padding: 4px 8px;
+  /* margin-top:auto pulls the whole biz cluster against the bottom
+     of the flex column. */
+  margin: auto 6px 0;
+  padding: 4px 6px 0;
   border-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.h-side-biz h5 {
-  font-family: var(--h-font-display);
-  font-size: 9px;
+.h-side-biz__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 11px 11px 9px;
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      120% 80% at 0% 0%,
+      rgba(197, 255, 61, 0.18),
+      transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02)
+    );
+  border: 1px solid rgba(197, 255, 61, 0.22);
+  color: var(--h-ink);
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    transform 200ms ease,
+    background 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+.h-side-biz__card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    140% 90% at 100% 100%,
+    rgba(197, 255, 61, 0.18),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.h-side-biz__card:hover {
+  border-color: rgba(197, 255, 61, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(197, 255, 61, 0.20),
+    0 12px 32px -14px rgba(197, 255, 61, 0.65);
+  transform: translateY(-1px);
+}
+.h-side-biz__card:hover::after {
+  opacity: 1;
+}
+.h-side-biz__kicker {
+  font-size: 8.25px;
+  font-weight: 800;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--h-ink-4);
+  color: var(--h-accent);
+  position: relative;
+  z-index: 1;
+}
+.h-side-biz__hed {
+  margin-top: 4px;
+  font-family: var(--h-font-display);
+  font-size: 13px;
   font-weight: 700;
-  margin: 4px 0 8px;
+  letter-spacing: -0.018em;
+  color: var(--h-ink);
+  line-height: 1.18;
+  position: relative;
+  z-index: 1;
 }
-.h-side-biz a {
-  display: block;
-  padding: 4px 0;
-  font-size: 11px;
-  color: var(--h-ink-3);
-  cursor: pointer;
-  transition: color 160ms ease, text-shadow 160ms ease;
-}
-.h-side-biz a:hover {
+.h-side-biz__hed-accent {
   color: var(--h-accent);
   text-shadow: 0 0 12px rgba(197, 255, 61, 0.5);
+  font-weight: 800;
+}
+.h-side-biz__sub {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--h-ink-2);
+  letter-spacing: 0.005em;
+  position: relative;
+  z-index: 1;
+}
+.h-side-biz__cta {
+  margin-top: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5.5px 10px;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: #0a0a0e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 1;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.h-side-biz__card:hover .h-side-biz__cta {
+  box-shadow: 0 6px 18px -6px rgba(197, 255, 61, 0.85);
+}
+.h-side-biz__arrow {
+  font-size: 12px;
+  color: #0a0a0e;
+  transition: transform 220ms ease;
+}
+.h-side-biz__card:hover .h-side-biz__arrow {
+  transform: translate(2px, -2px);
+}
+.h-side-biz__legal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 4px;
+  font-size: 9.25px;
+  color: var(--h-ink-4);
+  letter-spacing: 0.02em;
+}
+.h-side-biz__legal a {
+  color: var(--h-ink-3);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+.h-side-biz__legal a:hover {
+  color: var(--h-accent);
+}
+.h-side-biz__legal span[aria-hidden] {
+  opacity: 0.5;
 }
 
 /* =============================================================================
@@ -2863,22 +2986,31 @@ img {
    sidebar; on mobile (--h-content-indent collapses to ~24px) it spans
    the full width of the page. */
 .h-footer {
-  /* Push the top border further down the page so it reads as a true
-     page-end separator rather than crowding the content above. */
-  margin-top: 120px;
-  /* No hard 1px border-top — a hard line is visible scrolling through
-     the translucent sidebar glass. The soft gradient below reads as
-     a separator without that artefact. */
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.05),
-    transparent 4px
-  );
+  margin-top: 0;
+  position: relative;
   padding: 48px var(--h-content-pad) 60px var(--h-content-indent);
+}
+/* Top border drawn via ::before so we can clip it on the left to the
+   sidebar boundary on desktop. Full-width on mobile where the sidebar
+   collapses. */
+.h-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.10);
+  pointer-events: none;
+}
+@media (min-width: 1101px) {
+  .h-footer::before {
+    left: var(--h-content-indent);
+  }
 }
 @media (max-width: 1100px) {
   .h-footer {
-    margin-top: 80px;
+    margin-top: 0;
   }
 }
 .h-footer-grid {
@@ -3046,35 +3178,42 @@ img {
 }
 @media (max-width: 1100px) {
   .h-mobile-tabs {
-    display: block;
+    display: flex;
+    justify-content: center;
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
     z-index: 80;
     pointer-events: none;
+    padding: 0 16px;
   }
   .h-mobile-tabs__row {
     list-style: none;
     margin: 0;
-    padding: 6px;
+    padding: 5px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 4px;
-    /* Match the sidebar glass treatment — translucent fluid glass so
-       content underneath is faintly visible, with a subtle saturation
-       boost rather than heavy darkening. */
-    background: rgba(15, 15, 20, 0.32);
-    backdrop-filter: blur(28px) saturate(170%);
-    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    grid-template-columns: repeat(4, minmax(64px, 78px));
+    gap: 2px;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    /* Floating Apple-Music pill: heavier shadow, deeper backdrop blur,
+       slimmer height. Sits lifted off the bottom edge with room
+       around it so it reads as a detached element, not a docked bar. */
+    background: rgba(12, 12, 16, 0.46);
+    backdrop-filter: blur(34px) saturate(180%);
+    -webkit-backdrop-filter: blur(34px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 22px;
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+    border-radius: 999px;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 22px 54px -10px rgba(0, 0, 0, 0.55),
+      0 6px 18px -4px rgba(0, 0, 0, 0.4);
     pointer-events: auto;
   }
   @supports not (backdrop-filter: blur(10px)) {
     .h-mobile-tabs__row {
-      background: rgba(15, 15, 18, 0.82);
+      background: rgba(15, 15, 18, 0.86);
     }
   }
   .h-mobile-tabs__btn {
@@ -3082,15 +3221,15 @@ img {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    height: 56px;
+    gap: 1px;
+    height: 50px;
     border-radius: 999px;
     color: var(--h-ink-3);
     text-decoration: none;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
     letter-spacing: 0.01em;
-    transition: color 160ms ease, background 160ms ease;
+    transition: color 200ms ease, background 200ms ease, transform 200ms ease;
     width: 100%;
   }
   .h-mobile-tabs__btn:hover {
@@ -3098,7 +3237,7 @@ img {
   }
   .h-mobile-tabs__btn.is-active {
     color: var(--h-accent);
-    background: rgba(197, 255, 61, 0.10);
+    background: rgba(197, 255, 61, 0.12);
     text-shadow: 0 0 12px rgba(197, 255, 61, 0.45);
   }
   .h-mobile-tabs__btn.is-active .h-mobile-tabs__icon {
@@ -3107,21 +3246,26 @@ img {
   .h-mobile-tabs__btn:hover:not(.is-active) {
     color: var(--h-accent);
   }
+  .h-mobile-tabs__btn:active {
+    transform: scale(0.96);
+  }
   .h-mobile-tabs__icon {
     display: inline-flex;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     align-items: center;
     justify-content: center;
   }
   .h-mobile-tabs__icon svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
-  /* Make sure the cart bar doesn't sit on top of the tabs. */
+  /* Make sure the cart bar doesn't sit on top of the floating tabs. */
   .h-cartbar-wrap {
     bottom: calc(86px + env(safe-area-inset-bottom, 0px));
   }
+  /* Pad the long-page footer above the floating mobile tabs so the
+     last footer line doesn't hide behind the pill on small screens. */
 }
 @media (max-width: 1100px) {
   .h-footer {

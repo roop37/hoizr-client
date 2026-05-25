@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Hoizr — Find the night. Concerts, festivals & club nights in India",
+    default: "Hoizr — Concerts, festivals & club nights in India",
     template: "%s · Hoizr",
   },
   description:
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Hoizr",
     locale: "en_IN",
-    title: "Hoizr — Find the night.",
+    title: "Hoizr",
     description:
       "Concerts, festivals, club nights, comedy and live music across India. Tickets in 60 seconds.",
     url: SITE_URL,
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@hoizr",
     creator: "@hoizr",
-    title: "Hoizr — Find the night.",
+    title: "Hoizr",
     description: "Live music & event tickets across India.",
     images: ["/opengraph-image.webp"],
   },

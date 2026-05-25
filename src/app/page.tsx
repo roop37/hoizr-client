@@ -8,14 +8,31 @@ import { DomeGallery } from "@/components/hoizr-ui/DomeGallery";
 import { FeaturedHorizontalRail } from "@/components/hoizr-ui/FeaturedHorizontalRail";
 // HFooter is now rendered once at the layout level so it can pin to the
 // bottom of short pages. Page-level renders removed.
-import {
-  fetchCustomerMasters,
-  fetchPublicArtists,
-  fetchPublishedEvents,
-} from "@/lib/home-data";
-import { toDisplayEvent } from "@/lib/event-display";
+// import {
+//   fetchCustomerMasters,
+//   fetchPublicArtists,
+//   fetchPublishedEvents,
+// } from "@/lib/home-data";
+// import { toDisplayEvent } from "@/lib/event-display";
+import type { DisplayEvent } from "@/lib/event-display";
+import type { PublicArtistListResponse } from "@/types/artist";
+import type { GenreTagMaster, IndianCityMaster } from "@/types/master";
 
 export const dynamic = "force-dynamic";
+
+const EMPTY_ARTISTS: PublicArtistListResponse = {
+  artists: [],
+  total: 0,
+  page: 1,
+  pageSize: 0,
+};
+const EMPTY_MASTERS: {
+  cities: IndianCityMaster[];
+  genres: GenreTagMaster[];
+} = {
+  cities: [],
+  genres: [],
+};
 
 const COMING_SOON_EVENT_EXAMPLES = [
   {
@@ -42,21 +59,24 @@ const COMING_SOON_EVENT_EXAMPLES = [
 ] as const;
 
 export default async function HomePage() {
-  const [eventsRes, artistsRes, masters] = await Promise.all([
-    fetchPublishedEvents({ pageSize: 24 }),
-    fetchPublicArtists(32),
-    fetchCustomerMasters(),
-  ]);
+  // API wiring paused for pre-launch. Restore this block when public
+  // events are ready; the `all.length === 0` branch below will still
+  // render the coming-soon card if the API returns no events.
+  //
+  // const [eventsRes, artistsRes, masters] = await Promise.all([
+  //   fetchPublishedEvents({ pageSize: 24 }),
+  //   fetchPublicArtists(32),
+  //   fetchCustomerMasters(),
+  // ]);
+  // const all = eventsRes.events.map(toDisplayEvent);
 
-  const all = eventsRes.events.map(toDisplayEvent);
+  const all: DisplayEvent[] = [];
+  const artistsRes = EMPTY_ARTISTS;
+  const masters = EMPTY_MASTERS;
+
   if (all.length === 0) {
     return (
       <div className="h-page">
-        <div className="h-page-head">
-          <div>
-            <h1>Find the night.</h1>
-          </div>
-        </div>
         <section className="h-coming-soon">
           <div className="h-coming-soon__card">
             <div className="h-coming-soon__copy">
@@ -70,6 +90,8 @@ export default async function HomePage() {
               <div className="h-coming-soon__row">
                 <Link
                   href="https://business.hoizr.com"
+                  target="_blank"
+                  rel="noreferrer"
                   className="h-btn h-btn-accent h-btn-coming h-btn-coming--simple"
                 >
                   List your event

@@ -63,8 +63,8 @@ export const HFooter = () => (
           <a href={`${BUSINESS_URL}/resources#stickers`} target="_blank" rel="noreferrer">
             Flyer stickers ↗
           </a>
-          <a href={`${BUSINESS_URL}/pricing`} target="_blank" rel="noreferrer">
-            Pricing ↗
+          <a href={`${BUSINESS_URL}/about`} target="_blank" rel="noreferrer">
+            About ↗
           </a>
         </div>
         <div>

@@ -1,4 +1,4 @@
-# Hoizr — Find the night. Live event ticketing in India.
+# Hoizr — Live event ticketing in India.
 
 > Hoizr is India's consumer ticketing surface for live entertainment. Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India. Tickets in 60 seconds with UPI checkout and instant QR at the door.
 
@@ -6,12 +6,12 @@
 Hoizr is one product in a nightlife-tech family operated by Hoizr Technologies Pvt. Ltd.
 
 - **Hoizr** — Consumer ticketing surface. https://hoizr.com
-- **Hoizr Business** — Tools for hosts: ticketing, marketing, ops, AI-quoted commissions. https://business.hoizr.com
+- **Hoizr Business** — Tools for venues and event organizers: ticketing, marketing, ops, AI-quoted commissions. https://business.hoizr.com
 - **Hoizr Artist** — Profiles, fan CRM, merch, and rider management for performing artists. https://artist.hoizr.com
 - **Hoizr Promoters** — Coming soon. Tools for tour promoters and agency teams.
 
 ## Core values
-- Owned, not rented. Customers and hosts both keep their data and direct relationships.
+- Owned, not rented. Customers, venues, and event organizers keep their data and direct relationships.
 - Transparent pricing. UPI checkout, GST invoices, no hidden convenience fees.
 - India-first. Built for cities like Mumbai, Delhi NCR, Bengaluru, Pune, Goa, Hyderabad — with regional language support on the roadmap.
 
@@ -30,7 +30,7 @@ Hoizr is one product in a nightlife-tech family operated by Hoizr Technologies P
 Music fans, club-goers, festival attendees, comedy audiences, and general live-entertainment consumers across India.
 
 ## Counterpart
-For hosting events, visit https://business.hoizr.com — Hoizr Business is where venues and organisers list events, manage ticketing, and run marketing.
+For running events, visit https://business.hoizr.com — Hoizr Business is where venues and organizers list events, manage ticketing, and run marketing.
 
 ## Contact
 tech@hoizr.com · contact@hoizr.com · +91 83695 72945 · WhatsApp: https://wa.me/918369572945 · India
