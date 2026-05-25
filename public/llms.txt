@@ -1,36 +1,38 @@
-# Hoizr — Live event ticketing in India.
+# Hoizr — Live event ticketing in India
 
-> Hoizr is India's consumer ticketing surface for live entertainment. Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India. Tickets in 60 seconds with UPI checkout and instant QR at the door.
+> Hoizr is India's consumer ticketing surface for live entertainment. Fans discover and book concerts, festivals, club nights, comedy, and live music across India with fast UPI checkout and instant QR tickets at the door.
 
 ## The Hoizr family
-Hoizr is one product in a nightlife-tech family operated by Hoizr Technologies Pvt. Ltd.
+Hoizr is one product in a live-night technology family operated by Hoizr Technologies Pvt. Ltd.
 
 - **Hoizr** — Consumer ticketing surface. https://hoizr.com
-- **Hoizr Business** — Tools for venues and event organizers: ticketing, marketing, ops, AI-quoted commissions. https://business.hoizr.com
+- **Hoizr Business** — Organizer and venue tools for ticketing, marketing, ops, AI event evaluation, and peer benchmarks. https://business.hoizr.com
 - **Hoizr Artist** — Profiles, fan CRM, merch, and rider management for performing artists. https://artist.hoizr.com
-- **Hoizr Promoters** — Coming soon. Tools for tour promoters and agency teams.
+- **Hoizr Promoters** — Coming soon. Tools for tour promoters and agency operators.
 
-## Core values
-- Owned, not rented. Customers, venues, and event organizers keep their data and direct relationships.
-- Transparent pricing. UPI checkout, GST invoices, no hidden convenience fees.
-- India-first. Built for cities like Mumbai, Delhi NCR, Bengaluru, Pune, Goa, Hyderabad — with regional language support on the roadmap.
+## Core beliefs
+- Discovery should feel alive. Fans should find real nights in their city, not dead listings or generic directories.
+- Checkout should be fast. UPI, instant QR tickets, clean receipts, and clear event details are the baseline.
+- The ecosystem should get sharper. Better consumer discovery plus stronger organizer tools helps India's clubs, festivals, comedy rooms, artists, and party crews grow together.
+- India-first. Built for Mumbai, Delhi NCR, Bengaluru, Pune, Goa, Hyderabad, Chennai, and the next live-night cities coming up.
 
 ## Key surfaces
 
-- [Home](https://hoizr.com/): Featured event hero, curated collections, tonight, recently added, and the dome of artists you can follow.
-- [Events](https://hoizr.com/events): Full browsing with vertical chips (club, gigs, comedy, workshops, festivals) and city filters.
-- [Live tonight](https://hoizr.com/live): What's on tonight in your city.
-- [Search](https://hoizr.com/search): Advanced search across events, artists, venues, cities.
-- [Artists](https://hoizr.com/artists): 3D dome of every artist on Hoizr — drag to rotate, click to follow.
-- [Event detail](https://hoizr.com/events/{slug}): Per-event page with banner, about, line-up, schedule, things-to-know, and a sticky booking panel.
+- [Home](https://hoizr.com/): Featured event hero, curated collections, empty-state pre-launch card, and artist discovery.
+- [Events](https://hoizr.com/events): Full browsing with vertical chips, city filters, and published event inventory.
+- [Live tonight](https://hoizr.com/live): What's on tonight in the selected city.
+- [Search](https://hoizr.com/search): Search across events, artists, venues, and cities.
+- [Artists](https://hoizr.com/artists): Artist discovery surface.
+- [Artist profile](https://hoizr.com/artist/{slug}): Public artist page with profile, links, and upcoming events when available.
+- [Event detail](https://hoizr.com/events/{slug}): Per-event page with flyer, about, line-up, schedule, venue, things-to-know, and booking panel.
 - [RSS](https://hoizr.com/rss.xml): Fresh public event feed.
 - [Sitemap](https://hoizr.com/sitemap.xml): Canonical URL inventory for public discovery pages.
 
 ## Audience
-Music fans, club-goers, festival attendees, comedy audiences, and general live-entertainment consumers across India.
+Music fans, club-goers, festival attendees, comedy audiences, artists' fan communities, and live-entertainment consumers across India.
 
 ## Counterpart
-For running events, visit https://business.hoizr.com — Hoizr Business is where venues and organizers list events, manage ticketing, and run marketing.
+For running events, visit https://business.hoizr.com — Hoizr Business is where event organizers, venues, and promoters publish events, manage ticketing, run marketing, scan doors, and track performance.
 
 ## Contact
 tech@hoizr.com · contact@hoizr.com · +91 83695 72945 · WhatsApp: https://wa.me/918369572945 · India

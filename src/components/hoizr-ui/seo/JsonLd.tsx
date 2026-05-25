@@ -32,7 +32,7 @@ export const OrganizationJsonLd = () =>
     url: SITE_URL,
     logo: LOGO_URL,
     description:
-      "Hoizr is India's nightlife technology company. The Hoizr family covers Hoizr (consumer ticketing), Hoizr Business (host tools), Hoizr Artist (performer profiles), and Hoizr Promoters (coming soon).",
+      "Hoizr is India's live-night technology company. The Hoizr family covers Hoizr (consumer ticketing), Hoizr Business (organizer and venue tools), Hoizr Artist (performer profiles), and Hoizr Promoters (coming soon).",
     parentOrganization: {
       "@type": "Organization",
       name: LEGAL_NAME,
