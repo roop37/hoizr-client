@@ -32,7 +32,7 @@ export const OrganizationJsonLd = () =>
     url: SITE_URL,
     logo: LOGO_URL,
     description:
-      "Hoizr is India's nightlife technology company. The Hoizr family covers Hoizr (consumer ticketing), Hoizr Business (host tools), Hoizr Artist (performer profiles), and Hoizr Promoters (coming soon).",
+      "Hoizr is India's live-night technology company. The Hoizr family covers Hoizr (consumer ticketing), Hoizr Business (organizer and venue tools), Hoizr Artist (performer profiles), and Hoizr Promoters (coming soon).",
     parentOrganization: {
       "@type": "Organization",
       name: LEGAL_NAME,
@@ -165,10 +165,17 @@ export const CollectionPageJsonLd = ({
   name,
   description,
   href,
+  items,
 }: {
   name: string;
   description: string;
   href: string;
+  /**
+   * Optional list of items to embed as a Schema.org ItemList under
+   * `mainEntity`. Used by index pages (/artists, /events, /) so the
+   * page advertises both the collection metadata and the entries.
+   */
+  items?: { url: string; name: string }[];
 }) =>
   ldScript(`hoizr-collection-${href.replace(/\W+/g, "-")}-jsonld`, {
     "@context": "https://schema.org",
@@ -178,4 +185,19 @@ export const CollectionPageJsonLd = ({
     url: `${SITE_URL}${href}`,
     isPartOf: { "@type": "WebSite", name: ORG_NAME, url: SITE_URL },
     inLanguage: "en-IN",
+    ...(items?.length
+      ? {
+          mainEntity: {
+            "@type": "ItemList",
+            name,
+            numberOfItems: items.length,
+            itemListElement: items.map((item, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              url: item.url,
+              name: item.name,
+            })),
+          },
+        }
+      : {}),
   });

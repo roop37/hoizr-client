@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  ArtistJsonLd,
+  BreadcrumbJsonLd,
+} from "@/components/hoizr-ui/seo/JsonLd";
 import {
   PUBLIC_ARTIST_EVENTS_QUERY,
   PUBLIC_ARTIST_FOLLOWER_COUNTS_QUERY,
@@ -19,6 +24,58 @@ import type {
   PublicArtistRider,
 } from "@/types/artist";
 import { FollowButton } from "../FollowButton";
+
+const fetchArtistProfile = async (
+  idOrSlug: string,
+): Promise<PublicArtistProfile | null> => {
+  const res = await gqlMainRequest<{
+    publicArtistProfile: PublicArtistProfile | null;
+  }>(PUBLIC_ARTIST_PROFILE_QUERY, { idOrSlug }).catch(() => null);
+  return res?.publicArtistProfile ?? null;
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { idOrSlug: string; name: string };
+}): Promise<Metadata> {
+  const profile = await fetchArtistProfile(params.idOrSlug);
+  if (!profile) return { title: "Artist not found" };
+
+  const name = `${profile.firstName} ${profile.lastName}`.trim();
+  const location = [profile.city, profile.state].filter(Boolean).join(", ");
+  const genres = profile.genres?.length ? profile.genres.join(", ") : null;
+  // Canonical points back to the bare /artist/:idOrSlug variant so we
+  // never split link equity across the two URL shapes that resolve to
+  // the same profile.
+  const canonical = `/artist/${profile.slug ?? params.idOrSlug}`;
+  const description =
+    profile.bio?.slice(0, 160) ??
+    profile.tagline ??
+    [name, genres, location].filter(Boolean).join(" · ") ??
+    `${name} on Hoizr — live shows, tour dates, and merch.`;
+
+  return {
+    title: name,
+    description,
+    keywords: [name, ...(profile.genres ?? []), "live music India", "Hoizr"],
+    alternates: {
+      canonical,
+      languages: { "en-IN": canonical, "x-default": canonical },
+    },
+    openGraph: {
+      type: "profile",
+      title: name,
+      description,
+      url: canonical,
+      siteName: "Hoizr",
+      locale: "en_IN",
+      images: profile.profilePhoto
+        ? [{ url: profile.profilePhoto, alt: name }]
+        : undefined,
+    },
+  };
+}
 
 const RIDER_LABELS: Record<string, string> = {
   Tech: "Tech rider",
@@ -111,6 +168,14 @@ export default async function ArtistPageWithName({ params }: PageProps) {
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-16 pt-6">
+      <ArtistJsonLd artist={profile} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Hoizr", href: "/" },
+          { name: "Artists", href: "/artists" },
+          { name: displayName, href: `/artist/${profile.slug ?? profile._id}` },
+        ]}
+      />
       {profile.coverImage ? (
         <div className="relative -mx-4 mb-6 h-40 overflow-hidden sm:rounded-2xl">
           <Image

@@ -30,11 +30,12 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Hoizr — Concerts, festivals & club nights in India",
+    default:
+      "Hoizr — Concerts, festivals, club nights & comedy across India",
     template: "%s · Hoizr",
   },
   description:
-    "Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India. Instant QR tickets. Pay with UPI.",
+    "Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India. Instant QR tickets, UPI checkout, and the artists you should be hearing.",
   applicationName: "Hoizr",
   keywords: [
     "concert tickets India",
@@ -86,14 +87,6 @@ export const metadata: Metadata = {
         alt: "Hoizr — discover concerts, festivals, comedy and club nights in India",
       },
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    site: "@hoizr",
-    creator: "@hoizr",
-    title: "Hoizr",
-    description: "Live music & event tickets across India.",
-    images: ["/opengraph-image.webp"],
   },
   robots: {
     index: true,

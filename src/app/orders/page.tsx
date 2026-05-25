@@ -42,7 +42,7 @@ export default function OrdersPage() {
             </a>
           </div>
           <div className="h-coming-soon__meta">
-            Already had a ticket? Reply to your order email and the team will
+            Already had a ticket? Reply to your order email and support will
             help you on the same day.
           </div>
         </div>
