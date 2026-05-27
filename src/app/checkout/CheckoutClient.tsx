@@ -306,7 +306,7 @@ export const CheckoutClient = () => {
             email: profile.email,
             contact: profile.phone,
           },
-          theme: { color: "#1F62E8" },
+          theme: { color: "#0F8842" },
           handler: async (response: RazorpayPaymentResponse) => {
             try {
               await gqlRequest<{ confirmOrderPayment: CustomerOrderView }>(
