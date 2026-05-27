@@ -4,8 +4,14 @@ import { EventDetailClient } from "@/components/hoizr-ui/EventDetailClient";
 import { TrackView } from "@/components/analytics/TrackView";
 import { BreadcrumbJsonLd, EventJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { gqlRequest } from "@/lib/graphql";
-import { PUBLIC_EVENT_BY_SLUG_QUERY } from "@/lib/queries";
-import type { PublicEvent } from "@/types/event";
+import {
+  PUBLIC_EVENT_BY_SLUG_QUERY,
+  PUBLIC_EVENT_PEOPLE_QUERY,
+} from "@/lib/queries";
+import type {
+  PublicEvent,
+  PublicEventPeopleResponse,
+} from "@/types/event";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +24,21 @@ async function fetchEvent(slug: string): Promise<PublicEvent | null> {
     return data.getPublicEventBySlug ?? null;
   } catch {
     return null;
+  }
+}
+
+async function fetchPeople(
+  eventId: string
+): Promise<PublicEventPeopleResponse> {
+  try {
+    const data = await gqlRequest<{
+      getPublicEventPeople: PublicEventPeopleResponse;
+    }>(PUBLIC_EVENT_PEOPLE_QUERY, { eventId });
+    return (
+      data.getPublicEventPeople ?? { artists: [], organizers: [] }
+    );
+  } catch {
+    return { artists: [], organizers: [] };
   }
 }
 
@@ -51,6 +72,7 @@ export default async function EventDetailPage({
 }) {
   const event = await fetchEvent(params.slug);
   if (!event) notFound();
+  const people = await fetchPeople(event._id);
   return (
     <>
       <EventJsonLd event={event} />
@@ -73,7 +95,7 @@ export default async function EventDetailPage({
           },
         }}
       />
-      <EventDetailClient event={event} />
+      <EventDetailClient event={event} people={people} />
     </>
   );
 }

@@ -93,6 +93,39 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
   }
 `;
 
+/**
+ * Lineup + organizer + collaborators for the event detail page.
+ * Server resolves lineup → Artist (real) | PhantomArtist (stand-in) |
+ * free-text fallback, and stitches host + collaborator Host rows into
+ * an ordered list (primary host first, then collaborators).
+ */
+export const PUBLIC_EVENT_PEOPLE_QUERY = `
+  query GetPublicEventPeople($eventId: String!) {
+    getPublicEventPeople(eventId: $eventId) {
+      artists {
+        _id
+        name
+        picture
+        tagline
+        bio
+        slug
+        instagramLink
+        spotifyLink
+        youtubeLink
+        isPhantom
+      }
+      organizers {
+        _id
+        name
+        logo
+        description
+        city
+        isPrimary
+      }
+    }
+  }
+`;
+
 // Minimal event-summary fetch used by the order-detail page to show
 // "Valid for: <title> · <date> · <venue>" next to the QR (AUDIT-031)
 // and to surface the host name for the §27 disclosure (AUDIT-034).

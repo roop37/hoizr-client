@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import type { PublicEvent } from "@/types/event";
+import type {
+  PublicEvent,
+  PublicEventPeopleResponse,
+} from "@/types/event";
 import { toDisplayEvent } from "@/lib/event-display";
 import { HICONS } from "./icons";
 // HFooter rendered once at the layout level.
@@ -10,9 +13,10 @@ import { EventBookingPanel } from "@/app/events/[slug]/EventBookingPanel";
 
 type Props = {
   event: PublicEvent;
+  people?: PublicEventPeopleResponse;
 };
 
-export const EventDetailClient = ({ event }: Props) => {
+export const EventDetailClient = ({ event, people }: Props) => {
   const router = useRouter();
   const display = toDisplayEvent(event);
 
@@ -72,6 +76,110 @@ export const EventDetailClient = ({ event }: Props) => {
             </p>
             <p>{display.venueLong}</p>
           </div>
+
+          {people && people.artists.length > 0 ? (
+            <div className="h-detail-section">
+              <h2>Lineup</h2>
+              <div className="h-people-row">
+                {people.artists.map((artist, idx) => {
+                  const clickable = !artist.isPhantom && artist.slug;
+                  const href = clickable
+                    ? `/artists/${artist.slug}`
+                    : undefined;
+                  const inner = (
+                    <>
+                      <span
+                        className="h-people-avatar"
+                        style={
+                          artist.picture
+                            ? { backgroundImage: `url(${artist.picture})` }
+                            : undefined
+                        }
+                        aria-hidden
+                      >
+                        {!artist.picture ? (
+                          <span className="h-people-avatar-initial">
+                            {artist.name.charAt(0).toUpperCase()}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="h-people-name">{artist.name}</span>
+                      {artist.tagline ? (
+                        <span className="h-people-sub">{artist.tagline}</span>
+                      ) : null}
+                    </>
+                  );
+                  return clickable ? (
+                    <a
+                      key={`${artist._id ?? "lineup"}-${idx}`}
+                      href={href}
+                      className="h-people-card h-people-card--linked"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div
+                      key={`${artist._id ?? "lineup"}-${idx}`}
+                      className="h-people-card"
+                    >
+                      {inner}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {people && people.organizers.length > 0 ? (
+            <div className="h-detail-section">
+              <h2>Organizer{people.organizers.length > 1 ? "s" : ""}</h2>
+              <div className="h-people-row">
+                {people.organizers.map((org, idx) => {
+                  const href = org._id ? `/hosts/${org._id}` : undefined;
+                  const inner = (
+                    <>
+                      <span
+                        className="h-people-avatar"
+                        style={
+                          org.logo
+                            ? { backgroundImage: `url(${org.logo})` }
+                            : undefined
+                        }
+                        aria-hidden
+                      >
+                        {!org.logo ? (
+                          <span className="h-people-avatar-initial">
+                            {org.name.charAt(0).toUpperCase()}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="h-people-name">{org.name}</span>
+                      <span className="h-people-sub">
+                        {org.isPrimary ? "Host" : "Collaborator"}
+                        {org.city ? ` · ${org.city}` : ""}
+                      </span>
+                    </>
+                  );
+                  return href ? (
+                    <a
+                      key={`${org._id}-${idx}`}
+                      href={href}
+                      className="h-people-card h-people-card--linked"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div
+                      key={`org-${idx}`}
+                      className="h-people-card"
+                    >
+                      {inner}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
 
           <div className="h-detail-section">
             <h2>Things to know</h2>

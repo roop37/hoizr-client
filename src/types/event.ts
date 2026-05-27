@@ -64,6 +64,33 @@ export type PublicEventListResponse = {
   pageSize: number;
 };
 
+export type PublicEventArtistEntry = {
+  _id?: string;
+  name: string;
+  picture?: string;
+  tagline?: string;
+  bio?: string;
+  slug?: string;
+  instagramLink?: string;
+  spotifyLink?: string;
+  youtubeLink?: string;
+  isPhantom: boolean;
+};
+
+export type PublicEventOrganizerEntry = {
+  _id?: string;
+  name: string;
+  logo?: string;
+  description?: string;
+  city?: string;
+  isPrimary: boolean;
+};
+
+export type PublicEventPeopleResponse = {
+  artists: PublicEventArtistEntry[];
+  organizers: PublicEventOrganizerEntry[];
+};
+
 export type PublicEventFilter = {
   city?: string;
   cityId?: string;
