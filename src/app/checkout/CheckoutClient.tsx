@@ -14,7 +14,13 @@ import {
   EmptyState,
   ErrorState,
 } from "@/components/ui/feedback";
-import { clearActiveCart, writeActiveCart } from "@/lib/active-cart";
+import {
+  activeCartFromCartResponse,
+  clearActiveCart,
+  readActiveCart,
+  writeActiveCart,
+  type ActiveCart,
+} from "@/lib/active-cart";
 import { rupee } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
 import {
@@ -55,23 +61,6 @@ const loadRazorpay = (): Promise<boolean> =>
     document.head.appendChild(script);
   });
 
-const useCountdown = (expiresAt: string | null | undefined) => {
-  const [remaining, setRemaining] = useState<number>(0);
-
-  useEffect(() => {
-    if (!expiresAt) return;
-    const tick = () => {
-      const diff = new Date(expiresAt).getTime() - Date.now();
-      setRemaining(Math.max(0, Math.floor(diff / 1000)));
-    };
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [expiresAt]);
-
-  return remaining;
-};
-
 export const CheckoutClient = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -96,8 +85,6 @@ export const CheckoutClient = () => {
   });
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
-
-  const remainingSeconds = useCountdown(cart?.expiresAt ?? null);
 
   useEffect(() => {
     if (!hydrated) hydrate();
@@ -139,6 +126,22 @@ export const CheckoutClient = () => {
     });
   }, [profile]);
 
+  const persistCart = useCallback((cartResponse: CartResponse) => {
+    const existing = readActiveCart();
+    const meta: Partial<
+      Pick<ActiveCart, "eventSlug" | "eventTitle" | "eventImage">
+    > =
+      existing?.eventId === cartResponse.eventId
+        ? {
+            eventSlug: existing.eventSlug,
+            eventTitle: existing.eventTitle,
+            eventImage: existing.eventImage,
+          }
+        : {};
+
+    writeActiveCart(activeCartFromCartResponse(cartResponse, meta));
+  }, []);
+
   const fetchCart = useCallback(async () => {
     if (!eventId) {
       setFatalError("Missing event reference");
@@ -158,13 +161,7 @@ export const CheckoutClient = () => {
         clearActiveCart();
       } else {
         setCart(data.getCart);
-        if (data.getCart.expiresAt) {
-          writeActiveCart({
-            eventId,
-            totalAmount: Number(data.getCart.pricing?.totalAmount ?? 0),
-            expiresAt: data.getCart.expiresAt,
-          });
-        }
+        persistCart(data.getCart);
       }
     } catch (err: any) {
       setFatalError(
@@ -173,11 +170,66 @@ export const CheckoutClient = () => {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, persistCart]);
+
+  const restorePendingCartOrFetch = useCallback(async () => {
+    if (!eventId) {
+      setFatalError("Missing event reference");
+      setLoading(false);
+      return;
+    }
+
+    const pending = readActiveCart();
+    if (
+      pending?.pending &&
+      pending.eventId === eventId &&
+      (pending.tickets?.length ?? 0) > 0
+    ) {
+      setLoading(true);
+      setFatalError(null);
+      setActionError(null);
+      try {
+        const data = await gqlRequest<{ setCart: CartResponse }>(
+          SET_CART_MUTATION,
+          {
+            input: {
+              eventId,
+              tickets: pending.tickets ?? [],
+              extras: pending.extras ?? [],
+            },
+          }
+        );
+        setCart(data.setCart);
+        writeActiveCart(
+          activeCartFromCartResponse(data.setCart, {
+            eventSlug: pending.eventSlug,
+            eventTitle: pending.eventTitle,
+            eventImage: pending.eventImage,
+          })
+        );
+        track("cartCreated", {
+          eventId,
+          itemIds: (pending.tickets ?? []).map((line) => line.ticketId),
+          metadata: { restoredAfterAuth: true },
+        });
+      } catch (err: any) {
+        clearActiveCart();
+        setFatalError(
+          err?.response?.errors?.[0]?.message ??
+            "Unable to restore your selected tickets. Please reselect your tickets."
+        );
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    await fetchCart();
+  }, [eventId, fetchCart]);
 
   useEffect(() => {
-    if (profile) fetchCart();
-  }, [profile, fetchCart]);
+    if (profile) restorePendingCartOrFetch();
+  }, [profile, restorePendingCartOrFetch]);
 
   const updateCartLine = async (
     kind: "ticket" | "extra",
@@ -194,13 +246,7 @@ export const CheckoutClient = () => {
         { input: buildAdjustedCartInput(cart, kind, lineId, delta) }
       );
       setCart(data.setCart);
-      if (data.setCart?.expiresAt) {
-        writeActiveCart({
-          eventId,
-          totalAmount: Number(data.setCart.pricing?.totalAmount ?? 0),
-          expiresAt: data.setCart.expiresAt,
-        });
-      }
+      persistCart(data.setCart);
       track("cartUpdated", {
         eventId,
         itemIds: [lineId],
@@ -306,7 +352,7 @@ export const CheckoutClient = () => {
             email: profile.email,
             contact: profile.phone,
           },
-          theme: { color: "#1F62E8" },
+          theme: { color: "#0F8842" },
           handler: async (response: RazorpayPaymentResponse) => {
             try {
               await gqlRequest<{ confirmOrderPayment: CustomerOrderView }>(
@@ -429,22 +475,17 @@ export const CheckoutClient = () => {
     );
   }
 
-  const minutes = Math.floor(remainingSeconds / 60);
-  const seconds = remainingSeconds % 60;
   const guestInfoReady = isGuestInfoComplete(guestInfo);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 md:py-12">
       <h1 className="text-2xl font-semibold md:text-3xl">Review your order</h1>
       <p className="mt-1 text-sm text-muted">
-        Lock expires in{" "}
-        <span className="font-semibold text-ink">
-          {minutes}:{seconds.toString().padStart(2, "0")}
-        </span>
+        Confirm your tickets and payment details.
       </p>
 
       <div className="mt-6 space-y-4">
-        <div className="rounded-2xl border border-border bg-cream">
+        <div className="rounded-2xl border border-border bg-cream text-ink">
           <div className="border-b border-border px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
             Tickets
           </div>
@@ -551,7 +592,7 @@ export const CheckoutClient = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-cream p-5 text-sm">
+        <div className="rounded-2xl border border-border bg-cream p-5 text-sm text-ink">
           <div className="flex justify-between py-1">
             <span className="text-muted">Subtotal</span>
             <span className="font-medium">{rupee(cart.pricing.grossAmount)}</span>
@@ -582,7 +623,7 @@ export const CheckoutClient = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-cream p-5 text-sm">
+        <div className="rounded-2xl border border-border bg-cream p-5 text-sm text-ink">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="font-semibold">Your details</div>
@@ -670,14 +711,12 @@ export const CheckoutClient = () => {
 
         <button
           type="button"
-          disabled={paying || updatingLine !== null || remainingSeconds <= 0}
+          disabled={paying || updatingLine !== null}
           onClick={startPayment}
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-50"
         >
           {paying ? (
             <Loader2 size={16} className="animate-spin" />
-          ) : remainingSeconds <= 0 ? (
-            "Cart expired"
           ) : cart.pricing.totalAmount <= 0 ? (
             "Confirm booking"
           ) : (

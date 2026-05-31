@@ -116,7 +116,7 @@ export const EventJsonLd = ({ event }: { event: PublicEvent }) => {
     "@type": "Event",
     name: event.title ?? "Hoizr event",
     description: event.description ?? undefined,
-    image: event.eventFlyer ?? undefined,
+    image: event.horizontalFlyer ?? event.eventFlyer ?? undefined,
     startDate: event.startDate ?? undefined,
     endDate: event.endDate ?? undefined,
     eventStatus: "https://schema.org/EventScheduled",

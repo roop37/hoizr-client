@@ -580,39 +580,18 @@ body,
   gap: 2px;
   padding: 11px 11px 9px;
   border-radius: 14px;
-  background:
-    radial-gradient(
-      120% 80% at 0% 0%,
-      rgba(197, 255, 61, 0.18),
-      transparent 55%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.02)
-    );
+  background: #000;
   border: 1px solid rgba(197, 255, 61, 0.22);
   color: var(--h-ink);
   text-decoration: none;
   overflow: hidden;
   transition:
     transform 200ms ease,
-    background 200ms ease,
     border-color 200ms ease,
     box-shadow 200ms ease;
 }
 .h-side-biz__card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    140% 90% at 100% 100%,
-    rgba(197, 255, 61, 0.18),
-    transparent 60%
-  );
-  opacity: 0;
-  transition: opacity 220ms ease;
+  content: none;
 }
 .h-side-biz__card:hover {
   border-color: rgba(197, 255, 61, 0.55);
@@ -1720,6 +1699,10 @@ body,
   pointer-events: auto;
   margin: 0 auto;
   width: min(760px, 100%);
+  background: rgba(2, 2, 5, 0.78);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .h-cartbar {
   width: 100%;
@@ -2127,14 +2110,106 @@ body,
   }
 }
 
-/* Live now */
+/* Live now — keep cards the same size as /events so the page reads
+   as a denser, browsable grid rather than a wall of giant posters. */
 .h-live-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px 18px;
 }
-.h-live-grid .h-tile .cover {
-  aspect-ratio: 16 / 9;
+@media (max-width: 1180px) {
+  .h-live-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 820px) {
+  .h-live-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Genre marquees on /live — full-bleed under the sidebar, infinite
+   left-to-right loop, pause on hover. The track is rendered with the
+   events duplicated; translating -50% lands cleanly on the second
+   copy's first card so the loop is seamless. */
+.h-marquee-sec {
+  margin: 28px 0 12px;
+}
+.h-marquee-sec .h-marquee-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.h-marquee-sec .h-marquee-head h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0;
+}
+.h-marquee-sec .h-marquee-head .h-marquee-sub {
+  font-size: 12.5px;
+  color: var(--h-ink-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.h-marquee {
+  position: relative;
+  overflow: hidden;
+  /* Full-bleed: extend past the sidebar gutter on the left and the
+     page padding on the right. Mirrors the .h-rail bleed trick so the
+     scroll passes visually under the sidebar. */
+  margin-left: calc(-1 * var(--h-content-indent));
+  margin-right: calc(-1 * var(--h-content-pad));
+  padding-block: 4px;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 48px,
+    black calc(100% - 48px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 48px,
+    black calc(100% - 48px),
+    transparent 100%
+  );
+}
+.h-marquee-track {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  padding-left: var(--h-content-indent);
+  padding-right: var(--h-content-pad);
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  /* Hide scrollbars without disabling scroll. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Reset native momentum on iOS so our JS inertia is the only source
+     of motion — otherwise the two feel doubled. */
+  -webkit-overflow-scrolling: auto;
+  scroll-behavior: auto;
+  /* Drag handler reads pointer events, so the track must accept them
+     even when the user starts the drag on an empty gap. */
+  touch-action: pan-y;
+  user-select: none;
+}
+.h-marquee-track::-webkit-scrollbar {
+  display: none;
+}
+.h-marquee-track--dragging {
+  cursor: grabbing;
+}
+.h-marquee-track--dragging * {
+  pointer-events: none;
+}
+.h-marquee-item {
+  flex: 0 0 220px;
 }
 
 /* Search */
@@ -2198,21 +2273,38 @@ body,
    ============================================================================= */
 .h-detail {
   padding-top: 4px;
+  padding-bottom: 56px;
 }
 .h-detail-back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 8px 14px 8px 11px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   color: var(--h-ink);
   font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  /* Drop the back button down so its top edge sits on the same line
+     as the top of the floating sidebar (which starts at
+     --h-sidebar-edge from the viewport). */
+  margin-top: var(--h-sidebar-edge);
+  margin-bottom: 18px;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 .h-detail-back:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(-2px);
+}
+.h-detail-back .h-back-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
 }
 .h-detail-title {
   font-family: var(--h-font-display);
@@ -2239,11 +2331,14 @@ body,
   color: var(--h-ink-4);
 }
 
+/* Event detail banner — compact horizontal strip with a blurred bg
+   and a centered poster card. Keeps the booking panel visible above
+   the fold instead of being pushed below a full-width flyer. */
 .h-banner {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  height: 440px;
+  height: 360px;
   background: var(--h-bg-3);
   isolation: isolate;
 }
@@ -2268,16 +2363,25 @@ body,
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
-  width: clamp(280px, 32%, 420px);
-  aspect-ratio: 16 / 10;
+  width: clamp(220px, 26%, 320px);
+  max-height: calc(100% - 32px);
+  aspect-ratio: 3 / 4;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: #000;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 .h-banner-poster img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+@media (max-width: 880px) {
+  .h-banner {
+    height: 280px;
+  }
 }
 
 .h-detail-grid {
@@ -2287,6 +2391,109 @@ body,
   margin-top: 32px;
   align-items: flex-start;
 }
+/* Right column wraps all body content in one glass card so the page
+   reads as a single composed surface beneath the flyer instead of a
+   stack of unrelated blocks. */
+.h-detail-body-card {
+  position: relative;
+  padding: 28px 28px 22px;
+  border-radius: 22px;
+  background: rgba(20, 20, 26, 0.55);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 16px 36px rgba(0, 0, 0, 0.36);
+}
+.h-detail-body-card > .h-detail-section:last-of-type {
+  margin-bottom: 0;
+}
+@media (max-width: 880px) {
+  .h-detail-body-card {
+    padding: 20px 18px 16px;
+    border-radius: 18px;
+  }
+}
+
+/* Rich-text content (terms, refund, cancellation, host description).
+   Hosts author these in a rich-text editor on the business side and
+   we render them through DOMPurify on the customer side. */
+.h-richtext {
+  font-size: 14px;
+  color: var(--h-ink-2);
+  line-height: 1.65;
+  max-width: 60ch;
+}
+.h-richtext p {
+  margin: 0 0 10px;
+}
+.h-richtext p:last-child {
+  margin-bottom: 0;
+}
+.h-richtext h1,
+.h-richtext h2,
+.h-richtext h3,
+.h-richtext h4 {
+  font-family: var(--h-font-display);
+  color: var(--h-ink);
+  margin: 14px 0 8px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.h-richtext h1 { font-size: 20px; }
+.h-richtext h2 { font-size: 18px; }
+.h-richtext h3 { font-size: 16px; }
+.h-richtext h4 { font-size: 14px; }
+.h-richtext strong, .h-richtext b {
+  color: var(--h-ink);
+  font-weight: 600;
+}
+.h-richtext em, .h-richtext i {
+  font-style: italic;
+}
+.h-richtext a {
+  color: var(--h-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.h-richtext a:hover {
+  opacity: 0.85;
+}
+.h-richtext ul,
+.h-richtext ol {
+  margin: 6px 0 12px;
+  padding-left: 22px;
+}
+.h-richtext li {
+  margin-bottom: 4px;
+}
+.h-richtext blockquote {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-left: 3px solid rgba(255, 255, 255, 0.18);
+  color: var(--h-ink-3);
+}
+.h-richtext code {
+  font-family: var(--h-font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.h-richtext hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  margin: 14px 0;
+}
+
+.h-detail-disclaimer {
+  font-size: 12px;
+  color: var(--h-ink-3);
+  margin: 28px 0 40px;
+  max-width: 60ch;
+}
+
 .h-detail-section {
   margin-bottom: 36px;
 }
@@ -2317,6 +2524,98 @@ body,
 }
 .h-detail-section .readmore:hover {
   color: var(--h-accent);
+}
+
+/* Lineup + Organizer row on the event detail page. Renders a
+   horizontally scrolling row of avatar + name + sub cards. Each
+   card is a square 88×88 avatar with truncated metadata under it.
+   --linked variants get a hover lift to signal click-through to
+   /artists/<slug> or /hosts/<id>. */
+.h-people-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.h-people-row::-webkit-scrollbar { display: none; }
+/* Reusable glass card — mirrors the sidebar GlassSurface fallback so any
+   surface can opt in without wrapping in a React component. */
+.h-glass-card {
+  position: relative;
+  background: rgba(20, 20, 26, 0.55);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+}
+.h-people-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 108px;
+  padding: 10px 8px 9px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+}
+.h-people-card--linked {
+  cursor: pointer;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.h-people-card--linked:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 14px 28px rgba(0, 0, 0, 0.36);
+}
+.h-people-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+.h-people-avatar-initial {
+  font-family: var(--h-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1;
+}
+.h-people-name {
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--h-ink);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.h-people-sub {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--h-ink-3);
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
 }
 
 .h-things {
@@ -2527,6 +2826,39 @@ body,
 }
 .h-modal-close:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.h-signin-real {
+  max-width: 430px;
+  padding: 28px;
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(6, 7, 10, 0.82);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(28px) saturate(1.15);
+}
+.h-auth-panel input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+.h-auth-panel input:-webkit-autofill,
+.h-auth-panel input:-webkit-autofill:hover,
+.h-auth-panel input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: #fff;
+}
+.h-auth-google,
+.h-auth-google__container {
+  width: 100%;
+  max-width: 100%;
+}
+.h-auth-google__container {
+  display: flex;
+  justify-content: center;
 }
 
 .h-signin h2 {
@@ -2829,9 +3161,6 @@ body,
   }
   .h-search-advanced {
     grid-template-columns: 1fr;
-  }
-  .h-banner {
-    height: 300px;
   }
   .h-dome-section {
     height: 480px;
@@ -3206,7 +3535,8 @@ body,
   .h-mobile-topbar__inner {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
+    gap: 12px;
     padding: 10px 16px;
     padding-top: calc(10px + env(safe-area-inset-top, 0px));
   }
@@ -3322,4 +3652,204 @@ body,
   .h-footer-cols {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* =============================================================================
+   City picker modal — appears on first visit or via the city pill in the
+   header. Glassmorphic card centered on a dim backdrop.
+   ============================================================================= */
+.h-city-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 5, 10, 0.62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 24px 16px;
+  animation: h-city-fade 0.18s ease both;
+}
+@keyframes h-city-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.h-city-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(720px, 86dvh);
+  padding: 20px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 24px;
+  animation: h-city-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes h-city-pop {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.h-city-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.h-city-modal-head h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+.h-city-modal-head p {
+  font-size: 13px;
+  color: var(--h-ink-3);
+  margin: 0;
+}
+.h-city-close {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.h-city-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.h-city-locate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.h-city-locate:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+.h-city-locate:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.h-city-locate-ic {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+}
+.h-city-locate-error {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: #ff9b9b;
+}
+.h-city-search {
+  position: relative;
+}
+.h-city-search input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  font-size: 14px;
+  outline: none;
+}
+.h-city-search input::placeholder {
+  color: var(--h-ink-3);
+}
+.h-city-search input:focus {
+  border-color: rgba(255, 255, 255, 0.30);
+}
+.h-city-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 2px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+}
+.h-city-list::-webkit-scrollbar {
+  width: 6px;
+}
+.h-city-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.h-city-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--h-ink);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+.h-city-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.h-city-item--selected {
+  background: rgba(196, 255, 61, 0.10);
+  border-color: rgba(196, 255, 61, 0.34);
+}
+.h-city-item-name {
+  font-weight: 600;
+}
+.h-city-item-state {
+  font-size: 12px;
+  color: var(--h-ink-3);
+}
+.h-city-empty {
+  padding: 18px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--h-ink-3);
+}
+
+/* City pill in mobile/desktop chrome — opens the modal. */
+.h-city-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.h-city-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.h-city-pill-ic {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  color: var(--h-volt);
 }

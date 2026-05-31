@@ -1,0 +1,137 @@
+fragment OrderFields on CustomerOrderView {
+  _id
+  eventId
+  tickets {
+    ticketTypeId
+    ticketName
+    quantity
+    unitPrice
+    totalPrice
+  }
+  extras {
+    extraId
+    extraName
+    quantity
+    unitPrice
+    totalPrice
+  }
+  subtotal
+  platformFee
+  applicationFeePercent
+  platformFeeGst
+  taxes
+  taxesPercent
+  totalAmount
+  orderStatus
+  razorpayOrderId
+  razorpayPaymentId
+  qrCodeData
+  checkedIn
+  reservedAt
+  createdAt
+  refundRequestStatus
+  refundRequestedAt
+  refundRequestReason
+}
+
+mutation CreateOrder($input: CreateOrderInput!) {
+  createOrder(input: $input) {
+    order {
+      ...OrderFields
+    }
+    checkout {
+      razorpayOrderId
+      razorpayKeyId
+      amount
+      currency
+      orderId
+    }
+  }
+}
+
+mutation ReusePendingOrder($orderId: String!) {
+  reusePendingOrder(orderId: $orderId) {
+    order {
+      ...OrderFields
+    }
+    checkout {
+      razorpayOrderId
+      razorpayKeyId
+      amount
+      currency
+      orderId
+    }
+  }
+}
+
+mutation ConfirmOrderPayment(
+  $razorpayOrderId: String!
+  $razorpayPaymentId: String!
+  $razorpaySignature: String!
+) {
+  confirmOrderPayment(
+    razorpayOrderId: $razorpayOrderId
+    razorpayPaymentId: $razorpayPaymentId
+    razorpaySignature: $razorpaySignature
+  ) {
+    _id
+    orderStatus
+  }
+}
+
+query MyOrders {
+  getMyOrders {
+    ...OrderFields
+  }
+}
+
+query MyOrderById($orderId: String!) {
+  getMyOrderById(orderId: $orderId) {
+    ...OrderFields
+  }
+}
+
+mutation RequestOrderRefund($orderId: String!, $reason: String!) {
+  requestOrderRefund(orderId: $orderId, reason: $reason) {
+    ...OrderFields
+  }
+}
+
+query MyArtistMerchOrders {
+  myArtistMerchOrders {
+    _id
+    itemName
+    artistId
+    merchId
+    quantity
+    unitPrice
+    totalAmount
+    currency
+    status
+    razorpayOrderId
+    razorpayPaymentId
+    shippingName
+    shippingCity
+    shippingPincode
+    carrier
+    trackingNumber
+    shippedAt
+    createdAt
+    updatedAt
+  }
+}
+
+query MyFollowedArtists {
+  myFollowedArtists {
+    _id
+    firstName
+    lastName
+    slug
+    profilePhoto
+    tagline
+    city
+    state
+    genres
+    totalFollowersCount
+  }
+}

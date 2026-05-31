@@ -10,12 +10,12 @@ type Props = {
 };
 
 /**
- * District-style poster tile with a glass info strip overlay.
- * Layout: tall 4:5 poster · badge top-left · fav top-right · glass strip
- * pinned to the bottom showing title, date·city, venue and price. The
- * hover lifts the whole card and tints the price chip to volt.
+ * Canonical event card used everywhere events are listed — events
+ * page, search, live, marquees on /live, related sections, etc.
+ * Tall 4:5 poster with a glass info strip pinned to the bottom
+ * showing date, title, venue, city and price.
  */
-export const EventTile = ({ event }: Props) => (
+export const EventCard = ({ event }: Props) => (
   <Link href={`/events/${event.slug}`} className="h-tile">
     <div className="cover">
       {event.image ? (

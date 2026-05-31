@@ -17,7 +17,6 @@ import { HICONS } from "./icons";
 export const HCartBar = () => {
   const pathname = usePathname();
   const [cart, setCart] = useState<ActiveCart | null>(null);
-  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const sync = () => setCart(readActiveCart());
@@ -27,7 +26,7 @@ export const HCartBar = () => {
     };
     window.addEventListener("hoizr:active-cart-changed", sync);
     window.addEventListener("storage", onStorage);
-    const tick = window.setInterval(() => setNow(Date.now()), 30 * 1000);
+    const tick = window.setInterval(sync, 30 * 1000);
     return () => {
       window.removeEventListener("hoizr:active-cart-changed", sync);
       window.removeEventListener("storage", onStorage);
@@ -46,27 +45,17 @@ export const HCartBar = () => {
     return null;
   }
 
-  const expiresAt = new Date(cart.expiresAt).getTime();
-  const msLeft = expiresAt - now;
-  if (msLeft <= 0) {
-    clearActiveCart();
-    return null;
-  }
-  const mins = Math.max(0, Math.floor(msLeft / 60000));
-  const secs = Math.max(0, Math.floor((msLeft % 60000) / 1000));
-  const timeLabel = mins > 0 ? `${mins}m ${String(secs).padStart(2, "0")}s` : `${secs}s`;
-
   return (
     <div className="h-cartbar-wrap" role="status" aria-live="polite">
       <GlassSurface
         width="100%"
         height="100%"
         borderRadius={16}
-        backgroundOpacity={0.6}
-        saturation={1.4}
-        blur={14}
-        opacity={0.92}
-        brightness={48}
+        backgroundOpacity={0.88}
+        saturation={1.18}
+        blur={18}
+        opacity={0.98}
+        brightness={24}
       >
         <div className="h-cartbar">
           <div className="h-cartbar__cover">
@@ -83,7 +72,7 @@ export const HCartBar = () => {
               {cart.eventTitle ?? "Continue your order"}
             </div>
             <div className="h-cartbar__meta">
-              {rupee(cart.totalAmount)} · Holds for {timeLabel}
+              {rupee(cart.totalAmount)} · Ready for checkout
             </div>
           </div>
           <div className="h-cartbar__actions">

@@ -26,6 +26,11 @@ export type PublicExtra = {
   type: string;
 };
 
+export type PublicPlaceInfo = {
+  placeId?: string;
+  displayName?: string;
+};
+
 export type PublicEventLocation = {
   addressLine1?: string;
   addressLine2?: string;
@@ -33,6 +38,7 @@ export type PublicEventLocation = {
   state?: string;
   pincode?: string;
   formattedAddress?: string;
+  place?: PublicPlaceInfo;
 };
 
 export type PublicEvent = {
@@ -54,7 +60,9 @@ export type PublicEvent = {
   ticketingEnabled?: boolean;
   isHighDemand?: boolean;
   isComingSoon?: boolean;
+  ticketingTerms?: string;
   refundPolicy?: string;
+  cancellationPolicy?: string;
 };
 
 export type PublicEventListResponse = {
@@ -62,6 +70,33 @@ export type PublicEventListResponse = {
   total: number;
   page: number;
   pageSize: number;
+};
+
+export type PublicEventArtistEntry = {
+  _id?: string;
+  name: string;
+  picture?: string;
+  tagline?: string;
+  bio?: string;
+  slug?: string;
+  instagramLink?: string;
+  spotifyLink?: string;
+  youtubeLink?: string;
+  isPhantom: boolean;
+};
+
+export type PublicEventOrganizerEntry = {
+  _id?: string;
+  name: string;
+  logo?: string;
+  description?: string;
+  city?: string;
+  isPrimary: boolean;
+};
+
+export type PublicEventPeopleResponse = {
+  artists: PublicEventArtistEntry[];
+  organizers: PublicEventOrganizerEntry[];
 };
 
 export type PublicEventFilter = {

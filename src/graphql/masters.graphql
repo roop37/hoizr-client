@@ -1,0 +1,37 @@
+query ActiveCities {
+  getActiveIndianCities {
+    _id
+    value
+    cityId
+    city
+    district
+    state
+  }
+}
+
+query ActiveCitiesWithCoords {
+  getActiveIndianCities {
+    _id
+    value
+    cityId
+    city
+    district
+    state
+    latitude
+    longitude
+  }
+}
+
+query ActiveGenreTags {
+  getActiveGenreTags {
+    _id
+    value
+  }
+}
+
+query ActiveEventCategories {
+  getActiveEventCategories {
+    _id
+    value
+  }
+}

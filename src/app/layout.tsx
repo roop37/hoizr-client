@@ -5,11 +5,12 @@ import { PostHogAnalytics } from "@/components/analytics/PostHogProvider";
 import { WebPushPrompt } from "@/components/notifications/WebPushPrompt";
 import { GlassFilter } from "@/components/hoizr-ui/GlassFilter";
 import { HSide } from "@/components/hoizr-ui/HSide";
-// Pre-launch: floating auth chip + sign-in modal hidden until accounts
-// reopen. The cart bar stays — checkout is gated separately.
+import { CityPickerModal } from "@/components/hoizr-ui/CityPickerModal";
+import { CityInitializer } from "@/components/hoizr-ui/CityInitializer";
+// Pre-launch: floating auth chip hidden; sidebar sign-in opens the real modal.
 // import { HFloatingAuth } from "@/components/hoizr-ui/HFloatingAuth";
 import { HCartBar } from "@/components/hoizr-ui/HCartBar";
-// import { SignInModal } from "@/components/hoizr-ui/SignInModal";
+import { SignInModal } from "@/components/hoizr-ui/SignInModal";
 import { HFooter } from "@/components/hoizr-ui/HFooter";
 import { HMobileTabs } from "@/components/hoizr-ui/HMobileTabs";
 import { HMobileTopBar } from "@/components/hoizr-ui/HMobileTopBar";
@@ -132,13 +133,15 @@ export default async function RootLayout({
               <HFooter />
             </div>
           </div>
-          {/* Pre-launch: floating auth + sign-in modal hidden.
+          {/* Pre-launch: floating auth hidden.
           <HFloatingAuth />
-          <SignInModal />
           */}
+          <SignInModal />
           <HCartBar />
           <HMobileTabs />
           <WebPushPrompt />
+          <CityInitializer cities={masters.cities} />
+          <CityPickerModal cities={masters.cities} />
         </PostHogAnalytics>
       </body>
     </html>

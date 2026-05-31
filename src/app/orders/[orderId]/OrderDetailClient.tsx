@@ -336,7 +336,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
 
       <div className="mt-4 space-y-5">
         {eventSummary ? (
-          <div className="rounded-2xl border border-border bg-cream p-5">
+          <div className="rounded-2xl border border-border bg-cream p-5 text-ink">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted">
               Valid for
             </div>
@@ -405,7 +405,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
         ) : null}
 
         {confirmed || refundAlreadyRequested ? (
-          <div className="rounded-2xl border border-border bg-cream p-5 text-sm">
+          <div className="rounded-2xl border border-border bg-cream p-5 text-sm text-ink">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
@@ -467,7 +467,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-border bg-cream p-5">
+        <div className="rounded-2xl border border-border bg-cream p-5 text-ink">
           <div className="text-xs text-muted">
             Order #{order._id.slice(-6).toUpperCase()}
           </div>
@@ -519,7 +519,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-cream p-5 text-sm">
+        <div className="rounded-2xl border border-border bg-cream p-5 text-sm text-ink">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-muted">
@@ -570,7 +570,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
 
       {refundModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/45 px-4 py-5 sm:items-center">
-          <div className="w-full max-w-md rounded-2xl bg-cream p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-2xl bg-cream p-5 text-ink shadow-xl">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-lg font-semibold text-ink">

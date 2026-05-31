@@ -1,0 +1,67 @@
+mutation CustomerRequestOtp($input: CustomerOtpRequestInput!) {
+  customerRequestOtp(input: $input) {
+    otpId
+    profileRequired
+  }
+}
+
+mutation CustomerVerifyOtp($input: CustomerOtpVerifyInput!) {
+  customerVerifyOtp(input: $input) {
+    customerId
+    accessToken
+    refreshToken
+  }
+}
+
+mutation CustomerGoogleStart($input: CustomerGoogleStartInput!) {
+  customerGoogleStart(input: $input) {
+    outcome
+    customerId
+    accessToken
+    refreshToken
+    uniqueId
+    pendingToken
+    prefill {
+      email
+      firstName
+      lastName
+      picture
+    }
+  }
+}
+
+mutation CustomerAppleStart($input: CustomerAppleStartInput!) {
+  customerAppleStart(input: $input) {
+    outcome
+    customerId
+    accessToken
+    refreshToken
+    uniqueId
+  }
+}
+
+mutation CustomerPendingSignupRequestOtp(
+  $input: CustomerPendingSignupRequestOtpInput!
+) {
+  customerPendingSignupRequestOtp(input: $input) {
+    otpId
+  }
+}
+
+mutation CustomerPendingSignupVerifyOtp(
+  $input: CustomerPendingSignupVerifyOtpInput!
+) {
+  customerPendingSignupVerifyOtp(input: $input) {
+    outcome
+    customerId
+    accessToken
+    refreshToken
+    uniqueId
+    primaryEmailMasked
+    secondaryEmail
+  }
+}
+
+mutation CustomerLogout {
+  customerLogout
+}

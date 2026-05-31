@@ -3,6 +3,7 @@ export type IndianCityMaster = {
   value: string;
   cityId?: string | null;
   city?: string | null;
+  district?: string | null;
   state?: string | null;
   latitude?: number | null;
   longitude?: number | null;

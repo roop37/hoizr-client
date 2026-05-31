@@ -6,7 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { rupee } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
 import { SET_CART_MUTATION } from "@/lib/queries";
-import { writeActiveCart } from "@/lib/active-cart";
+import {
+  activeCartFromCartResponse,
+  activeCartSelections,
+  readActiveCart,
+  writeActiveCart,
+} from "@/lib/active-cart";
 import { track } from "@/lib/tracker";
 import { useAuthStore } from "@/store/auth";
 import type { PublicEvent, PublicExtra, PublicTicket } from "@/types/event";
@@ -87,6 +92,14 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
     }
   }, [hydrated, hydrate]);
 
+  useEffect(() => {
+    const activeCart = readActiveCart();
+    if (!activeCart || activeCart.eventId !== event._id) return;
+    const selections = activeCartSelections(activeCart);
+    setTicketSel(selections.tickets);
+    setExtraSel(selections.extras);
+  }, [event._id]);
+
   const tickets = event.tickets ?? [];
   const extras = event.extras ?? [];
 
@@ -130,11 +143,12 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
       setError("Select at least one ticket to continue.");
       return;
     }
-    if (!profile) {
-      router.push(`/login?next=${encodeURIComponent(`/events/${event.slug}`)}`);
-      return;
-    }
-    setLoading(true);
+    const selectedTickets = Object.entries(ticketSel)
+      .filter(([, qty]) => qty > 0)
+      .map(([ticketId, quantity]) => ({ ticketId, quantity }));
+    const selectedExtras = Object.entries(extraSel)
+      .filter(([, qty]) => qty > 0)
+      .map(([extraId, quantity]) => ({ extraId, quantity }));
     const selectedTicketIds = Object.entries(ticketSel)
       .filter(([, qty]) => qty > 0)
       .map(([ticketId]) => ticketId);
@@ -147,28 +161,41 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
         extraCount: Object.values(extraSel).reduce((s, n) => s + n, 0),
       },
     });
+
+    if (!profile) {
+      writeActiveCart({
+        eventId: event._id,
+        eventSlug: event.slug,
+        eventTitle: event.title,
+        eventImage: event.horizontalFlyer ?? event.eventFlyer,
+        totalAmount: preview.totalAmount,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        tickets: selectedTickets,
+        extras: selectedExtras,
+        pending: true,
+      });
+      router.push(`/checkout?eventId=${event._id}`);
+      return;
+    }
+
+    setLoading(true);
     try {
       const cartResponse = await gqlRequest<{ setCart: CartResponse }>(SET_CART_MUTATION, {
         input: {
           eventId: event._id,
-          tickets: Object.entries(ticketSel)
-            .filter(([, qty]) => qty > 0)
-            .map(([ticketId, quantity]) => ({ ticketId, quantity })),
-          extras: Object.entries(extraSel)
-            .filter(([, qty]) => qty > 0)
-            .map(([extraId, quantity]) => ({ extraId, quantity })),
+          tickets: selectedTickets,
+          extras: selectedExtras,
         },
       });
       const cart = cartResponse?.setCart;
       if (cart?.expiresAt) {
-        writeActiveCart({
-          eventId: event._id,
-          eventSlug: event.slug,
-          eventTitle: event.title,
-          eventImage: event.eventFlyer,
-          totalAmount: Number(cart.pricing?.totalAmount ?? 0),
-          expiresAt: cart.expiresAt,
-        });
+        writeActiveCart(
+          activeCartFromCartResponse(cart, {
+            eventSlug: event.slug,
+            eventTitle: event.title,
+            eventImage: event.horizontalFlyer ?? event.eventFlyer,
+          })
+        );
       }
       track("cartCreated", {
         eventId: event._id,
@@ -195,14 +222,14 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-cream">
-      <div className="border-b border-border px-5 py-4">
-        <div className="text-xs font-semibold uppercase tracking-wider text-muted">
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-white backdrop-blur-md">
+      <div className="border-b border-white/10 px-5 py-4">
+        <div className="text-xs font-semibold uppercase tracking-wider text-white/60">
           Tickets
         </div>
       </div>
 
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-white/8">
         {tickets.length ? (
           tickets.map((ticket) => {
             const available = isTicketAvailable(ticket);
@@ -211,7 +238,7 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
               <div key={ticket._id} className="flex items-center gap-3 px-5 py-4">
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{ticket.ticketName}</div>
-                  <div className="mt-0.5 text-xs text-muted">
+                  <div className="mt-0.5 text-xs text-white/60">
                     {ticket.ticketCategory}
                     {ticket.ticketInfo ? ` · ${ticket.ticketInfo}` : ""}
                   </div>
@@ -223,12 +250,12 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                   </div>
                 </div>
                 {available ? (
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-1 backdrop-blur">
                     <button
                       type="button"
                       disabled={qty <= 0}
                       onClick={() => stepTicket(ticket, -1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30"
                     >
                       <Minus size={14} />
                     </button>
@@ -238,13 +265,13 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                     <button
                       type="button"
                       onClick={() => stepTicket(ticket, 1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white"
                     >
                       <Plus size={14} />
                     </button>
                   </div>
                 ) : (
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
                     {ticket.markAsComingSoon
                       ? "Soon"
                       : ticket.markAsOnGroundOnly
@@ -256,7 +283,7 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
             );
           })
         ) : (
-          <div className="px-5 py-6 text-center text-sm text-muted">
+          <div className="px-5 py-6 text-center text-sm text-white/60">
             No tickets configured yet.
           </div>
         )}
@@ -264,10 +291,10 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
 
       {extras.length ? (
         <div>
-          <div className="border-y border-border bg-background px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
+          <div className="border-y border-white/10 bg-white/5 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white/60">
             Add-ons
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-white/8">
             {extras.map((extra) => {
               const available = Math.max(
                 0,
@@ -279,7 +306,7 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{extra.name}</div>
                     {extra.description ? (
-                      <div className="mt-0.5 line-clamp-2 text-xs text-muted">
+                      <div className="mt-0.5 line-clamp-2 text-xs text-white/60">
                         {extra.description}
                       </div>
                     ) : null}
@@ -288,12 +315,12 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                     </div>
                   </div>
                   {available > 0 ? (
-                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-1">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-1 backdrop-blur">
                       <button
                         type="button"
                         disabled={qty <= 0}
                         onClick={() => stepExtra(extra._id, -1, available)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30"
                       >
                         <Minus size={14} />
                       </button>
@@ -304,13 +331,13 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                         type="button"
                         disabled={qty >= available}
                         onClick={() => stepExtra(extra._id, 1, available)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30"
                       >
                         <Plus size={14} />
                       </button>
                     </div>
                   ) : (
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
                       Sold out
                     </span>
                   )}
@@ -322,28 +349,28 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
       ) : null}
 
       {preview.grossAmount > 0 ? (
-        <div className="space-y-1.5 border-t border-border bg-background px-5 py-4 text-sm">
+        <div className="space-y-1.5 border-t border-white/10 bg-white/5 px-5 py-4 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted">Subtotal</span>
+            <span className="text-white/60">Subtotal</span>
             <span className="font-medium">{rupee(preview.grossAmount)}</span>
           </div>
           {preview.taxes > 0 ? (
             <div className="flex justify-between">
-              <span className="text-muted">Ticket GST</span>
+              <span className="text-white/60">Ticket GST</span>
               <span className="font-medium">{rupee(preview.taxes)}</span>
             </div>
           ) : null}
           <div className="flex justify-between">
-            <span className="text-muted">Platform fee</span>
+            <span className="text-white/60">Platform fee</span>
             <span className="font-medium">{rupee(preview.applicationFee)}</span>
           </div>
           {preview.platformFeeGst > 0 ? (
             <div className="flex justify-between">
-              <span className="text-muted">GST on platform fee</span>
+              <span className="text-white/60">GST on platform fee</span>
               <span className="font-medium">{rupee(preview.platformFeeGst)}</span>
             </div>
           ) : null}
-          <div className="mt-2 flex justify-between border-t border-border pt-2 text-base">
+          <div className="mt-2 flex justify-between border-t border-white/10 pt-2 text-base">
             <span className="font-semibold">Total</span>
             <span className="font-semibold">{rupee(preview.totalAmount)}</span>
           </div>
@@ -351,12 +378,12 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
       ) : null}
 
       {error ? (
-        <div className="border-t border-red-200 bg-red-50 px-5 py-3 text-sm text-red-700">
+        <div className="border-t border-red-400/30 bg-red-500/10 px-5 py-3 text-sm text-red-300">
           {error}
         </div>
       ) : null}
 
-      <div className="border-t border-border px-5 py-4">
+      <div className="border-t border-white/10 px-5 py-4">
         <button
           type="button"
           disabled={loading || totalTickets <= 0}
@@ -368,13 +395,10 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
           ) : (
             <>
               <TicketCheck size={16} />
-              {profile ? "Continue to checkout" : "Sign in to book"}
+              Continue to checkout
             </>
           )}
         </button>
-        <p className="mt-2 text-center text-xs text-muted">
-          Tickets are reserved for 13 minutes once locked.
-        </p>
       </div>
     </div>
   );

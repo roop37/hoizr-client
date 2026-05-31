@@ -3,7 +3,7 @@ import Link from "next/link";
 import { HHero } from "@/components/hoizr-ui/HHero";
 import { RailHead } from "@/components/hoizr-ui/RailHead";
 import { GenreCollectionCard } from "@/components/hoizr-ui/GenreCollectionCard";
-import { EventTile } from "@/components/hoizr-ui/EventTile";
+import { EventCard } from "@/components/hoizr-ui/EventCard";
 import { HTicker } from "@/components/hoizr-ui/HTicker";
 import { DomeGallery } from "@/components/hoizr-ui/DomeGallery";
 import { FeaturedHorizontalRail } from "@/components/hoizr-ui/FeaturedHorizontalRail";
@@ -217,7 +217,7 @@ export default async function HomePage() {
         <RailHead title="Tonight" seeAllHref="/events" />
         <div className="h-rail h-rail-5">
           {others.slice(0, 8).map((e) => (
-            <EventTile key={e.id} event={e} />
+            <EventCard key={e.id} event={e} />
           ))}
         </div>
       </div>
@@ -232,7 +232,7 @@ export default async function HomePage() {
               .reverse()
               .slice(0, 8)
               .map((e) => (
-                <EventTile key={e.id} event={e} />
+                <EventCard key={e.id} event={e} />
               ))}
           </div>
         </div>

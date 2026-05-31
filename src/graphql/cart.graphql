@@ -1,0 +1,44 @@
+fragment CartFields on CartResponse {
+  eventId
+  tickets {
+    ticketId
+    ticketName
+    quantity
+    unitPrice
+    totalPrice
+  }
+  extras {
+    extraId
+    extraName
+    quantity
+    unitPrice
+    totalPrice
+  }
+  pricing {
+    grossAmount
+    applicationFee
+    applicationFeePercent
+    platformFeeGst
+    taxes
+    taxesPercent
+    totalAmount
+  }
+  reservedAt
+  expiresAt
+}
+
+query GetCart($eventId: String!) {
+  getCart(eventId: $eventId) {
+    ...CartFields
+  }
+}
+
+mutation SetCart($input: SetCartInput!) {
+  setCart(input: $input) {
+    ...CartFields
+  }
+}
+
+mutation ClearCart($eventId: String!) {
+  clearCart(eventId: $eventId)
+}

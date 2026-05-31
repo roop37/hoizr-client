@@ -254,7 +254,7 @@ export const OrdersClient = () => {
                 <Link
                   key={order._id}
                   href={`/orders/${order._id}`}
-                  className="block rounded-2xl border border-border bg-cream p-4 transition hover:bg-background"
+                  className="block rounded-2xl border border-border bg-cream p-4 text-ink transition hover:bg-background"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -309,7 +309,7 @@ export const OrdersClient = () => {
             return (
               <div
                 key={order._id}
-                className="block rounded-2xl border border-border bg-cream p-4"
+                className="block rounded-2xl border border-border bg-cream p-4 text-ink"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

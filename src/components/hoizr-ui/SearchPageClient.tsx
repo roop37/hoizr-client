@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { EventTile } from "./EventTile";
+import { EventCard } from "./EventCard";
 // HFooter rendered once at the layout level.
 import { HICONS } from "./icons";
 import type { DisplayEvent } from "@/lib/event-display";
@@ -167,7 +167,7 @@ export const SearchPageClient = ({ events, cities, genres }: Props) => {
       ) : (
         <div className="h-evt-grid">
           {results.map((e) => (
-            <EventTile key={e.id} event={e} />
+            <EventCard key={e.id} event={e} />
           ))}
         </div>
       )}
