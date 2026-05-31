@@ -11,7 +11,19 @@
  * server is still the source of truth for cart state during checkout.
  */
 
+import type { CartResponse } from "@/types/order";
+
 const KEY = "hoizr:active-cart";
+
+export type ActiveCartTicket = {
+  ticketId: string;
+  quantity: number;
+};
+
+export type ActiveCartExtra = {
+  extraId: string;
+  quantity: number;
+};
 
 export type ActiveCart = {
   eventId: string;
@@ -20,10 +32,63 @@ export type ActiveCart = {
   eventImage?: string;
   totalAmount: number;
   expiresAt: string; // ISO
+  tickets?: ActiveCartTicket[];
+  extras?: ActiveCartExtra[];
+  pending?: boolean;
 };
+
+type ActiveCartMeta = Pick<
+  ActiveCart,
+  "eventSlug" | "eventTitle" | "eventImage" | "pending"
+>;
 
 const safeWindow = (): Window | null =>
   typeof window === "undefined" ? null : window;
+
+export const activeCartFromCartResponse = (
+  cart: CartResponse,
+  meta: Partial<ActiveCartMeta> = {}
+): ActiveCart => {
+  const cartPointer: ActiveCart = {
+    eventId: cart.eventId,
+    totalAmount: Number(cart.pricing?.totalAmount ?? 0),
+    expiresAt: cart.expiresAt,
+    tickets: (cart.tickets ?? [])
+      .filter((line) => line.quantity > 0)
+      .map((line) => ({
+        ticketId: line.ticketId,
+        quantity: line.quantity,
+      })),
+    extras: (cart.extras ?? [])
+      .filter((line) => line.quantity > 0)
+      .map((line) => ({
+        extraId: line.extraId,
+        quantity: line.quantity,
+      })),
+  };
+
+  if (meta.eventSlug) cartPointer.eventSlug = meta.eventSlug;
+  if (meta.eventTitle) cartPointer.eventTitle = meta.eventTitle;
+  if (meta.eventImage) cartPointer.eventImage = meta.eventImage;
+  if (meta.pending) cartPointer.pending = true;
+
+  return cartPointer;
+};
+
+export const activeCartSelections = (
+  cart: ActiveCart | null
+): { tickets: Record<string, number>; extras: Record<string, number> } => ({
+  tickets: Object.fromEntries(
+    (cart?.tickets ?? [])
+      .filter((line) => line.quantity > 0)
+      .map((line) => [line.ticketId, line.quantity])
+  ),
+  extras: Object.fromEntries(
+    (cart?.extras ?? [])
+      .filter((line) => line.quantity > 0)
+      .map((line) => [line.extraId, line.quantity])
+  ),
+});
 
 export const readActiveCart = (): ActiveCart | null => {
   const w = safeWindow();

@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EventTile } from "@/components/hoizr-ui/EventTile";
-// HFooter now rendered at the layout level.
+import { EventCard } from "@/components/hoizr-ui/EventCard";
+import { MarqueeRow } from "@/components/hoizr-ui/MarqueeRow";
 import { RailHead } from "@/components/hoizr-ui/RailHead";
-import { BreadcrumbJsonLd, CollectionPageJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
-import { fetchPublishedEvents } from "@/lib/home-data";
-import { toDisplayEvent } from "@/lib/event-display";
+import {
+  BreadcrumbJsonLd,
+  CollectionPageJsonLd,
+} from "@/components/hoizr-ui/seo/JsonLd";
+import {
+  fetchCustomerMasters,
+  fetchPublishedEvents,
+} from "@/lib/home-data";
+import { toDisplayEvent, type DisplayEvent } from "@/lib/event-display";
+import type { PublicEvent } from "@/types/event";
+import type { GenreTagMaster } from "@/types/master";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 
@@ -27,7 +35,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Live tonight on Hoizr — events across India",
-    description: "Tonight's concerts, club nights, comedy, and live music across India.",
+    description:
+      "Tonight's concerts, club nights, comedy, and live music across India.",
     url: "/live",
     type: "website",
     siteName: "Hoizr",
@@ -42,6 +51,7 @@ export const metadata: Metadata = {
     ],
   },
 };
+
 export const dynamic = "force-dynamic";
 
 const isToday = (iso?: string) => {
@@ -61,12 +71,42 @@ const isThisWeek = (iso?: string) => {
   return diff >= -1 && diff <= 7;
 };
 
+const groupByGenre = (
+  events: PublicEvent[],
+  genres: GenreTagMaster[]
+): { genre: GenreTagMaster; events: DisplayEvent[] }[] => {
+  const map = new Map<string, DisplayEvent[]>();
+  for (const e of events) {
+    const ids = e.genreTagIds ?? [];
+    if (!ids.length) continue;
+    const display = toDisplayEvent(e);
+    for (const id of ids) {
+      if (!map.has(id)) map.set(id, []);
+      map.get(id)!.push(display);
+    }
+  }
+  return genres
+    .map((g) => ({ genre: g, events: map.get(g._id) ?? [] }))
+    .filter((row) => row.events.length > 0);
+};
+
 export default async function LivePage() {
-  const list = await fetchPublishedEvents({ pageSize: 48 });
-  const liveToday = list.events.filter((e) => isToday(e.startDate)).map(toDisplayEvent);
+  const [list, masters] = await Promise.all([
+    fetchPublishedEvents({ pageSize: 48 }),
+    fetchCustomerMasters(),
+  ]);
+
+  const liveToday = list.events
+    .filter((e) => isToday(e.startDate))
+    .map(toDisplayEvent);
   const upcoming = list.events
     .filter((e) => !isToday(e.startDate) && isThisWeek(e.startDate))
     .map(toDisplayEvent);
+
+  // Build "[Genre] Near You" rows from the FULL event list so the
+  // marquees feel populated even when nothing is live tonight in
+  // exactly that genre.
+  const genreRows = groupByGenre(list.events, masters.genres);
 
   return (
     <div className="h-page">
@@ -79,12 +119,24 @@ export default async function LivePage() {
           name: e.title,
         }))}
       />
-      <BreadcrumbJsonLd items={[{ name: "Hoizr", href: "/" }, { name: "Live tonight", href: "/live" }]} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Hoizr", href: "/" },
+          { name: "Live tonight", href: "/live" },
+        ]}
+      />
       <div className="h-page-head">
         <div>
           <div className="label">Live in your city</div>
           <h1>Happening today.</h1>
-          <p style={{ color: "var(--h-ink-2)", maxWidth: "56ch", margin: "10px 0 0", fontSize: 14 }}>
+          <p
+            style={{
+              color: "var(--h-ink-2)",
+              maxWidth: "56ch",
+              margin: "10px 0 0",
+              fontSize: 14,
+            }}
+          >
             Doors open in the next few hours. Book now, scan at the gate.
           </p>
         </div>
@@ -109,24 +161,36 @@ export default async function LivePage() {
       {liveToday.length === 0 ? (
         <div className="h-empty">
           Nothing live in your city today.{" "}
-          <Link href="/events" className="h-btn-text" style={{ color: "var(--h-accent)" }}>
+          <Link
+            href="/events"
+            className="h-btn-text"
+            style={{ color: "var(--h-accent)" }}
+          >
             See upcoming events
           </Link>
         </div>
       ) : (
         <div className="h-live-grid">
           {liveToday.map((e) => (
-            <EventTile key={e.id} event={e} />
+            <EventCard key={e.id} event={e} />
           ))}
         </div>
       )}
+
+      {genreRows.map((row) => (
+        <MarqueeRow
+          key={row.genre._id}
+          title={`${row.genre.value} Near You`}
+          events={row.events}
+        />
+      ))}
 
       {upcoming.length > 0 ? (
         <div className="h-rail-sec">
           <RailHead title="Coming up this week" seeAllHref="/events" />
           <div className="h-rail h-rail-5">
             {upcoming.map((e) => (
-              <EventTile key={e.id} event={e} />
+              <EventCard key={e.id} event={e} />
             ))}
           </div>
         </div>

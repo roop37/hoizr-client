@@ -7,6 +7,7 @@ import type {
   PublicEventPeopleResponse,
 } from "@/types/event";
 import { toDisplayEvent } from "@/lib/event-display";
+import { sanitizeRichText } from "@/lib/sanitize";
 import { HICONS } from "./icons";
 // HFooter rendered once at the layout level.
 import { EventBookingPanel } from "@/app/events/[slug]/EventBookingPanel";
@@ -26,8 +27,13 @@ export const EventDetailClient = ({ event, people }: Props) => {
 
   return (
     <div className="h-page h-detail">
-      <button type="button" className="h-detail-back" onClick={() => router.back()}>
-        <span style={{ display: "inline-flex" }}>{HICONS.chevL}</span>
+      <button
+        type="button"
+        className="h-detail-back"
+        onClick={() => router.back()}
+        aria-label="Go back"
+      >
+        <span className="h-back-icon">{HICONS.chevL}</span>
         <span>Back</span>
       </button>
 
@@ -38,7 +44,7 @@ export const EventDetailClient = ({ event, people }: Props) => {
           {display.startTime ? `, ${display.startTime}` : ""}
         </span>
         <span className="sep">|</span>
-        <span>{display.venueLong}</span>
+        <span>{display.venueShort}</span>
       </div>
 
       <div className="h-banner">
@@ -46,20 +52,33 @@ export const EventDetailClient = ({ event, people }: Props) => {
           {display.image ? (
             <img src={display.image} alt={display.title} />
           ) : (
-            <div style={{ position: "absolute", inset: 0, background: display.imageStyle, opacity: 0.55 }} />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: display.imageStyle,
+                opacity: 0.55,
+              }}
+            />
           )}
         </div>
         <div className="h-banner-poster">
           {display.image ? (
             <img src={display.image} alt={display.title} />
           ) : (
-            <div style={{ position: "absolute", inset: 0, background: display.imageStyle }} />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: display.imageStyle,
+              }}
+            />
           )}
         </div>
       </div>
 
       <div className="h-detail-grid">
-        <div>
+        <div className="h-detail-body-card">
           {display.about ? (
             <div className="h-detail-section">
               <h2>About</h2>
@@ -74,7 +93,7 @@ export const EventDetailClient = ({ event, people }: Props) => {
               {display.startTime ? ` · ${display.startTime}` : ""}
               {display.endTime ? ` — ${display.endTime}` : ""}
             </p>
-            <p>{display.venueLong}</p>
+            <p>{display.venueShort}</p>
           </div>
 
           {people && people.artists.length > 0 ? (
@@ -113,14 +132,14 @@ export const EventDetailClient = ({ event, people }: Props) => {
                     <a
                       key={`${artist._id ?? "lineup"}-${idx}`}
                       href={href}
-                      className="h-people-card h-people-card--linked"
+                      className="h-people-card h-glass-card h-people-card--linked"
                     >
                       {inner}
                     </a>
                   ) : (
                     <div
                       key={`${artist._id ?? "lineup"}-${idx}`}
-                      className="h-people-card"
+                      className="h-people-card h-glass-card"
                     >
                       {inner}
                     </div>
@@ -155,7 +174,7 @@ export const EventDetailClient = ({ event, people }: Props) => {
                       </span>
                       <span className="h-people-name">{org.name}</span>
                       <span className="h-people-sub">
-                        {org.isPrimary ? "Host" : "Collaborator"}
+                        {org.isPrimary ? "Organizer" : "Collaborator"}
                         {org.city ? ` · ${org.city}` : ""}
                       </span>
                     </>
@@ -164,14 +183,14 @@ export const EventDetailClient = ({ event, people }: Props) => {
                     <a
                       key={`${org._id}-${idx}`}
                       href={href}
-                      className="h-people-card h-people-card--linked"
+                      className="h-people-card h-glass-card h-people-card--linked"
                     >
                       {inner}
                     </a>
                   ) : (
                     <div
                       key={`org-${idx}`}
-                      className="h-people-card"
+                      className="h-people-card h-glass-card"
                     >
                       {inner}
                     </div>
@@ -194,7 +213,7 @@ export const EventDetailClient = ({ event, people }: Props) => {
               </div>
               <div className="h-thing">
                 <span className="ic">{HICONS.pin}</span>
-                <span>{display.venueLong}</span>
+                <span>{display.venueShort}</span>
               </div>
               <div className="h-thing">
                 <span className="ic">{HICONS.clock}</span>
@@ -214,11 +233,47 @@ export const EventDetailClient = ({ event, people }: Props) => {
 
           <div className="h-detail-section">
             <h2>Venue</h2>
-            <p>{display.venueLong}. Cashless bar — UPI / card only. Re-entry not permitted.</p>
+            <p>{display.venueShort}. Cashless bar — UPI / card only. Re-entry not permitted.</p>
           </div>
 
-          <p style={{ fontSize: 12, color: "var(--h-ink-3)" }}>
-            Ticketing by Hoizr. The event itself is run by the organiser — Hoizr is not the event organiser.
+          {display.ticketingTerms ? (
+            <div className="h-detail-section">
+              <h2>Terms &amp; conditions</h2>
+              <div
+                className="h-richtext"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeRichText(display.ticketingTerms),
+                }}
+              />
+            </div>
+          ) : null}
+
+          {display.refundPolicy ? (
+            <div className="h-detail-section">
+              <h2>Refund policy</h2>
+              <div
+                className="h-richtext"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeRichText(display.refundPolicy),
+                }}
+              />
+            </div>
+          ) : null}
+
+          {display.cancellationPolicy ? (
+            <div className="h-detail-section">
+              <h2>Cancellation policy</h2>
+              <div
+                className="h-richtext"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeRichText(display.cancellationPolicy),
+                }}
+              />
+            </div>
+          ) : null}
+
+          <p className="h-detail-disclaimer">
+            Ticketing by Hoizr. The event itself is run by the organizer — Hoizr is not the event organizer.
           </p>
         </div>
 

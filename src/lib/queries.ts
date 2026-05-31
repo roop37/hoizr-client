@@ -1,4 +1,9 @@
 // --- Public reads ---
+//
+// New queries should be added to src/graphql/*.graphql and consumed via
+// the typed SDK in `lib/sdk.ts` (`sdk.OperationName(...)`). The raw
+// strings below are kept for the modules that haven't been migrated yet
+// — both styles can coexist while the migration is in progress.
 
 export const PUBLIC_EVENT_LIST_QUERY = `
   query GetPublishedEvents($input: PublicEventFilterInput) {
@@ -60,7 +65,14 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
         state
         pincode
         formattedAddress
+        place {
+          placeId
+          displayName
+        }
       }
+      ticketingTerms
+      refundPolicy
+      cancellationPolicy
       ticketingEnabled
       isHighDemand
       tickets {
@@ -156,6 +168,7 @@ export const ACTIVE_CITIES_QUERY = `
       value
       cityId
       city
+      district
       state
     }
   }
@@ -168,6 +181,7 @@ export const ACTIVE_CITIES_WITH_COORDS_QUERY = `
       value
       cityId
       city
+      district
       state
       latitude
       longitude
@@ -199,6 +213,7 @@ export const REQUEST_OTP_MUTATION = `
   mutation CustomerRequestOtp($input: CustomerOtpRequestInput!) {
     customerRequestOtp(input: $input) {
       otpId
+      profileRequired
     }
   }
 `;
@@ -220,6 +235,7 @@ export const GOOGLE_START_MUTATION = `
       customerId
       accessToken
       refreshToken
+      uniqueId
       pendingToken
       prefill {
         email
@@ -238,6 +254,7 @@ export const APPLE_START_MUTATION = `
       customerId
       accessToken
       refreshToken
+      uniqueId
     }
   }
 `;
@@ -261,6 +278,7 @@ export const PENDING_SIGNUP_VERIFY_OTP_MUTATION = `
       customerId
       accessToken
       refreshToken
+      uniqueId
       primaryEmailMasked
       secondaryEmail
     }

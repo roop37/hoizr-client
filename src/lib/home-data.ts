@@ -1,4 +1,5 @@
 import { gqlRequest } from "./graphql";
+import { gqlMainRequest } from "./graphql-main";
 import {
   ACTIVE_CITIES_QUERY,
   ACTIVE_CITIES_WITH_COORDS_QUERY,
@@ -6,6 +7,7 @@ import {
   PUBLIC_EVENT_LIST_QUERY,
 } from "./queries";
 import { PUBLIC_ARTISTS_QUERY } from "./artist-queries";
+import { FALLBACK_INDIAN_CITIES } from "./city-fallbacks";
 import type { PublicEventFilter, PublicEventListResponse } from "@/types/event";
 import type { PublicArtistListResponse } from "@/types/artist";
 import type { GenreTagMaster, IndianCityMaster } from "@/types/master";
@@ -26,15 +28,28 @@ async function fetchActiveCities(): Promise<IndianCityMaster[]> {
     const data = await gqlRequest<{ getActiveIndianCities: IndianCityMaster[] }>(
       ACTIVE_CITIES_WITH_COORDS_QUERY,
     );
-    return data.getActiveIndianCities;
+    return data.getActiveIndianCities?.length
+      ? data.getActiveIndianCities
+      : FALLBACK_INDIAN_CITIES;
   } catch {
     try {
       const data = await gqlRequest<{ getActiveIndianCities: IndianCityMaster[] }>(
         ACTIVE_CITIES_QUERY,
       );
-      return data.getActiveIndianCities;
+      return data.getActiveIndianCities?.length
+        ? data.getActiveIndianCities
+        : FALLBACK_INDIAN_CITIES;
     } catch {
-      return [];
+      try {
+        const data = await gqlMainRequest<{
+          getActiveIndianCities: IndianCityMaster[];
+        }>(ACTIVE_CITIES_WITH_COORDS_QUERY);
+        return data.getActiveIndianCities?.length
+          ? data.getActiveIndianCities
+          : FALLBACK_INDIAN_CITIES;
+      } catch {
+        return FALLBACK_INDIAN_CITIES;
+      }
     }
   }
 }

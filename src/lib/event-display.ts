@@ -26,6 +26,9 @@ export type DisplayEvent = {
   ticketingEnabled: boolean;
   isHighDemand: boolean;
   isComingSoon: boolean;
+  ticketingTerms?: string;
+  refundPolicy?: string;
+  cancellationPolicy?: string;
 };
 
 const PLACEHOLDER_GRADIENTS = [
@@ -83,22 +86,36 @@ const formatDateLong = (iso?: string) => {
 const pickBadge = (e: PublicEvent) => {
   if (e.isHighDemand) return "HIGH DEMAND";
   if (e.isComingSoon) return "COMING SOON";
-  if (e.eventType && e.eventType.length > 0) return e.eventType[0].toUpperCase();
+  if (e.eventType && e.eventType.length > 0) {
+    const type = e.eventType.find(
+      (t) => t && t.toUpperCase() !== "EXCLUSIVE"
+    );
+    if (type) return type.toUpperCase();
+  }
   if (e.ticketingEnabled === false) return "GUESTLIST";
   return "NEW";
 };
 
 export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
-  const venueLong = [e.location?.formattedAddress, e.location?.addressLine1, e.city]
+  // Prefer the Google Place display name (the venue search name the host
+  // picked during onboarding). Fall back to the address line so we never
+  // show the long, comma-heavy formattedAddress that includes pincode +
+  // state + country.
+  const placeName = e.location?.place?.displayName;
+  const cityName = e.city || e.location?.city;
+  const venueShort = placeName || e.location?.addressLine1 || cityName || "Venue TBA";
+  const venueLong = [placeName || e.location?.addressLine1, cityName]
     .filter(Boolean)
     .join(" · ");
-  const venueShort = e.location?.addressLine1 ?? e.city ?? "Venue TBA";
-  const series = (e.eventType ?? [])[0]?.toUpperCase() ?? "HOIZR";
+  const seriesType = (e.eventType ?? []).find(
+    (t) => t && t.toUpperCase() !== "EXCLUSIVE"
+  );
+  const series = seriesType ? seriesType.toUpperCase() : "HOIZR";
   return {
     id: e._id,
     slug: e.slug ?? e._id,
     title: e.title ?? "Untitled event",
-    image: e.eventFlyer ?? null,
+    image: e.horizontalFlyer ?? e.eventFlyer ?? null,
     horizontalImage: e.horizontalFlyer ?? null,
     imageStyle: PLACEHOLDER_GRADIENTS[hashString(e._id) % PLACEHOLDER_GRADIENTS.length],
     city: e.city ?? "India",
@@ -119,6 +136,9 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     ticketingEnabled: e.ticketingEnabled ?? false,
     isHighDemand: !!e.isHighDemand,
     isComingSoon: !!e.isComingSoon,
+    ticketingTerms: (e as any).ticketingTerms,
+    refundPolicy: e.refundPolicy,
+    cancellationPolicy: e.cancellationPolicy,
   };
 };
 

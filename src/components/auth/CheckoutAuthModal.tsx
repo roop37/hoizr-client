@@ -38,17 +38,17 @@ export const CheckoutAuthModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4 backdrop-blur-xl"
       role="dialog"
       aria-modal="true"
       aria-labelledby="checkout-auth-modal-title"
     >
-      <div className="relative w-full max-w-md rounded-2xl border border-border bg-cream p-5 shadow-2xl">
+      <div className="relative w-full max-w-md rounded-[24px] border border-white/12 bg-white/[0.08] p-5 text-white shadow-2xl backdrop-blur-2xl">
         <button
           type="button"
           aria-label="Close sign-in"
           onClick={onClose}
-          className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-background hover:text-ink"
+          className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-white/55 hover:bg-white/10 hover:text-white"
         >
           <X size={16} />
         </button>
@@ -61,7 +61,7 @@ export const CheckoutAuthModal = ({
         <AuthPanel
           onAuthenticated={onAuthenticated}
           headline="Sign in to complete your booking"
-          subheadline="Your cart is held while you sign in. We'll send your tickets to the email on file."
+          subheadline="Use phone OTP to continue. We'll send your tickets to the email on file."
         />
       </div>
     </div>

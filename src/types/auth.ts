@@ -31,6 +31,7 @@ export type CustomerGoogleStartResponse = {
   customerId?: string;
   accessToken?: string;
   refreshToken?: string;
+  uniqueId?: string;
   pendingToken?: string;
   prefill?: GoogleStartPrefill;
 };
@@ -40,6 +41,7 @@ export type CustomerPendingSignupVerifyResponse = {
   customerId: string;
   accessToken: string;
   refreshToken: string;
+  uniqueId: string;
   primaryEmailMasked?: string;
   secondaryEmail?: string;
 };

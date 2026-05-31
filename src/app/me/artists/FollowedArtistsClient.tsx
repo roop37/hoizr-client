@@ -115,7 +115,7 @@ export const FollowedArtistsClient = () => {
               <Link
                 key={artist._id}
                 href={artistHref(artist)}
-                className="group flex h-full flex-col rounded-3xl border border-border bg-cream p-5 transition hover:-translate-y-0.5 hover:bg-background"
+                className="group flex h-full flex-col rounded-3xl border border-border bg-cream p-5 text-ink transition hover:-translate-y-0.5 hover:bg-background"
               >
                 <div className="flex items-start gap-4">
                   {artist.profilePhoto ? (

@@ -13,14 +13,9 @@ export default function LoginPage({
 }: {
   searchParams: { next?: string };
 }) {
-  // Wrapper is intentionally a centered block, NOT a flex column with
-  // items-center — that combination shrunk the inner card to its
-  // intrinsic content width (≈150px) instead of letting it span
-  // max-w-md, which made the "Sign in to Hoizr" heading wrap onto
-  // every other word.
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-12 md:py-16">
-      <div className="w-full rounded-2xl border border-border bg-cream p-6 md:p-8 shadow-sm">
+    <div className="h-page flex min-h-[70vh] w-full items-center justify-center py-12 md:py-16">
+      <div className="w-full max-w-[430px] rounded-[28px] border border-white/12 bg-white/[0.08] p-6 text-white shadow-2xl backdrop-blur-2xl sm:p-8 md:p-10">
         <LoginForm next={searchParams.next ?? "/"} />
       </div>
     </div>

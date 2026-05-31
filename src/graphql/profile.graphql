@@ -1,0 +1,35 @@
+query MyProfile {
+  getMyProfile {
+    _id
+    firstName
+    lastName
+    email
+    secondaryEmail
+    phone
+    city
+    profilePic
+    googleConnected
+    appleConnected
+    signupProvider
+  }
+}
+
+mutation UpdateMyProfile($input: UpdateCustomerProfileInput!) {
+  updateMyProfile(input: $input) {
+    _id
+    firstName
+    lastName
+    email
+    phone
+    city
+    profilePic
+  }
+}
+
+mutation RegisterFcmToken($fcmToken: String!) {
+  registerFcmToken(fcmToken: $fcmToken)
+}
+
+mutation UnregisterFcmToken($fcmToken: String!) {
+  unregisterFcmToken(fcmToken: $fcmToken)
+}

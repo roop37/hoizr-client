@@ -144,7 +144,7 @@ export const ProfileClient = () => {
         Update your details and profile picture.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-border bg-cream p-5">
+      <div className="mt-6 rounded-2xl border border-border bg-cream p-5 text-ink">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-background text-xl font-semibold text-ink">
@@ -190,7 +190,7 @@ export const ProfileClient = () => {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-cream p-5">
+      <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-cream p-5 text-ink">
         <label className="block text-sm">
           <span className="text-xs font-semibold text-muted">First name</span>
           <input

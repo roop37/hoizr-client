@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/uiStore";
 import type { IndianCityMaster } from "@/types/master";
 import { GlassSurface } from "./GlassSurface";
@@ -97,7 +98,9 @@ type Props = {
 
 export const HSide = ({ cities }: Props) => {
   const pathname = usePathname();
-  const user = useUIStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
+  const authHydrated = useAuthStore((s) => s.hydrated);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
   const city = useUIStore((s) => s.city);
   const setCity = useUIStore((s) => s.setCity);
   const openSignIn = useUIStore((s) => s.openSignIn);
@@ -105,6 +108,20 @@ export const HSide = ({ cities }: Props) => {
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
   const cityMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const signedIn = Boolean(profile);
+  const displayName =
+    [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") ||
+    profile?.email ||
+    "Hoizr customer";
+  const initials =
+    [profile?.firstName, profile?.lastName]
+      .filter((part): part is string => Boolean(part))
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") ||
+    profile?.email?.[0]?.toUpperCase() ||
+    "H";
 
   const sortedCities = useMemo(
     () =>
@@ -129,6 +146,12 @@ export const HSide = ({ cities }: Props) => {
   useEffect(() => {
     closeMobileSidebar();
   }, [closeMobileSidebar, pathname]);
+
+  useEffect(() => {
+    if (!authHydrated) {
+      void hydrateAuth();
+    }
+  }, [authHydrated, hydrateAuth]);
 
   useEffect(() => {
     if (!mobileSidebarOpen) return;
@@ -249,6 +272,17 @@ export const HSide = ({ cities }: Props) => {
             >
               {HICONS.close}
             </button>
+            <button
+              type="button"
+              className="h-city-pill"
+              onClick={() => useUIStore.getState().openCityPicker()}
+              title="Change city"
+              aria-label={`Current city: ${city}. Tap to change.`}
+            >
+              <span className="h-city-pill-ic">{HICONS.pin}</span>
+              <span>{city || "Pick city"}</span>
+              <span style={{ display: "inline-flex" }}>{HICONS.chevDown}</span>
+            </button>
             {/* Pre-launch: city picker hidden entirely. Restore the
                 block below when cities reopen.
             <div className="h-city-picker" ref={cityMenuRef}>
@@ -301,7 +335,7 @@ export const HSide = ({ cities }: Props) => {
               ))}
             </div>
 
-            {user.signedIn ? (
+            {signedIn ? (
               <div className="h-side-group">
                 <h4>Your Library</h4>
                 {LIBRARY_NAV.map((n) => (
@@ -369,36 +403,26 @@ export const HSide = ({ cities }: Props) => {
             </div>
           </div>
 
-          {/* Pre-launch: sign-in entry hidden until accounts reopen.
-          {!user.signedIn ? (
+          {!signedIn ? (
             <div className="h-side-foot">
               <button
                 type="button"
                 className="h-btn h-btn-outline"
                 style={{ width: "100%", justifyContent: "center", padding: "9px 14px" }}
-                onClick={openSignIn}
+                onClick={() => {
+                  openSignIn();
+                  closeMobileSidebar();
+                }}
               >
                 Sign in
               </button>
             </div>
           ) : (
             <div className="h-side-foot">
-              <div className="avatar">{user.initials}</div>
-              <div className="who">{user.name}</div>
+              <div className="avatar">{initials}</div>
+              <div className="who">{displayName}</div>
             </div>
           )}
-          */}
-          <div className="h-side-foot">
-            <button
-              type="button"
-              className="h-btn h-btn-outline"
-              style={{ width: "100%", justifyContent: "center", padding: "9px 14px", opacity: 0.65, cursor: "not-allowed" }}
-              disabled
-              aria-label="Sign-in coming soon"
-            >
-              Sign in · coming soon
-            </button>
-          </div>
         </div>
       </GlassSurface>
       </aside>

@@ -26,6 +26,11 @@ export type PublicExtra = {
   type: string;
 };
 
+export type PublicPlaceInfo = {
+  placeId?: string;
+  displayName?: string;
+};
+
 export type PublicEventLocation = {
   addressLine1?: string;
   addressLine2?: string;
@@ -33,6 +38,7 @@ export type PublicEventLocation = {
   state?: string;
   pincode?: string;
   formattedAddress?: string;
+  place?: PublicPlaceInfo;
 };
 
 export type PublicEvent = {
@@ -54,7 +60,9 @@ export type PublicEvent = {
   ticketingEnabled?: boolean;
   isHighDemand?: boolean;
   isComingSoon?: boolean;
+  ticketingTerms?: string;
   refundPolicy?: string;
+  cancellationPolicy?: string;
 };
 
 export type PublicEventListResponse = {

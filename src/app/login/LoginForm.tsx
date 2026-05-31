@@ -20,7 +20,7 @@ export const LoginForm = ({ next }: { next: string }) => {
     <AuthPanel
       onAuthenticated={handleAuthenticated}
       headline="Sign in to Hoizr"
-      subheadline="Use Google, Apple (coming soon), or your phone number."
+      subheadline="Use phone OTP to continue. Google is available when this browser origin is configured."
     />
   );
 };

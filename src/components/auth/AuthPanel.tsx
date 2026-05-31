@@ -75,6 +75,7 @@ const AuthPanelInner = ({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [profileRequired, setProfileRequired] = useState(false);
   const [pendingToken, setPendingToken] = useState<string>("");
   const [pendingPicture, setPendingPicture] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
@@ -144,11 +145,17 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      const data = await gqlRequest<{ customerRequestOtp: { otpId: string } }>(
-        REQUEST_OTP_MUTATION,
-        { input: { phone } }
-      );
+      const data = await gqlRequest<{
+        customerRequestOtp: { otpId: string; profileRequired: boolean };
+      }>(REQUEST_OTP_MUTATION, { input: { phone } });
       setOtpId(data.customerRequestOtp.otpId);
+      setProfileRequired(Boolean(data.customerRequestOtp.profileRequired));
+      setOtp("");
+      if (!data.customerRequestOtp.profileRequired) {
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+      }
       setStep("phone-otp");
     } catch (err) {
       setError(errorMessageFrom(err, "Unable to send OTP"));
@@ -163,6 +170,13 @@ const AuthPanelInner = ({
       setError("Enter the 6-digit OTP we just sent you");
       return;
     }
+    if (
+      profileRequired &&
+      (!firstName.trim() || !lastName.trim() || !email.trim())
+    ) {
+      setError("Please add your name and email to create your account.");
+      return;
+    }
     setLoading(true);
     try {
       await gqlRequest(VERIFY_OTP_MUTATION, {
@@ -170,9 +184,9 @@ const AuthPanelInner = ({
           phone,
           otpId,
           otp,
-          firstName: firstName.trim() || undefined,
-          lastName: lastName.trim() || undefined,
-          email: email.trim() || undefined,
+          firstName: profileRequired ? firstName.trim() : undefined,
+          lastName: profileRequired ? lastName.trim() : undefined,
+          email: profileRequired ? email.trim() : undefined,
         },
       });
       await onAuthenticated();
@@ -281,9 +295,25 @@ const AuthPanelInner = ({
   const renderStep = () => {
     if (step === "choose") {
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => setStep("phone")}
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90"
+          >
+            <Phone size={16} /> Continue with phone OTP
+          </button>
+
           {GOOGLE_CLIENT_ID ? (
-            <div className="flex justify-center">
+            <>
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-white/15" />
+                <span className="text-xs font-medium uppercase tracking-wider text-white/45">
+                  or
+                </span>
+                <span className="h-px flex-1 bg-white/15" />
+              </div>
+              <div className="h-auth-google flex justify-center overflow-hidden rounded-xl">
               <GoogleLogin
                 onSuccess={(credentialResponse) => {
                   const credential = credentialResponse.credential;
@@ -294,43 +324,27 @@ const AuthPanelInner = ({
                   }
                 }}
                 onError={() => {
-                  setError("Google sign-in failed. Try again.");
+                  const origin =
+                    typeof window !== "undefined"
+                      ? window.location.origin
+                      : "this origin";
+                  setError(
+                    `Google sign-in is blocked for ${origin}. Use phone OTP, or add this origin to Authorized JavaScript origins in Google Cloud Console.`
+                  );
                 }}
                 useOneTap={false}
-                width="320"
+                theme="filled_black"
+                width="300"
+                containerProps={{ className: "h-auth-google__container" }}
               />
-            </div>
+              </div>
+            </>
           ) : (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
               Google sign-in isn't configured for this environment. Use phone
               OTP below.
             </div>
           )}
-
-          <button
-            type="button"
-            disabled
-            title="Apple sign-in is coming soon"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-cream text-sm font-semibold text-muted opacity-60"
-          >
-            Continue with Apple — coming soon
-          </button>
-
-          <div className="flex items-center gap-3 py-1">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-xs font-medium uppercase tracking-wider text-muted">
-              or
-            </span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setStep("phone")}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95"
-          >
-            <Phone size={16} /> Continue with phone OTP
-          </button>
         </div>
       );
     }
@@ -341,11 +355,11 @@ const AuthPanelInner = ({
           <button
             type="button"
             onClick={() => setStep("choose")}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-white/55 hover:text-white"
           >
             <ArrowLeft size={14} /> Back to all options
           </button>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-white/85">
             Phone number
             <input
               autoFocus
@@ -354,17 +368,17 @@ const AuthPanelInner = ({
               placeholder="+91 9876543210"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-accent"
+              className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-sm text-white outline-none focus:border-accent"
             />
           </label>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-white/50">
             We'll send a 6-digit OTP to verify your number.
           </p>
           <button
             type="button"
             disabled={loading}
             onClick={requestPhoneOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -381,7 +395,7 @@ const AuthPanelInner = ({
     if (step === "phone-otp") {
       return (
         <div className="space-y-3">
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-white/85">
             6-digit OTP sent to {phone}
             <input
               autoFocus
@@ -389,7 +403,7 @@ const AuthPanelInner = ({
               maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-center text-lg tracking-[0.4em] outline-none focus:border-accent"
+              className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-center text-lg tracking-[0.4em] text-white outline-none focus:border-accent"
             />
           </label>
           <button
@@ -400,41 +414,43 @@ const AuthPanelInner = ({
             Change number
           </button>
 
-          <div className="rounded-xl border border-border bg-background px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-              New here? Tell us a bit about yourself
-            </p>
-            <p className="mt-1 text-[11px] text-muted">
-              Required for first-time accounts. We won't ask again on next sign-in.
-            </p>
-            <div className="mt-3 grid gap-2">
-              <input
-                placeholder="First name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
-              />
-              <input
-                placeholder="Last name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
-              />
-              <input
-                type="email"
-                placeholder="Email (for ticket delivery)"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
-              />
+          {profileRequired ? (
+            <div className="rounded-xl border border-white/12 bg-white/[0.06] px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/55">
+                New here? Tell us a bit about yourself
+              </p>
+              <p className="mt-1 text-[11px] text-white/45">
+                Required for first-time accounts. We won't ask again on next sign-in.
+              </p>
+              <div className="mt-3 grid gap-2">
+                <input
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
+                />
+                <input
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
+                />
+                <input
+                  type="email"
+                  placeholder="Email (for ticket delivery)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <button
             type="button"
             disabled={loading}
             onClick={verifyPhoneOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -451,7 +467,7 @@ const AuthPanelInner = ({
     if (step === "pending-phone") {
       return (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2">
+          <div className="flex items-center gap-3 rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2">
             {pendingPicture ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -460,18 +476,18 @@ const AuthPanelInner = ({
                 className="h-10 w-10 rounded-full object-cover"
               />
             ) : null}
-            <div className="text-sm">
+            <div className="text-sm text-white">
               <div className="font-semibold">
                 {firstName} {lastName}
               </div>
-              <div className="text-xs text-muted">{email}</div>
+              <div className="text-xs text-white/50">{email}</div>
             </div>
           </div>
-          <div className="rounded-xl border border-border bg-amber-50/50 px-3 py-2 text-xs text-ink">
+          <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
             <ShieldCheck className="inline -mt-0.5 mr-1" size={14} /> Almost
             there — add your phone number so we can deliver tickets and OTPs.
           </div>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-white/85">
             Phone number
             <input
               autoFocus
@@ -480,14 +496,14 @@ const AuthPanelInner = ({
               placeholder="+91 9876543210"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-accent"
+              className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-sm text-white outline-none focus:border-accent"
             />
           </label>
           <button
             type="button"
             disabled={loading}
             onClick={requestPendingOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -504,7 +520,7 @@ const AuthPanelInner = ({
     // pending-otp
     return (
       <div className="space-y-3">
-        <label className="block text-sm font-medium">
+        <label className="block text-sm font-medium text-white/85">
           6-digit OTP sent to {phone}
           <input
             autoFocus
@@ -512,7 +528,7 @@ const AuthPanelInner = ({
             maxLength={6}
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-            className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-center text-lg tracking-[0.4em] outline-none focus:border-accent"
+            className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-center text-lg tracking-[0.4em] text-white outline-none focus:border-accent"
           />
         </label>
         <button
@@ -528,20 +544,20 @@ const AuthPanelInner = ({
             placeholder="First name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
+            className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
           />
           <input
             placeholder="Last name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
+            className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
           />
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
+            className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
           />
         </div>
 
@@ -549,7 +565,7 @@ const AuthPanelInner = ({
           type="button"
           disabled={loading}
           onClick={verifyPendingOtp}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
         >
           {loading ? (
             <Loader2 size={16} className="animate-spin" />
@@ -564,18 +580,18 @@ const AuthPanelInner = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="h-auth-panel space-y-4">
       {headline ? (
         <div>
-          <h2 className="text-lg font-semibold text-ink">{headline}</h2>
+          <h2 className="text-lg font-semibold text-white">{headline}</h2>
           {subheadline ? (
-            <p className="mt-1 text-xs text-muted">{subheadline}</p>
+            <p className="mt-1 text-xs text-white/55">{subheadline}</p>
           ) : null}
         </div>
       ) : null}
       {renderStep()}
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-lg border border-red-300/25 bg-red-500/10 px-3 py-2 text-sm text-red-100">
           {error}
         </div>
       ) : null}

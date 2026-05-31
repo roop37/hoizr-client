@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { EventTile } from "./EventTile";
+import { EventCard } from "./EventCard";
 // HFooter rendered once at the layout level.
 import type { DisplayEvent } from "@/lib/event-display";
 import { useUIStore } from "@/store/uiStore";
@@ -80,7 +80,6 @@ export const EventsPageClient = ({
     <div className="h-page">
       <div className="h-page-head">
         <div>
-          <div className="label">Events · India</div>
           <h1>Find tonight, or any night.</h1>
           <p style={{ color: "var(--h-ink-2)", maxWidth: "56ch", margin: "10px 0 0", fontSize: 14 }}>
             Every event here is hand-picked. As Hoizr grows, this feed grows with it.
@@ -165,7 +164,7 @@ export const EventsPageClient = ({
       ) : (
         <div className="h-evt-grid">
           {filtered.map((e) => (
-            <EventTile key={e.id} event={e} />
+            <EventCard key={e.id} event={e} />
           ))}
         </div>
       )}
