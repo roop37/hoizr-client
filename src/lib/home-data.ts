@@ -1,11 +1,6 @@
-import { gqlRequest } from "./graphql";
 import { gqlMainRequest } from "./graphql-main";
-import {
-  ACTIVE_CITIES_QUERY,
-  ACTIVE_CITIES_WITH_COORDS_QUERY,
-  ACTIVE_GENRE_TAGS_QUERY,
-  PUBLIC_EVENT_LIST_QUERY,
-} from "./queries";
+import { sdk } from "./sdk";
+import { ACTIVE_CITIES_WITH_COORDS_QUERY } from "./queries";
 import { PUBLIC_ARTISTS_QUERY } from "./artist-queries";
 import { FALLBACK_INDIAN_CITIES } from "./city-fallbacks";
 import type { PublicEventFilter, PublicEventListResponse } from "@/types/event";
@@ -14,10 +9,10 @@ import type { GenreTagMaster, IndianCityMaster } from "@/types/master";
 
 export async function fetchPublishedEvents(input?: PublicEventFilter) {
   try {
-    const data = await gqlRequest<{ getPublishedEvents: PublicEventListResponse }>(PUBLIC_EVENT_LIST_QUERY, {
+    const data = await sdk.GetPublishedEvents({
       input: { page: 1, pageSize: input?.pageSize ?? 24, ...input },
     });
-    return data.getPublishedEvents;
+    return data.getPublishedEvents as PublicEventListResponse;
   } catch {
     return { events: [], total: 0, page: 1, pageSize: 0 };
   }
@@ -25,19 +20,15 @@ export async function fetchPublishedEvents(input?: PublicEventFilter) {
 
 async function fetchActiveCities(): Promise<IndianCityMaster[]> {
   try {
-    const data = await gqlRequest<{ getActiveIndianCities: IndianCityMaster[] }>(
-      ACTIVE_CITIES_WITH_COORDS_QUERY,
-    );
+    const data = await sdk.ActiveCitiesWithCoords();
     return data.getActiveIndianCities?.length
-      ? data.getActiveIndianCities
+      ? (data.getActiveIndianCities as IndianCityMaster[])
       : FALLBACK_INDIAN_CITIES;
   } catch {
     try {
-      const data = await gqlRequest<{ getActiveIndianCities: IndianCityMaster[] }>(
-        ACTIVE_CITIES_QUERY,
-      );
+      const data = await sdk.ActiveCities();
       return data.getActiveIndianCities?.length
-        ? data.getActiveIndianCities
+        ? (data.getActiveIndianCities as IndianCityMaster[])
         : FALLBACK_INDIAN_CITIES;
     } catch {
       try {
@@ -57,7 +48,7 @@ async function fetchActiveCities(): Promise<IndianCityMaster[]> {
 export async function fetchCustomerMasters() {
   const [citiesRes, genresRes] = await Promise.allSettled([
     fetchActiveCities(),
-    gqlRequest<{ getActiveGenreTags: GenreTagMaster[] }>(ACTIVE_GENRE_TAGS_QUERY),
+    sdk.ActiveGenreTags(),
   ]);
 
   return {
@@ -67,14 +58,14 @@ export async function fetchCustomerMasters() {
         : [],
     genres:
       genresRes.status === "fulfilled"
-        ? genresRes.value.getActiveGenreTags
+        ? (genresRes.value.getActiveGenreTags as GenreTagMaster[])
         : [],
   };
 }
 
 export async function fetchPublicArtists(pageSize = 32) {
   try {
-    const data = await gqlRequest<{ publicArtists: PublicArtistListResponse }>(PUBLIC_ARTISTS_QUERY, {
+    const data = await gqlMainRequest<{ publicArtists: PublicArtistListResponse }>(PUBLIC_ARTISTS_QUERY, {
       input: { page: 1, pageSize },
     });
     return data.publicArtists;

@@ -1,8 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { gqlRequest } from "@/lib/graphql";
-import { LOGOUT_MUTATION, MY_PROFILE_QUERY } from "@/lib/queries";
+import { sdk } from "@/lib/sdk";
 import { unregisterStoredWebPushToken } from "@/lib/web-push";
 import type { CustomerProfile } from "@/types/auth";
 
@@ -26,10 +25,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (get().hydrated) return;
     set({ loading: true });
     try {
-      const data = await gqlRequest<{ getMyProfile: CustomerProfile | null }>(
-        MY_PROFILE_QUERY
-      );
-      set({ profile: data.getMyProfile ?? null });
+      const data = await sdk.MyProfile();
+      set({ profile: (data.getMyProfile ?? null) as CustomerProfile | null });
     } catch {
       set({ profile: null });
     } finally {
@@ -40,7 +37,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await unregisterStoredWebPushToken();
     try {
-      await gqlRequest<{ customerLogout: boolean }>(LOGOUT_MUTATION);
+      await sdk.CustomerLogout();
     } catch {
       // ignore network errors on logout
     }

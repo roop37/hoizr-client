@@ -3,14 +3,7 @@
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { ArrowLeft, ArrowRight, Loader2, Phone, ShieldCheck } from "lucide-react";
 import { useCallback, useState } from "react";
-import { gqlRequest } from "@/lib/graphql";
-import {
-  GOOGLE_START_MUTATION,
-  PENDING_SIGNUP_REQUEST_OTP_MUTATION,
-  PENDING_SIGNUP_VERIFY_OTP_MUTATION,
-  REQUEST_OTP_MUTATION,
-  VERIFY_OTP_MUTATION,
-} from "@/lib/queries";
+import { sdk } from "@/lib/sdk";
 import { CustomerAuthErrorCode } from "@/types/auth";
 import type {
   CustomerGoogleStartResponse,
@@ -99,10 +92,8 @@ const AuthPanelInner = ({
     setError(null);
     setLoading(true);
     try {
-      const data = await gqlRequest<{
-        customerGoogleStart: CustomerGoogleStartResponse;
-      }>(GOOGLE_START_MUTATION, { input: { idToken: credential } });
-      const res = data.customerGoogleStart;
+      const data = await sdk.CustomerGoogleStart({ input: { idToken: credential } });
+      const res = data.customerGoogleStart as CustomerGoogleStartResponse;
 
       if (res.outcome === "LOGGED_IN") {
         await onAuthenticated();
@@ -145,9 +136,7 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      const data = await gqlRequest<{
-        customerRequestOtp: { otpId: string; profileRequired: boolean };
-      }>(REQUEST_OTP_MUTATION, { input: { phone } });
+      const data = await sdk.CustomerRequestOtp({ input: { phone } });
       setOtpId(data.customerRequestOtp.otpId);
       setProfileRequired(Boolean(data.customerRequestOtp.profileRequired));
       setOtp("");
@@ -179,7 +168,7 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      await gqlRequest(VERIFY_OTP_MUTATION, {
+      await sdk.CustomerVerifyOtp({
         input: {
           phone,
           otpId,
@@ -210,9 +199,7 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      const data = await gqlRequest<{
-        customerPendingSignupRequestOtp: { otpId: string };
-      }>(PENDING_SIGNUP_REQUEST_OTP_MUTATION, {
+      const data = await sdk.CustomerPendingSignupRequestOtp({
         input: { pendingToken, phone },
       });
       setOtpId(data.customerPendingSignupRequestOtp.otpId);
@@ -242,9 +229,7 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      const data = await gqlRequest<{
-        customerPendingSignupVerifyOtp: CustomerPendingSignupVerifyResponse;
-      }>(PENDING_SIGNUP_VERIFY_OTP_MUTATION, {
+      const data = await sdk.CustomerPendingSignupVerifyOtp({
         input: {
           pendingToken,
           otp,
@@ -253,7 +238,7 @@ const AuthPanelInner = ({
           email: email.trim(),
         },
       });
-      const res = data.customerPendingSignupVerifyOtp;
+      const res = data.customerPendingSignupVerifyOtp as CustomerPendingSignupVerifyResponse;
       if (res.outcome === "NEW_ACCOUNT") {
         await onAuthenticated();
         return;
