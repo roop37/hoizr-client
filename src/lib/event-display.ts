@@ -15,6 +15,10 @@ export type DisplayEvent = {
   venueLong: string;
   date: string;
   dateLong: string;
+  // Raw ISO start date — preserved so the events page can do date-range
+  // filtering (Tonight, This weekend, Next 7 days) without re-parsing
+  // the formatted `date` string.
+  startDateISO?: string;
   startTime: string;
   endTime: string;
   fromPrice: number | null;
@@ -125,6 +129,7 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     venueLong: venueLong || venueShort,
     date: formatDateShort(e.startDate),
     dateLong: formatDateLong(e.startDate),
+    startDateISO: e.startDate,
     startTime: formatTime(e.startDate),
     endTime: formatTime(e.endDate),
     fromPrice: minTicketPrice(e.tickets ?? []),
