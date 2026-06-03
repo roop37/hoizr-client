@@ -90,9 +90,6 @@ const matchesWhen = (event: DisplayEvent, when: WhenId): boolean => {
     return start >= startOfDay(tomorrow) && start <= endOfDay(tomorrow);
   }
   if (when === "weekend") {
-    // Friday 18:00 → Sunday 23:59, IST treated as local time on the
-    // client. Good enough for visual filtering; precise tz handling
-    // happens server-side at booking.
     const dow = now.getDay();
     const daysUntilFri = (5 - dow + 7) % 7;
     const fri = addDays(startOfDay(now), daysUntilFri);
@@ -185,6 +182,7 @@ export const EventsPageClient = ({
   const selectedGlobalCity = useUIStore((s) => s.city);
   const [city, setCity] = useState(initialCity ?? "All cities");
   const [genreId, setGenreId] = useState(initialGenreId ?? "All genres");
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!initialCity && selectedGlobalCity !== "All cities") {
@@ -192,9 +190,22 @@ export const EventsPageClient = ({
     }
   }, [initialCity, selectedGlobalCity]);
 
-  // Push filter state to URL so users can deep-link / share filtered
-  // views. Only writes params that diverge from the default — keeps
-  // the URL clean for the common case.
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSheetOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [sheetOpen]);
+
+  // URL state sync — written without `scroll: false` so deep-linking
+  // doesn't jump the page on every filter change.
   useEffect(() => {
     const params = new URLSearchParams();
     if (vert !== "All") params.set("vibe", vert);
@@ -260,21 +271,50 @@ export const EventsPageClient = ({
 
   const activeGenre = eventGenres.find((genre) => genre._id === genreId);
 
-  const activeFilters: string[] = [];
+  // Build active-filter pills (removable). Search is shown as a pill so
+  // the user can clear it without finding the input.
+  type Pill = { key: string; label: string; clear: () => void };
+  const pills: Pill[] = [];
   if (vert !== "All") {
-    activeFilters.push(VERTICALS.find((v) => v.id === vert)?.label ?? vert);
+    pills.push({
+      key: "vibe",
+      label: VERTICALS.find((v) => v.id === vert)?.label ?? vert,
+      clear: () => setVert("All"),
+    });
   }
-  if (city !== "All cities") activeFilters.push(city);
+  if (city !== "All cities") {
+    pills.push({ key: "city", label: city, clear: () => setCity("All cities") });
+  }
   if (when !== "all") {
-    activeFilters.push(WHEN_OPTIONS.find((w) => w.id === when)?.label ?? when);
+    pills.push({
+      key: "when",
+      label: WHEN_OPTIONS.find((w) => w.id === when)?.label ?? when,
+      clear: () => setWhen("all"),
+    });
   }
   if (price !== "any") {
-    activeFilters.push(
-      PRICE_OPTIONS.find((p) => p.id === price)?.label ?? price,
-    );
+    pills.push({
+      key: "price",
+      label: PRICE_OPTIONS.find((p) => p.id === price)?.label ?? price,
+      clear: () => setPrice("any"),
+    });
   }
-  if (activeGenre) activeFilters.push(activeGenre.value);
-  if (search.trim()) activeFilters.push(`"${search.trim()}"`);
+  if (activeGenre) {
+    pills.push({
+      key: "genre",
+      label: activeGenre.value,
+      clear: () => setGenreId("All genres"),
+    });
+  }
+  if (search.trim()) {
+    pills.push({
+      key: "search",
+      label: `"${search.trim()}"`,
+      clear: () => setSearch(""),
+    });
+  }
+
+  const activeCount = pills.length;
 
   const clearAll = () => {
     setVert("All");
@@ -325,9 +365,36 @@ export const EventsPageClient = ({
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search artists, venues, cities, vibes…"
+            placeholder="Search artists, venues, cities…"
           />
         </label>
+        <button
+          type="button"
+          className="h-evt-filter-btn"
+          onClick={() => setSheetOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={sheetOpen}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="7" y1="12" x2="17" y2="12" />
+            <line x1="10" y1="18" x2="14" y2="18" />
+          </svg>
+          <span>Filters</span>
+          {activeCount > 0 ? (
+            <span className="h-evt-filter-count">{activeCount}</span>
+          ) : null}
+        </button>
         <div className="h-evt-sort">
           <span className="h-evt-sort-label">Sort</span>
           <select
@@ -344,104 +411,50 @@ export const EventsPageClient = ({
         </div>
       </div>
 
-      <div className="h-evt-filter-stack">
-        <div className="h-evt-filter-row" role="group" aria-label="When">
-          {WHEN_OPTIONS.map((option) => (
+      {pills.length ? (
+        <div className="h-evt-pills">
+          {pills.map((pill) => (
             <button
-              key={option.id}
+              key={pill.key}
               type="button"
-              className={`h-chip ${when === option.id ? "active" : ""}`}
-              onClick={() => setWhen(option.id)}
+              className="h-evt-pill"
+              onClick={pill.clear}
             >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        {eventCities.length > 1 ? (
-          <div className="h-evt-filter-row" role="group" aria-label="City">
-            {eventCities.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`h-chip ${city === c ? "active" : ""}`}
-                onClick={() => setCity(c)}
+              <span>{pill.label}</span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
               >
-                {c}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="h-evt-filter-row" role="group" aria-label="Vibe">
-          {VERTICALS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`h-chip ${vert === option.id ? "active" : ""}`}
-              onClick={() => setVert(option.id)}
-            >
-              {option.label}
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           ))}
+          <button
+            type="button"
+            className="h-evt-pill h-evt-pill-clear"
+            onClick={clearAll}
+          >
+            Clear all
+          </button>
         </div>
-
-        <div className="h-evt-filter-row" role="group" aria-label="Price">
-          {PRICE_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`h-chip ${price === option.id ? "active" : ""}`}
-              onClick={() => setPrice(option.id)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        {eventGenres.length ? (
-          <div className="h-evt-filter-row" role="group" aria-label="Genre">
-            <button
-              type="button"
-              className={`h-chip ${genreId === "All genres" ? "active" : ""}`}
-              onClick={() => setGenreId("All genres")}
-            >
-              All genres
-            </button>
-            {eventGenres.map((genre) => (
-              <button
-                key={genre._id}
-                type="button"
-                className={`h-chip ${genreId === genre._id ? "active" : ""}`}
-                onClick={() => setGenreId(genre._id)}
-              >
-                {genre.value}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
+      ) : null}
 
       <div className="h-evt-count">
         <strong>{filtered.length}</strong>{" "}
         {filtered.length === 1 ? "event" : "events"}
-        {activeFilters.length ? (
-          <>
-            {" "}
-            ·{" "}
-            <span style={{ color: "var(--h-ink)" }}>
-              {activeFilters.join(" · ")}
-            </span>{" "}
-            <button type="button" className="h-evt-clear" onClick={clearAll}>
-              Clear all
-            </button>
-          </>
-        ) : null}
       </div>
 
       {filtered.length === 0 ? (
         <div className="h-empty">
-          No events match this filter yet.{" "}
+          No events match these filters.{" "}
           <button
             type="button"
             className="h-btn-text"
@@ -458,6 +471,155 @@ export const EventsPageClient = ({
           ))}
         </div>
       )}
+
+      {sheetOpen ? (
+        <div
+          className="h-evt-sheet-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filter events"
+          onClick={() => setSheetOpen(false)}
+        >
+          <div
+            className="h-evt-sheet"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="h-evt-sheet-handle" aria-hidden />
+            <div className="h-evt-sheet-head">
+              <h2>Filters</h2>
+              <button
+                type="button"
+                className="h-evt-sheet-close"
+                onClick={() => setSheetOpen(false)}
+                aria-label="Close filters"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="h-evt-sheet-body">
+              <FilterSection title="When">
+                {WHEN_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`h-chip ${when === option.id ? "active" : ""}`}
+                    onClick={() => setWhen(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </FilterSection>
+
+              {eventCities.length > 1 ? (
+                <FilterSection title="City">
+                  {eventCities.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`h-chip ${city === c ? "active" : ""}`}
+                      onClick={() => setCity(c)}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </FilterSection>
+              ) : null}
+
+              <FilterSection title="Vibe">
+                {VERTICALS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`h-chip ${vert === option.id ? "active" : ""}`}
+                    onClick={() => setVert(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </FilterSection>
+
+              <FilterSection title="Price">
+                {PRICE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`h-chip ${price === option.id ? "active" : ""}`}
+                    onClick={() => setPrice(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </FilterSection>
+
+              {eventGenres.length ? (
+                <FilterSection title="Genre">
+                  <button
+                    type="button"
+                    className={`h-chip ${genreId === "All genres" ? "active" : ""}`}
+                    onClick={() => setGenreId("All genres")}
+                  >
+                    All genres
+                  </button>
+                  {eventGenres.map((genre) => (
+                    <button
+                      key={genre._id}
+                      type="button"
+                      className={`h-chip ${genreId === genre._id ? "active" : ""}`}
+                      onClick={() => setGenreId(genre._id)}
+                    >
+                      {genre.value}
+                    </button>
+                  ))}
+                </FilterSection>
+              ) : null}
+            </div>
+
+            <div className="h-evt-sheet-foot">
+              <button
+                type="button"
+                className="h-evt-sheet-clear"
+                onClick={clearAll}
+              >
+                Clear all
+              </button>
+              <button
+                type="button"
+                className="h-evt-sheet-apply"
+                onClick={() => setSheetOpen(false)}
+              >
+                Show {filtered.length}{" "}
+                {filtered.length === 1 ? "event" : "events"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
+
+const FilterSection = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section className="h-evt-sheet-section">
+    <h3>{title}</h3>
+    <div className="h-evt-sheet-chips">{children}</div>
+  </section>
+);
