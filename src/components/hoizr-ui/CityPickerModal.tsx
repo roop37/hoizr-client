@@ -3,12 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/auth";
-import { gqlRequest } from "@/lib/graphql";
-import {
-  ACTIVE_CITIES_QUERY,
-  ACTIVE_CITIES_WITH_COORDS_QUERY,
-  UPDATE_MY_PROFILE_MUTATION,
-} from "@/lib/queries";
+import { sdk } from "@/lib/sdk";
 import { FALLBACK_INDIAN_CITIES } from "@/lib/city-fallbacks";
 import {
   isFallbackCityList,
@@ -105,12 +100,10 @@ export const CityPickerModal = ({ cities }: Props) => {
 
       setLoadingCities(true);
       try {
-        const data = await gqlRequest<{
-          getActiveIndianCities: IndianCityMaster[];
-        }>(ACTIVE_CITIES_WITH_COORDS_QUERY);
+        const data = await sdk.ActiveCitiesWithCoords();
         const next =
           data.getActiveIndianCities?.length
-            ? data.getActiveIndianCities
+            ? (data.getActiveIndianCities as IndianCityMaster[])
             : cityOptions.length
               ? cityOptions
               : FALLBACK_INDIAN_CITIES;
@@ -118,12 +111,10 @@ export const CityPickerModal = ({ cities }: Props) => {
         return next;
       } catch {
         try {
-          const data = await gqlRequest<{
-            getActiveIndianCities: IndianCityMaster[];
-          }>(ACTIVE_CITIES_QUERY);
+          const data = await sdk.ActiveCities();
           const next =
             data.getActiveIndianCities?.length
-              ? data.getActiveIndianCities
+              ? (data.getActiveIndianCities as IndianCityMaster[])
               : cityOptions.length
                 ? cityOptions
                 : FALLBACK_INDIAN_CITIES;
@@ -226,7 +217,7 @@ export const CityPickerModal = ({ cities }: Props) => {
     close();
     if (profile) {
       try {
-        await gqlRequest(UPDATE_MY_PROFILE_MUTATION, {
+        await sdk.UpdateMyProfile({
           input: { city: label },
         });
       } catch {
