@@ -1258,199 +1258,111 @@ body,
 /* =============================================================================
    Event tile — District-style tall poster with a glass info strip.
    ============================================================================= */
+/* =============================================================================
+   Event tile (canonical event card)
+   ─────────────────────────────────────────────────────────────────────────────
+   District-style card: the entire flyer renders at its natural aspect
+   ratio (no crop, no zoom, no overlay) on top, then a translucent
+   glass footer with the same Apple-fluid feel as `.h-cartbar` carries
+   date / title / venue / price. Card height varies with the flyer's
+   intrinsic aspect — `align-self: start` on the grid item keeps rows
+   from stretching shorter cards.
+   ============================================================================= */
 .h-tile {
-  display: block;
-  text-align: left;
-  cursor: pointer;
-  padding: 0;
-  background: none;
-  border: 0;
-  color: inherit;
-  width: 100%;
-  text-decoration: none;
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.h-tile:hover {
-  transform: translateY(-6px);
-}
-.h-tile .cover {
-  position: relative;
-  /* 4:5 vertical poster — District proportion. Tall enough to feel
-     like a flyer, narrow enough to fit four-per-row on desktop. */
-  aspect-ratio: 4 / 5;
-  overflow: hidden;
-  border-radius: 14px;
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  background: var(--h-bg-3);
-  isolation: isolate;
-  transition: box-shadow 0.28s ease;
-}
-.h-tile:hover .cover {
-  box-shadow:
-    0 24px 48px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-}
-.h-tile .cover img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.h-tile:hover .cover img {
-  transform: scale(1.04);
-}
-.h-tile .cover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  /* Two-stop fade: top stays clean for the badge, bottom darkens hard so
-     the glass strip reads against any flyer. */
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, transparent 24%),
-    linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.78) 100%);
-}
-.h-tile .cover .meta-top {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  z-index: 3;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-}
-.h-tile .cover .badge {
-  font-family: var(--h-font-display);
-  font-size: 9.5px;
-  letter-spacing: 0.16em;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  color: var(--h-volt);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  white-space: nowrap;
-  text-transform: uppercase;
-}
-.h-tile .cover .fav {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: color 0.15s, background 0.15s, transform 0.15s;
-}
-.h-tile .cover .fav:hover {
-  color: var(--h-accent);
-  background: rgba(0, 0, 0, 0.72);
-  transform: scale(1.06);
-}
-
-/* Glass strip — pinned to the bottom of the poster with a real
-   backdrop-filter. Title + date on the left, price chip on the right. */
-.h-tile .cover .glass-strip {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  z-index: 3;
-  padding: 11px 12px 12px;
-  border-radius: 12px;
-  background: rgba(10, 10, 14, 0.42);
+  flex-direction: column;
+  width: 100%;
+  align-self: start;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 18px;
+  overflow: hidden;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(22px) saturate(170%);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.28);
-  color: #fff;
+    0 16px 32px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition:
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+.h-tile:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 26px 56px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.h-tile-flyer {
+  display: block;
+  width: 100%;
+  line-height: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+.h-tile-flyer img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.h-tile-flyer-fallback {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+}
+.h-tile-info {
+  /* Lighter inner glass to lift the text block off the flyer below.
+     Backdrop-filter still reads as glass because the parent .h-tile
+     is translucent over the page. */
+  padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
-.h-tile .cover .glass-strip .row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-}
-.h-tile .cover .glass-strip .title-block {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  flex: 1;
-}
-.h-tile .cover .glass-strip .date-tag {
+.h-tile-date {
   font-family: var(--h-font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--h-volt);
-}
-.h-tile .cover .glass-strip .title {
-  font-family: var(--h-font-display);
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.2;
-  letter-spacing: -0.005em;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.h-tile .cover .glass-strip .price {
-  font-family: var(--h-font-display);
-  font-weight: 700;
+  color: var(--h-accent);
   font-size: 12.5px;
-  color: var(--h-bg);
-  background: var(--h-volt);
-  padding: 4px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  letter-spacing: -0.005em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
-.h-tile .cover .glass-strip .venue {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.78);
-  min-width: 0;
+.h-tile-title {
+  font-family: var(--h-font-display);
+  color: var(--h-ink);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  margin: 4px 0 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.h-tile .cover .glass-strip .venue-ic {
-  flex-shrink: 0;
-  display: inline-flex;
-  color: rgba(255, 255, 255, 0.6);
-}
-.h-tile .cover .glass-strip .venue-ic svg {
-  width: 12px;
-  height: 12px;
-}
-.h-tile .cover .glass-strip .venue-text {
+.h-tile-venue {
+  color: var(--h-ink-2);
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.h-tile-price {
+  margin: 6px 0 0;
+  color: var(--h-ink);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* =============================================================================
@@ -1849,19 +1761,21 @@ body,
   margin: 0 4px;
 }
 
-/* /events page redesigned filter UI — toolbar + stacked filter rows.
-   Lives in its own block so the legacy `.h-evt-filters` (used by other
-   surfaces) stays untouched. */
+/* /events page filter UX — calm toolbar + bottom-sheet for everything else.
+   Search + Filters button + Sort live on the toolbar; the heavy chip
+   rows hide inside a bottom sheet that slides up on mobile and lands
+   centred on desktop. Active filters surface as removable pills so
+   users see what's on without opening the sheet. */
 .h-evt-toolbar {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  margin: 18px 0 14px;
+  margin: 18px 0 12px;
   flex-wrap: wrap;
 }
 .h-evt-search {
-  flex: 1 1 320px;
-  min-width: 220px;
+  flex: 1 1 280px;
+  min-width: 200px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1888,11 +1802,44 @@ body,
 .h-evt-search input::placeholder {
   color: var(--h-ink-3);
 }
+.h-evt-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--h-line);
+  color: var(--h-ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.h-evt-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--h-line-2);
+}
+.h-evt-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: var(--h-accent-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-left: 2px;
+}
 .h-evt-sort {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px 6px 14px;
+  padding: 6px 6px 6px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--h-line);
@@ -1919,41 +1866,203 @@ body,
   background: var(--h-bg);
   color: var(--h-ink);
 }
-.h-evt-filter-stack {
+
+/* Active-filter pills — only render when any filter is set. Tap to clear. */
+.h-evt-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.h-evt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 999px;
+  background: rgba(197, 255, 61, 0.12);
+  border: 1px solid rgba(197, 255, 61, 0.4);
+  color: var(--h-ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.h-evt-pill:hover {
+  background: rgba(197, 255, 61, 0.22);
+}
+.h-evt-pill svg {
+  opacity: 0.6;
+}
+.h-evt-pill-clear {
+  background: transparent;
+  border-color: var(--h-line);
+  color: var(--h-ink-2);
+  padding: 6px 12px;
+}
+.h-evt-pill-clear:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--h-ink);
+}
+
+/* Bottom-sheet filter dialog. Mobile: anchored to bottom edge, slides
+   up. Desktop (>768px): centred modal with the same chrome — feels
+   like a small popover rather than a full sheet. */
+.h-evt-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: h-fade-in 0.2s ease;
+}
+.h-evt-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  background: rgba(18, 18, 22, 0.96);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0 0 18px;
+  color: var(--h-ink);
+  box-shadow: 0 -24px 64px rgba(0, 0, 0, 0.6);
+  animation: h-slide-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.h-evt-filter-row {
+.h-evt-sheet-handle {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 10px auto 6px;
+  flex-shrink: 0;
+}
+.h-evt-sheet-head {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px 14px;
+  flex-shrink: 0;
 }
-.h-evt-clear {
-  margin-left: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--h-accent, var(--h-ink));
-  background: transparent;
-  border: none;
+.h-evt-sheet-head h2 {
+  font-family: var(--h-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.h-evt-sheet-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--h-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  padding: 0;
+  transition: background 0.15s;
 }
-.h-evt-clear:hover {
-  text-decoration: underline;
+.h-evt-sheet-close:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
-@media (max-width: 640px) {
-  .h-evt-filter-row {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
+.h-evt-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.h-evt-sheet-section h3 {
+  font-family: var(--h-font-display);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--h-ink-3);
+  margin: 0 0 10px;
+}
+.h-evt-sheet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.h-evt-sheet-foot {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+.h-evt-sheet-clear {
+  flex: 0 0 auto;
+  padding: 0 18px;
+  height: 44px;
+  border-radius: 14px;
+  background: transparent;
+  border: 1px solid var(--h-line-2);
+  color: var(--h-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.h-evt-sheet-clear:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.h-evt-sheet-apply {
+  flex: 1;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--h-accent);
+  color: var(--h-accent-ink);
+  border: none;
+  font-family: var(--h-font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.h-evt-sheet-apply:hover {
+  background: var(--h-accent-h);
+}
+@keyframes h-slide-up {
+  from {
+    transform: translateY(100%);
   }
-  .h-evt-filter-row::-webkit-scrollbar {
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes h-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (min-width: 769px) {
+  .h-evt-sheet-overlay {
+    align-items: center;
+  }
+  .h-evt-sheet {
+    border-radius: 24px;
+    border-top: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: h-fade-in 0.2s ease;
+  }
+  .h-evt-sheet-handle {
     display: none;
   }
 }
