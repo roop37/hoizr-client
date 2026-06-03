@@ -9,9 +9,21 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 
 type SearchParams = {
   vertical?: string;
+  vibe?: string;
   city?: string;
   genre?: string;
+  when?: string;
+  price?: string;
+  sort?: string;
+  q?: string;
 };
+
+const VALID_WHEN = ["all", "today", "tomorrow", "weekend", "week", "month"] as const;
+const VALID_PRICE = ["any", "free", "under500", "mid", "premium"] as const;
+const VALID_SORT = ["earliest", "trending", "cheapest", "priciest"] as const;
+type WhenId = (typeof VALID_WHEN)[number];
+type PriceId = (typeof VALID_PRICE)[number];
+type SortId = (typeof VALID_SORT)[number];
 
 export const dynamic = "force-dynamic";
 
@@ -57,13 +69,29 @@ export const metadata: Metadata = {
 export default async function EventsPage({ searchParams }: { searchParams: SearchParams }) {
   const [list, masters] = await Promise.all([
     fetchPublishedEvents({
-      pageSize: 48,
+      pageSize: 96,
       city: searchParams.city,
       genreTagIds: searchParams.genre ? [searchParams.genre] : undefined,
     }),
     fetchCustomerMasters(),
   ]);
   const events = list.events.map(toDisplayEvent);
+  const initialVibe = searchParams.vibe ?? searchParams.vertical ?? "All";
+  const initialWhen: WhenId = (VALID_WHEN as readonly string[]).includes(
+    searchParams.when ?? "",
+  )
+    ? (searchParams.when as WhenId)
+    : "all";
+  const initialPrice: PriceId = (VALID_PRICE as readonly string[]).includes(
+    searchParams.price ?? "",
+  )
+    ? (searchParams.price as PriceId)
+    : "any";
+  const initialSort: SortId = (VALID_SORT as readonly string[]).includes(
+    searchParams.sort ?? "",
+  )
+    ? (searchParams.sort as SortId)
+    : "earliest";
   return (
     <>
       <CollectionPageJsonLd
@@ -79,16 +107,26 @@ export default async function EventsPage({ searchParams }: { searchParams: Searc
       <TrackView
         event="eventListView"
         payload={{
-          metadata: { totalResults: list.total, vertical: searchParams.vertical, city: searchParams.city },
+          metadata: {
+            totalResults: list.total,
+            vibe: initialVibe,
+            city: searchParams.city,
+            when: initialWhen,
+            price: initialPrice,
+          },
         }}
       />
       <EventsPageClient
         events={events}
         cities={masters.cities}
         genres={masters.genres}
-        initialVertical={searchParams.vertical ?? "All"}
+        initialVertical={initialVibe}
         initialCity={searchParams.city}
         initialGenreId={searchParams.genre}
+        initialWhen={initialWhen}
+        initialPrice={initialPrice}
+        initialSort={initialSort}
+        initialSearch={searchParams.q ?? ""}
       />
     </>
   );

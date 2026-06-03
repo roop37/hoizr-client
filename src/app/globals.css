@@ -1849,6 +1849,115 @@ body,
   margin: 0 4px;
 }
 
+/* /events page redesigned filter UI — toolbar + stacked filter rows.
+   Lives in its own block so the legacy `.h-evt-filters` (used by other
+   surfaces) stays untouched. */
+.h-evt-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 18px 0 14px;
+  flex-wrap: wrap;
+}
+.h-evt-search {
+  flex: 1 1 320px;
+  min-width: 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--h-line);
+  color: var(--h-ink-3);
+  transition: border-color 0.15s, background 0.15s;
+}
+.h-evt-search:focus-within {
+  border-color: var(--h-ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+.h-evt-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--h-ink);
+  font-size: 14px;
+  font-family: inherit;
+}
+.h-evt-search input::placeholder {
+  color: var(--h-ink-3);
+}
+.h-evt-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--h-line);
+}
+.h-evt-sort-label {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--h-ink-3);
+  text-transform: uppercase;
+}
+.h-evt-sort select {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--h-ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+}
+.h-evt-sort select option {
+  background: var(--h-bg);
+  color: var(--h-ink);
+}
+.h-evt-filter-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.h-evt-filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.h-evt-clear {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--h-accent, var(--h-ink));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.h-evt-clear:hover {
+  text-decoration: underline;
+}
+@media (max-width: 640px) {
+  .h-evt-filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .h-evt-filter-row::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 .h-evt-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
