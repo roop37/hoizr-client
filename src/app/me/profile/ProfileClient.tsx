@@ -137,17 +137,22 @@ export const ProfileClient = () => {
     profile.lastName?.[0] ?? ""
   }`.toUpperCase();
 
+  const inputClass =
+    "mt-1 h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none transition focus:border-[#c5ff3d]/60 focus:bg-white/[0.06] placeholder:text-white/40";
+
   return (
-    <div className="mx-auto w-full max-w-xl px-4 py-10 md:py-12">
-      <h1 className="text-2xl font-semibold md:text-3xl">My profile</h1>
-      <p className="mt-1 text-sm text-muted">
+    <div className="mx-auto w-full max-w-xl px-4 py-10 text-white md:py-12">
+      <h1 className="text-2xl font-semibold text-white md:text-3xl">
+        My profile
+      </h1>
+      <p className="mt-1 text-sm text-white/60">
         Update your details and profile picture.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-border bg-cream p-5 text-ink">
+      <div className="mt-6 rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-white backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-background text-xl font-semibold text-ink">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white/[0.06] text-xl font-semibold text-white ring-1 ring-inset ring-white/10">
               {profilePic ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -164,7 +169,7 @@ export const ProfileClient = () => {
               aria-label="Change profile picture"
               disabled={uploading}
               onClick={handlePickFile}
-              className="absolute -bottom-1 -right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-cream text-ink shadow disabled:opacity-50"
+              className="absolute -bottom-1 -right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#1a181d] text-white shadow-lg disabled:opacity-50"
             >
               {uploading ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -181,71 +186,81 @@ export const ProfileClient = () => {
             />
           </div>
           <div className="text-sm">
-            <div className="font-semibold">
+            <div className="font-semibold text-white">
               {profile.firstName} {profile.lastName}
             </div>
-            <div className="text-xs text-muted">{profile.email}</div>
-            <div className="text-xs text-muted">{profile.phone}</div>
+            <div className="text-xs text-white/55">{profile.email}</div>
+            <div className="text-xs text-white/55">{profile.phone}</div>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-cream p-5 text-ink">
+      <div className="mt-4 grid gap-3 rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-white backdrop-blur-xl">
         <label className="block text-sm">
-          <span className="text-xs font-semibold text-muted">First name</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+            First name
+          </span>
           <input
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-accent"
+            className={inputClass}
           />
         </label>
         <label className="block text-sm">
-          <span className="text-xs font-semibold text-muted">Last name</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+            Last name
+          </span>
           <input
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-accent"
+            className={inputClass}
           />
         </label>
         <label className="block text-sm">
-          <span className="text-xs font-semibold text-muted">Email</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+            Email
+          </span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-accent"
+            className={inputClass}
           />
         </label>
         {profile.secondaryEmail ? (
-          <div className="text-xs text-muted">
+          <div className="text-xs text-white/55">
             Secondary email on file:{" "}
-            <span className="font-medium">{profile.secondaryEmail}</span>
+            <span className="font-medium text-white/80">
+              {profile.secondaryEmail}
+            </span>
           </div>
         ) : null}
         <label className="block text-sm">
-          <span className="text-xs font-semibold text-muted">City</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+            City
+          </span>
           <input
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-accent"
+            className={inputClass}
           />
         </label>
 
         <div className="flex flex-wrap items-center gap-2 pt-2">
           {profile.googleConnected ? (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+            <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-200 ring-1 ring-inset ring-emerald-400/40">
               Google connected
             </span>
           ) : null}
           {profile.appleConnected ? (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+            <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-200 ring-1 ring-inset ring-emerald-400/40">
               Apple connected
             </span>
           ) : null}
         </div>
 
         {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="rounded-xl border border-rose-400/30 bg-rose-500/[0.08] px-3 py-2 text-sm text-rose-200">
             {error}
           </div>
         ) : null}
@@ -254,7 +269,7 @@ export const ProfileClient = () => {
           type="button"
           disabled={saving}
           onClick={save}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
         >
           {saving ? (
             <Loader2 size={16} className="animate-spin" />

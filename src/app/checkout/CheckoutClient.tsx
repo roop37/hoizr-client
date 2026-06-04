@@ -477,32 +477,41 @@ export const CheckoutClient = () => {
 
   const guestInfoReady = isGuestInfoComplete(guestInfo);
 
+  const inputClass =
+    "mt-1 h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none transition focus:border-[#c5ff3d]/60 focus:bg-white/[0.06] placeholder:text-white/40";
+  const stepperBtn =
+    "inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30 hover:bg-white/[0.08]";
+
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-10 md:py-12">
-      <h1 className="text-2xl font-semibold md:text-3xl">Review your order</h1>
-      <p className="mt-1 text-sm text-muted">
+    <div className="mx-auto w-full max-w-2xl px-4 py-10 text-white md:py-12">
+      <h1 className="text-2xl font-semibold text-white md:text-3xl">
+        Review your order
+      </h1>
+      <p className="mt-1 text-sm text-white/60">
         Confirm your tickets and payment details.
       </p>
 
       <div className="mt-6 space-y-4">
-        <div className="rounded-2xl border border-border bg-cream text-ink">
-          <div className="border-b border-border px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
+        <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.04] text-white backdrop-blur-xl">
+          <div className="border-b border-white/[0.06] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
             Tickets
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-white/[0.06]">
             {cart.tickets.map((line) => (
               <div
                 key={line.ticketId}
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
                 <div>
-                  <div className="font-semibold">{line.ticketName}</div>
-                  <div className="text-xs text-muted">
+                  <div className="font-semibold text-white">
+                    {line.ticketName}
+                  </div>
+                  <div className="text-xs text-white/55">
                     {rupee(line.unitPrice)} each
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-1">
                     <button
                       type="button"
                       aria-label={`Remove one ${line.ticketName}`}
@@ -512,11 +521,11 @@ export const CheckoutClient = () => {
                         line.quantity <= 1
                       }
                       onClick={() => updateCartLine("ticket", line.ticketId, -1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="min-w-[1.5rem] text-center text-sm font-semibold">
+                    <span className="min-w-[1.5rem] text-center text-sm font-semibold text-white">
                       {updatingLine === `ticket:${line.ticketId}` ? (
                         <Loader2 size={13} className="mx-auto animate-spin" />
                       ) : (
@@ -528,19 +537,19 @@ export const CheckoutClient = () => {
                       aria-label={`Add one ${line.ticketName}`}
                       disabled={paying || updatingLine === `ticket:${line.ticketId}`}
                       onClick={() => updateCartLine("ticket", line.ticketId, 1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Plus size={14} />
                     </button>
                   </div>
-                  <div className="min-w-[5rem] text-right font-semibold">
+                  <div className="min-w-[5rem] text-right font-semibold text-white">
                     {rupee(line.totalPrice)}
                   </div>
                 </div>
               </div>
             ))}
             {cart.extras.length ? (
-              <div className="border-t border-border px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
+              <div className="border-t border-white/[0.06] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
                 Add-ons
               </div>
             ) : null}
@@ -550,23 +559,25 @@ export const CheckoutClient = () => {
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
                 <div>
-                  <div className="font-semibold">{line.extraName}</div>
-                  <div className="text-xs text-muted">
+                  <div className="font-semibold text-white">
+                    {line.extraName}
+                  </div>
+                  <div className="text-xs text-white/55">
                     {rupee(line.unitPrice)} each
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-1">
                     <button
                       type="button"
                       aria-label={`Remove one ${line.extraName}`}
                       disabled={paying || updatingLine === `extra:${line.extraId}`}
                       onClick={() => updateCartLine("extra", line.extraId, -1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="min-w-[1.5rem] text-center text-sm font-semibold">
+                    <span className="min-w-[1.5rem] text-center text-sm font-semibold text-white">
                       {updatingLine === `extra:${line.extraId}` ? (
                         <Loader2 size={13} className="mx-auto animate-spin" />
                       ) : (
@@ -578,12 +589,12 @@ export const CheckoutClient = () => {
                       aria-label={`Add one ${line.extraName}`}
                       disabled={paying || updatingLine === `extra:${line.extraId}`}
                       onClick={() => updateCartLine("extra", line.extraId, 1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Plus size={14} />
                     </button>
                   </div>
-                  <div className="min-w-[5rem] text-right font-semibold">
+                  <div className="min-w-[5rem] text-right font-semibold text-white">
                     {rupee(line.totalPrice)}
                   </div>
                 </div>
@@ -592,50 +603,60 @@ export const CheckoutClient = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-cream p-5 text-sm text-ink">
+        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
           <div className="flex justify-between py-1">
-            <span className="text-muted">Subtotal</span>
-            <span className="font-medium">{rupee(cart.pricing.grossAmount)}</span>
+            <span className="text-white/55">Subtotal</span>
+            <span className="font-medium text-white">
+              {rupee(cart.pricing.grossAmount)}
+            </span>
           </div>
           {cart.pricing.taxes > 0 ? (
             <div className="flex justify-between py-1">
-              <span className="text-muted">
+              <span className="text-white/55">
                 Ticket GST ({cart.pricing.taxesPercent}%)
               </span>
-              <span className="font-medium">{rupee(cart.pricing.taxes)}</span>
+              <span className="font-medium text-white">
+                {rupee(cart.pricing.taxes)}
+              </span>
             </div>
           ) : null}
           <div className="flex justify-between py-1">
-            <span className="text-muted">
+            <span className="text-white/55">
               Platform fee ({cart.pricing.applicationFeePercent}%)
             </span>
-            <span className="font-medium">{rupee(cart.pricing.applicationFee)}</span>
+            <span className="font-medium text-white">
+              {rupee(cart.pricing.applicationFee)}
+            </span>
           </div>
           {cart.pricing.platformFeeGst > 0 ? (
             <div className="flex justify-between py-1">
-              <span className="text-muted">GST on platform fee (18%)</span>
-              <span className="font-medium">{rupee(cart.pricing.platformFeeGst)}</span>
+              <span className="text-white/55">GST on platform fee (18%)</span>
+              <span className="font-medium text-white">
+                {rupee(cart.pricing.platformFeeGst)}
+              </span>
             </div>
           ) : null}
-          <div className="mt-2 flex justify-between border-t border-border pt-2 text-base">
-            <span className="font-semibold">Total payable</span>
-            <span className="font-semibold">{rupee(cart.pricing.totalAmount)}</span>
+          <div className="mt-2 flex justify-between border-t border-white/[0.08] pt-2 text-base">
+            <span className="font-semibold text-white">Total payable</span>
+            <span className="font-semibold text-white">
+              {rupee(cart.pricing.totalAmount)}
+            </span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-cream p-5 text-sm text-ink">
+        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="font-semibold">Your details</div>
-              <p className="mt-1 text-xs text-muted">
+              <div className="font-semibold text-white">Your details</div>
+              <p className="mt-1 text-xs text-white/60">
                 These details appear on the booking and payment receipt.
               </p>
             </div>
             <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${
                 guestInfoReady
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700"
+                  ? "bg-emerald-400/15 text-emerald-200 ring-emerald-400/40"
+                  : "bg-amber-400/15 text-amber-200 ring-amber-400/40"
               }`}
             >
               {guestInfoReady ? "Ready" : "Needed"}
@@ -643,7 +664,9 @@ export const CheckoutClient = () => {
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-semibold text-muted">First name</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                First name
+              </span>
               <input
                 value={guestInfo.firstName ?? ""}
                 onChange={(e) =>
@@ -652,12 +675,14 @@ export const CheckoutClient = () => {
                     firstName: e.target.value,
                   }))
                 }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
+                className={inputClass}
                 autoComplete="given-name"
               />
             </label>
             <label className="block">
-              <span className="text-xs font-semibold text-muted">Last name</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Last name
+              </span>
               <input
                 value={guestInfo.lastName ?? ""}
                 onChange={(e) =>
@@ -666,12 +691,14 @@ export const CheckoutClient = () => {
                     lastName: e.target.value,
                   }))
                 }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
+                className={inputClass}
                 autoComplete="family-name"
               />
             </label>
             <label className="block sm:col-span-2">
-              <span className="text-xs font-semibold text-muted">Email</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Email
+              </span>
               <input
                 type="email"
                 value={guestInfo.email ?? ""}
@@ -681,12 +708,14 @@ export const CheckoutClient = () => {
                     email: e.target.value,
                   }))
                 }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
+                className={inputClass}
                 autoComplete="email"
               />
             </label>
             <label className="block sm:col-span-2">
-              <span className="text-xs font-semibold text-muted">Phone</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Phone
+              </span>
               <input
                 value={guestInfo.phone ?? ""}
                 onChange={(e) =>
@@ -695,7 +724,7 @@ export const CheckoutClient = () => {
                     phone: e.target.value,
                   }))
                 }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
+                className={inputClass}
                 autoComplete="tel"
               />
             </label>
@@ -713,7 +742,7 @@ export const CheckoutClient = () => {
           type="button"
           disabled={paying || updatingLine !== null}
           onClick={startPayment}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
         >
           {paying ? (
             <Loader2 size={16} className="animate-spin" />
@@ -723,15 +752,14 @@ export const CheckoutClient = () => {
             `Pay ${rupee(cart.pricing.totalAmount)}`
           )}
         </button>
-        <p className="text-center text-xs text-muted">
+        <p className="text-center text-xs text-white/55">
           {cart.pricing.totalAmount <= 0
             ? "No payment is needed for this booking."
             : "Secured by Razorpay. Cards, UPI, net-banking, and wallets supported."}
         </p>
 
-        {/* AUDIT-034: SoT §27 disclosure on point of sale. Hoizr is the
-            ticketing platform — the organiser owns and runs the event. */}
-        <p className="text-center text-xs text-muted">
+        {/* AUDIT-034: SoT §27 disclosure on point of sale. */}
+        <p className="text-center text-xs text-white/50">
           Ticketing by Hoizr. The event itself is run by the organiser —
           Hoizr is not the event organiser.
         </p>
