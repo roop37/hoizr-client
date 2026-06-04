@@ -73,8 +73,8 @@ export const FollowedArtistsClient = () => {
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-12">
         <div className="mb-8">
-          <div className="h-8 w-48 animate-pulse rounded bg-border/60" />
-          <div className="mt-2 h-4 w-80 animate-pulse rounded bg-border/40" />
+          <div className="h-8 w-48 animate-pulse rounded bg-white/[0.08]" />
+          <div className="mt-2 h-4 w-80 animate-pulse rounded bg-white/[0.06]" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <CardSkeleton />
@@ -86,10 +86,12 @@ export const FollowedArtistsClient = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-12">
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 text-white md:px-6 md:py-12">
       <header className="mb-8">
-        <h1 className="text-3xl font-semibold md:text-4xl">Following</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted">{intro}</p>
+        <h1 className="text-3xl font-semibold text-white md:text-4xl">
+          Following
+        </h1>
+        <p className="mt-1 max-w-2xl text-sm text-white/65">{intro}</p>
       </header>
 
       {error ? (
@@ -115,7 +117,7 @@ export const FollowedArtistsClient = () => {
               <Link
                 key={artist._id}
                 href={artistHref(artist)}
-                className="group flex h-full flex-col rounded-3xl border border-border bg-cream p-5 text-ink transition hover:-translate-y-0.5 hover:bg-background"
+                className="group flex h-full flex-col rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-white backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/[0.07]"
               >
                 <div className="flex items-start gap-4">
                   {artist.profilePhoto ? (
@@ -128,22 +130,22 @@ export const FollowedArtistsClient = () => {
                       unoptimized
                     />
                   ) : (
-                    <div className="grid h-[72px] w-[72px] place-items-center rounded-2xl bg-background text-2xl font-semibold text-dark">
+                    <div className="grid h-[72px] w-[72px] place-items-center rounded-2xl bg-white/[0.06] text-2xl font-semibold text-white ring-1 ring-inset ring-white/10">
                       {avatarInitial}
                     </div>
                   )}
 
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-lg font-semibold text-ink">
+                    <div className="truncate text-lg font-semibold text-white">
                       {displayName}
                     </div>
                     {artist.tagline ? (
-                      <p className="mt-1 overflow-hidden text-sm text-muted [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                      <p className="mt-1 overflow-hidden text-sm text-white/65 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                         {artist.tagline}
                       </p>
                     ) : null}
                     {location ? (
-                      <div className="mt-2 inline-flex items-center gap-1 text-xs text-muted">
+                      <div className="mt-2 inline-flex items-center gap-1 text-xs text-white/55">
                         <MapPin size={12} />
                         <span className="truncate">{location}</span>
                       </div>
@@ -156,7 +158,7 @@ export const FollowedArtistsClient = () => {
                     {genres.map((genre) => (
                       <span
                         key={genre}
-                        className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted"
+                        className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/70"
                       >
                         {genre}
                       </span>
@@ -164,13 +166,13 @@ export const FollowedArtistsClient = () => {
                   </div>
                 ) : null}
 
-                <div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-sm">
-                  <div className="inline-flex items-center gap-2 text-muted">
+                <div className="mt-5 flex items-center justify-between border-t border-white/[0.08] pt-4 text-sm">
+                  <div className="inline-flex items-center gap-2 text-white/55">
                     <Users size={14} />
                     <span>{formatFollowers(artist.totalFollowersCount)} followers</span>
                   </div>
-                  <span className="font-medium text-ink transition group-hover:text-dark">
-                    View profile
+                  <span className="font-semibold text-[#c5ff3d] transition group-hover:text-[#d9ff6e]">
+                    View profile →
                   </span>
                 </div>
               </Link>

@@ -147,6 +147,8 @@ export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
       _id
       title
       slug
+      eventFlyer
+      horizontalFlyer
       startDate
       endDate
       city
