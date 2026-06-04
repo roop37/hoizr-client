@@ -336,7 +336,7 @@ const AuthPanelInner = ({
 
     if (step === "phone") {
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <button
             type="button"
             onClick={() => setStep("choose")}
@@ -345,7 +345,9 @@ const AuthPanelInner = ({
             <ArrowLeft size={14} /> Back to all options
           </button>
           <label className="block text-sm font-medium text-white/85">
-            Phone number
+            <span className="text-xs uppercase tracking-[0.14em] text-white/55">
+              Phone number
+            </span>
             <input
               autoFocus
               type="tel"
@@ -353,7 +355,7 @@ const AuthPanelInner = ({
               placeholder="+91 9876543210"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
-              className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-sm text-white outline-none focus:border-accent"
+              className="mt-2 h-12 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-base text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
             />
           </label>
           <p className="text-xs text-white/50">
@@ -363,7 +365,7 @@ const AuthPanelInner = ({
             type="button"
             disabled={loading}
             onClick={requestPhoneOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -379,16 +381,18 @@ const AuthPanelInner = ({
 
     if (step === "phone-otp") {
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <label className="block text-sm font-medium text-white/85">
-            6-digit OTP sent to {phone}
+            <span className="text-xs uppercase tracking-[0.14em] text-white/55">
+              6-digit OTP sent to {phone}
+            </span>
             <input
               autoFocus
               inputMode="numeric"
               maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-center text-lg tracking-[0.4em] text-white outline-none focus:border-accent"
+              className="mt-2 h-14 w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 text-center text-xl tracking-[0.55em] text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
             />
           </label>
           <button
@@ -400,32 +404,32 @@ const AuthPanelInner = ({
           </button>
 
           {profileRequired ? (
-            <div className="rounded-xl border border-white/12 bg-white/[0.06] px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/55">
+            <div className="rounded-2xl bg-white/[0.04] px-4 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
                 New here? Tell us a bit about yourself
               </p>
-              <p className="mt-1 text-[11px] text-white/45">
+              <p className="mt-1 text-[11.5px] leading-relaxed text-white/45">
                 Required for first-time accounts. We won't ask again on next sign-in.
               </p>
-              <div className="mt-3 grid gap-2">
+              <div className="mt-3 grid gap-2.5">
                 <input
                   placeholder="First name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
+                  className="h-12 rounded-xl border border-white/10 bg-black/25 px-3.5 text-sm text-white outline-none transition focus:border-accent focus:bg-black/30"
                 />
                 <input
                   placeholder="Last name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
+                  className="h-12 rounded-xl border border-white/10 bg-black/25 px-3.5 text-sm text-white outline-none transition focus:border-accent focus:bg-black/30"
                 />
                 <input
                   type="email"
                   placeholder="Email (for ticket delivery)"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
+                  className="h-12 rounded-xl border border-white/10 bg-black/25 px-3.5 text-sm text-white outline-none transition focus:border-accent focus:bg-black/30"
                 />
               </div>
             </div>
@@ -435,7 +439,7 @@ const AuthPanelInner = ({
             type="button"
             disabled={loading}
             onClick={verifyPhoneOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -565,12 +569,16 @@ const AuthPanelInner = ({
   };
 
   return (
-    <div className="h-auth-panel space-y-4">
+    <div className="h-auth-panel space-y-5">
       {headline ? (
-        <div>
-          <h2 className="text-lg font-semibold text-white">{headline}</h2>
+        <div className="pr-10">
+          <h2 className="text-[22px] font-bold leading-tight tracking-[-0.01em] text-white">
+            {headline}
+          </h2>
           {subheadline ? (
-            <p className="mt-1 text-xs text-white/55">{subheadline}</p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+              {subheadline}
+            </p>
           ) : null}
         </div>
       ) : null}

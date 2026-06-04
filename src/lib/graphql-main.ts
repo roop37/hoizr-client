@@ -59,6 +59,11 @@ const endpoint = resolveEndpoint(
 
 export const gqlMainClient = new GraphQLClient(endpoint, {
   credentials: "include",
+  // Mirror gqlClient — no caching at any layer. Public listings (artists,
+  // cities, genres) must be live; a stale cluster of "events" surviving
+  // a DB swap is the canonical bug this guards against.
+  cache: "no-store",
+  headers: { "Cache-Control": "no-cache" },
 });
 
 export const gqlMainRequest = <T>(

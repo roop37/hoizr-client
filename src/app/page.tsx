@@ -8,6 +8,7 @@ import { HTicker } from "@/components/hoizr-ui/HTicker";
 import { DomeGallery } from "@/components/hoizr-ui/DomeGallery";
 import { FeaturedHorizontalRail } from "@/components/hoizr-ui/FeaturedHorizontalRail";
 import { CollectionPageJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
+import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 
@@ -145,12 +146,13 @@ export default async function HomePage() {
     featuredHorizontal[0] ?? all.find((e) => e.isHighDemand) ?? all[0];
   const others = all.filter((e) => e.id !== heroEvent.id);
 
-  // Genres collection rail — only show genres that have at least one live
-  // event right now so we never link customers to an empty filter result.
-  const eventGenreIds = new Set(all.flatMap((e) => e.genreTagIds));
-  const liveGenres = masters.genres
-    .filter((g) => eventGenreIds.has(g._id))
-    .slice(0, 8);
+  // Genres collection rail — surface the full active genre catalogue
+  // (same list the event-journey "Genre" picker uses on business-client)
+  // so the home page reads as a complete map of vibes, not just the
+  // ones with live inventory tonight. The rail is horizontally
+  // scrollable; the `h-bleed` modifier lets it scroll UNDER the
+  // sidebar on the left.
+  const liveGenres = masters.genres;
 
   const ticker = all
     .slice(0, 6)
@@ -163,6 +165,7 @@ export default async function HomePage() {
 
   return (
     <div className="h-page">
+      <FreshnessRevalidate />
       <CollectionPageJsonLd
         name="Hoizr — Live music, comedy, club nights & festivals across India"
         description="Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India on Hoizr."
@@ -179,7 +182,7 @@ export default async function HomePage() {
       <HHero event={heroEvent} />
 
       {liveGenres.length > 0 ? (
-        <div className="h-rail-sec">
+        <div className="h-rail-sec h-bleed">
           <RailHead title="Browse by vibe" seeAllHref="/events" />
           <div className="h-rail h-rail-5">
             {liveGenres.map((g) => (

@@ -63,13 +63,27 @@ const TOKEN_REFRESH = `mutation { customerTokenRefresh { success } }`;
 
 type RefreshPayload = { customerTokenRefresh?: { success?: boolean } };
 
+// `cache: 'no-store'` defeats every layer of the Next.js Data Cache.
+// Even though pages set `dynamic = "force-dynamic"` and graphql-request
+// issues POSTs (which Next does not cache by default), every consumer
+// pulls live data — no edge or build-time staleness can leak into a
+// render. `Cache-Control: no-cache` blocks any reverse proxy in between
+// (Cloudflare, etc) from serving a cached GraphQL response.
+const noStoreInit: RequestInit = { cache: "no-store" };
+
 export const gqlClient = new GraphQLClient(endpoint, {
   credentials: "include",
+  cache: "no-store",
+  headers: { "Cache-Control": "no-cache" },
   fetch: async (input, init) => {
-    let response = await fetch(input as RequestInfo, init);
+    const initWithNoStore: RequestInit = { ...noStoreInit, ...init, cache: "no-store" };
+    let response = await fetch(input as RequestInfo, initWithNoStore);
     if (response.status === 401) {
       try {
-        const refresh = new GraphQLClient(endpoint, { credentials: "include" });
+        const refresh = new GraphQLClient(endpoint, {
+          credentials: "include",
+          cache: "no-store",
+        });
         // customer-server's resolver returns HTTP 200 with { success: false }
         // when the refresh token is missing / expired / mismatched (see
         // auth.resolver.ts:customerTokenRefresh). Only retry the original
@@ -77,7 +91,7 @@ export const gqlClient = new GraphQLClient(endpoint, {
         // app routes the user back to /login instead of looping.
         const result = (await refresh.request(TOKEN_REFRESH)) as RefreshPayload;
         if (result?.customerTokenRefresh?.success === true) {
-          response = await fetch(input as RequestInfo, init);
+          response = await fetch(input as RequestInfo, initWithNoStore);
         }
       } catch {
         // fall through with 401
