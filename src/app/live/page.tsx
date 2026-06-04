@@ -7,6 +7,7 @@ import {
   BreadcrumbJsonLd,
   CollectionPageJsonLd,
 } from "@/components/hoizr-ui/seo/JsonLd";
+import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 import {
   fetchCustomerMasters,
   fetchPublishedEvents,
@@ -110,6 +111,7 @@ export default async function LivePage() {
 
   return (
     <div className="h-page">
+      <FreshnessRevalidate />
       <CollectionPageJsonLd
         name="Live tonight on Hoizr"
         description="Events happening tonight across India."

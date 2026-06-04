@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { EventDetailClient } from "@/components/hoizr-ui/EventDetailClient";
 import { TrackView } from "@/components/analytics/TrackView";
 import { BreadcrumbJsonLd, EventJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
+import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 import { gqlRequest } from "@/lib/graphql";
 import {
   PUBLIC_EVENT_BY_SLUG_QUERY,
@@ -96,6 +97,7 @@ export default async function EventDetailPage({
   const people = await fetchPeople(event._id);
   return (
     <>
+      <FreshnessRevalidate />
       <EventJsonLd event={event} />
       <BreadcrumbJsonLd
         items={[

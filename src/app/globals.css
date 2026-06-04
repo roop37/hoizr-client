@@ -1269,6 +1269,12 @@ body,
    from stretching shorter cards.
    ============================================================================= */
 .h-tile {
+  /* Fluid-glass aesthetic (no Three.js): deep translucent surface with
+     a diagonal sheen, a brightened inner edge, and a soft refraction
+     glow that scales on hover. Reads as the same family as
+     `.h-glass-card` / `.h-detail-body-card` so cards feel composed
+     rather than slapped onto the page. */
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -1276,28 +1282,53 @@ body,
   text-align: left;
   text-decoration: none;
   color: inherit;
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
   isolation: isolate;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02) 55%),
+    rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(26px) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(26px) saturate(180%) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 18px 40px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02);
   transition:
-    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.28s ease,
-    border-color 0.28s ease;
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.32s ease,
+    border-color 0.32s ease;
 }
+/* Diagonal sheen that brightens on hover — fakes the "wet glass" pass
+   FluidGlass does with three/r3f, at near-zero perf cost. */
+.h-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, 0) 62%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  opacity: 0.55;
+  mix-blend-mode: overlay;
+  transition: opacity 0.32s ease;
+  z-index: 1;
+}
+.h-tile > * { position: relative; z-index: 2; }
 .h-tile:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.18);
   box-shadow:
-    0 26px 56px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    0 30px 64px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
+.h-tile:hover::before { opacity: 0.9; }
 .h-tile-flyer {
   display: block;
   width: 100%;
@@ -1315,17 +1346,21 @@ body,
   aspect-ratio: 4 / 5;
 }
 .h-tile-info {
-  /* Lighter inner glass to lift the text block off the flyer below.
-     Backdrop-filter still reads as glass because the parent .h-tile
-     is translucent over the page. */
+  /* Brighter, gradient-tinged glass footer — the section the user
+     specifically called out for not feeling like the rest of the fluid
+     glass language. Subtle inner highlight at the top reads as a wet
+     refraction edge against the flyer image above it. */
   padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025) 60%),
+    rgba(20, 20, 26, 0.42);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
 }
 .h-tile-date {
   font-family: var(--h-font-display);
@@ -2067,6 +2102,105 @@ body,
   }
 }
 
+/* =============================================================================
+   Auth sheet — used by SignInModal + CheckoutAuthModal. Bottom sheet on
+   mobile, centred fluid-glass modal on desktop. Scrim deliberately keeps
+   the page visible (soft blur + low-opacity tint) instead of a black
+   wall — the underlying surface stays part of the composition so sign-in
+   doesn't feel like a context switch.
+   ============================================================================= */
+.h-auth-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(8, 10, 14, 0.38);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: h-fade-in 0.22s ease;
+}
+.h-auth-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--h-ink);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03)),
+    rgba(18, 18, 24, 0.72);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  border-radius: 28px 28px 0 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 -24px 64px rgba(0, 0, 0, 0.55);
+  animation: h-slide-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.h-auth-sheet-handle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  margin: 10px auto 4px;
+  flex-shrink: 0;
+}
+.h-auth-sheet-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  z-index: 2;
+}
+.h-auth-sheet-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.05);
+}
+.h-auth-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px calc(22px + env(safe-area-inset-bottom)) 22px;
+  -webkit-overflow-scrolling: touch;
+}
+.h-auth-sheet-body::-webkit-scrollbar { display: none; }
+@media (min-width: 769px) {
+  .h-auth-sheet-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+  .h-auth-sheet {
+    max-width: 460px;
+    max-height: min(86vh, 720px);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    animation: hModalIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 34px 90px rgba(0, 0, 0, 0.55);
+  }
+  .h-auth-sheet-handle {
+    display: none;
+  }
+  .h-auth-sheet-body {
+    padding: 28px;
+  }
+}
+
 .h-evt-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2797,11 +2931,16 @@ body,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
-  background-size: cover;
+  background-color: rgba(255, 255, 255, 0.06);
+  /* `contain` (vs `cover`) keeps wide wordmark logos — Krunk-style
+     horizontal lockups, festival banners — visible in full instead of
+     cropping their sides. Square portrait shots still fill the box;
+     extra padding on tall/wide art reads as a soft frame. */
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   border: 1px solid rgba(255, 255, 255, 0.16);
   overflow: hidden;
