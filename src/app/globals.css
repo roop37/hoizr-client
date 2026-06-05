@@ -861,7 +861,12 @@ body,
 .h-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(280px, 1fr);
+  /* Cap the upper bound so a rail with only one or two cards doesn't
+     blow up to the viewport width (each track was previously 1fr of
+     the readable column). 260px is a comfortable poster width at the
+     3:4 aspect baked into .h-tile-flyer. */
+  grid-auto-columns: 260px;
+  justify-content: start;
   gap: 20px;
   overflow-x: auto;
   padding-bottom: 8px;
@@ -882,10 +887,15 @@ body,
   scroll-snap-align: start;
 }
 .h-rail-5 {
-  grid-auto-columns: minmax(200px, 1fr);
+  grid-auto-columns: 220px;
 }
 .h-rail-6 {
-  grid-auto-columns: minmax(170px, 1fr);
+  grid-auto-columns: 180px;
+}
+@media (max-width: 640px) {
+  .h-rail { grid-auto-columns: 200px; }
+  .h-rail-5 { grid-auto-columns: 180px; }
+  .h-rail-6 { grid-auto-columns: 160px; }
 }
 
 /* =============================================================================
@@ -1333,18 +1343,20 @@ body,
   display: block;
   width: 100%;
   line-height: 0;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
   background: rgba(0, 0, 0, 0.35);
 }
 .h-tile-flyer img,
 .h-tile-flyer video {
   display: block;
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
 }
 .h-tile-flyer-fallback {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  height: 100%;
 }
 .h-tile-info {
   /* Brighter, gradient-tinged glass footer — the section the user
@@ -2715,12 +2727,16 @@ body,
 .h-event-hero--landscape {
   aspect-ratio: 16 / 9;
   width: 100%;
-  max-height: min(68vh, 720px);
+  /* Cap landscape hero so it doesn't dominate the viewport on wide
+     screens — a 16:9 at full readable column width was approaching
+     720px tall on desktop, pushing the title, CTA, and booking panel
+     below the fold. */
+  max-height: min(48vh, 460px);
 }
 .h-event-hero--portrait,
 .h-event-hero--fallback {
-  height: min(64vh, 560px);
-  min-height: 360px;
+  height: min(48vh, 440px);
+  min-height: 300px;
 }
 .h-event-hero-landscape,
 .h-event-hero-fallback {
@@ -3699,8 +3715,8 @@ body,
   }
   .h-event-hero--portrait,
   .h-event-hero--fallback {
-    height: 440px;
-    min-height: 320px;
+    height: 360px;
+    min-height: 280px;
   }
   .h-evt-grid {
     grid-template-columns: repeat(3, 1fr);

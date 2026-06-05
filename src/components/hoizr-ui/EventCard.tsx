@@ -24,16 +24,18 @@ const formatDateTimeLabel = (event: DisplayEvent): string => {
 };
 
 /**
- * Canonical event card. The flyer renders at its natural aspect ratio
- * with `object-fit: contain` so vertical posters AND horizontal flyers
- * both show fully — no zoom, no crop, no gradient overlays. The info
- * footer below uses the same translucent glass surface as the bottom
- * cart bar so the card belongs to the rest of the chrome.
+ * Canonical event card. The card slot is a fixed 3:4 portrait frame —
+ * landscape images shown here would either letterbox or distort the
+ * grid, so we ALWAYS render the portrait flyer (eventFlyer) regardless
+ * of whether the event also has a landscape (horizontalFlyer) asset.
+ * The landscape asset is reserved for the featured hero rail and the
+ * event detail page.
  */
 export const EventCard = ({ event }: Props) => {
   const dateTime = formatDateTimeLabel(event);
   const price = formatPrice(event.fromPrice);
   const priceSuffix = price === "Guestlist" || price === "Free" ? "" : " onwards";
+  const cardImage = event.portraitImage ?? event.image;
   return (
     <Link href={`/events/${event.slug}`} className="h-tile">
       <div className="h-tile-flyer">
@@ -46,9 +48,9 @@ export const EventCard = ({ event }: Props) => {
             loop
             aria-label={event.title}
           />
-        ) : event.image ? (
+        ) : cardImage ? (
           <img
-            src={event.image}
+            src={cardImage}
             alt={event.title}
             loading="lazy"
             decoding="async"

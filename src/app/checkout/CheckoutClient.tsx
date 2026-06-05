@@ -354,6 +354,21 @@ export const CheckoutClient = () => {
           },
           theme: { color: "#0F8842" },
           handler: async (response: RazorpayPaymentResponse) => {
+            // The Razorpay handler firing means the customer's payment is
+            // in flight on Razorpay's side — money may already be debited.
+            // Always release the local cart and hand off to the order
+            // detail page; that page polls getMyOrderById waiting for the
+            // webhook-driven finaliser, then either shows the QR or the
+            // "payment didn't confirm — refund coming" banner.
+            //
+            // We still try the inline confirmOrderPayment fast-path for a
+            // snappy "QR shown immediately" UX, but if it throws (Razorpay
+            // fetchPayment timeout, mongo transaction conflict, server
+            // restart mid-request, etc.) we MUST NOT block the redirect —
+            // doing so would push the user back to the checkout button and
+            // a retry there would mint a fresh Razorpay order and charge
+            // them again while the first capture is still being reconciled.
+            clearActiveCart();
             try {
               await gqlRequest<{ confirmOrderPayment: CustomerOrderView }>(
                 CONFIRM_PAYMENT_MUTATION,
@@ -368,20 +383,19 @@ export const CheckoutClient = () => {
                 orderId: order._id,
                 metadata: { totalAmount: order.totalAmount },
               });
-              clearActiveCart();
-              router.push(`/orders/${order._id}?just_paid=1`);
-              resolve();
             } catch (err: any) {
               track("checkoutPaymentFailed", {
                 eventId,
                 orderId: order._id,
                 metadata: {
-                  stage: "confirm",
+                  stage: "confirm-fast-path",
                   reason: err?.message ?? "unknown",
+                  handoff: "order-detail-poll",
                 },
               });
-              reject(err);
             }
+            router.push(`/orders/${order._id}?just_paid=1`);
+            resolve();
           },
           modal: {
             ondismiss: () => {
