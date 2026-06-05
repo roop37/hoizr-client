@@ -330,6 +330,21 @@ const AuthPanelInner = ({
               OTP below.
             </div>
           )}
+
+          {/* Phone OTP creates a new customer account on first verify,
+              so this isn't a separate auth path — just a discoverability
+              affordance for users who don't realise the OTP button
+              doubles as sign-up. Routes to the same phone step. */}
+          <p className="pt-1 text-center text-xs text-white/55">
+            New to Hoizr?{" "}
+            <button
+              type="button"
+              onClick={() => setStep("phone")}
+              className="font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              Sign up
+            </button>
+          </p>
         </div>
       );
     }
