@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type {
   PublicEvent,
   PublicEventPeopleResponse,
@@ -229,6 +229,28 @@ export const EventDetailClient = ({
       : "fallback";
   const ticketsHref = `/events/${display.slug}/tickets`;
 
+  // Floating bottom CTA tracks the visibility of the top hero CTA. On
+  // mobile we hide the bottom button while the top one is on-screen
+  // (avoids a duplicate above-the-fold), and reveal it the moment the
+  // user scrolls past so the action stays reachable. Desktop renders
+  // both unconditionally — the CSS only positions/styles the floating
+  // version below the `(max-width: 1100px)` breakpoint anyway.
+  const topCtaRef = useRef<HTMLDivElement | null>(null);
+  const [showFloatingCta, setShowFloatingCta] = useState(false);
+  useEffect(() => {
+    if (!topCtaRef.current) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setShowFloatingCta(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowFloatingCta(!entry.isIntersecting),
+      { rootMargin: "-20px 0px 0px 0px", threshold: 0.01 }
+    );
+    observer.observe(topCtaRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [event._id]);
@@ -298,15 +320,17 @@ export const EventDetailClient = ({
             <span>{display.venueShort}</span>
           </div>
         </div>
-        {display.ticketingEnabled ? (
-          <Link href={ticketsHref} className="h-detail-cta">
-            Book tickets
-          </Link>
-        ) : (
-          <span className="h-detail-cta" aria-disabled>
-            View entry
-          </span>
-        )}
+        <div ref={topCtaRef}>
+          {display.ticketingEnabled ? (
+            <Link href={ticketsHref} className="h-detail-cta">
+              Book tickets
+            </Link>
+          ) : (
+            <span className="h-detail-cta" aria-disabled>
+              View entry
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="h-detail-grid h-detail-grid--single">
@@ -513,7 +537,11 @@ export const EventDetailClient = ({
       </div>
 
       {display.ticketingEnabled ? (
-        <Link href={ticketsHref} className="h-detail-bottom-cta">
+        <Link
+          href={ticketsHref}
+          className={`h-detail-bottom-cta${showFloatingCta ? " is-visible" : ""}`}
+          aria-hidden={!showFloatingCta}
+        >
           Book tickets
         </Link>
       ) : null}
