@@ -37,40 +37,40 @@ type Tab = "tickets" | "merch";
 // colour — the same recipe used on the order detail page.
 const ticketStatusBadge = (status: OrderStatus) => {
   switch (status) {
-    case "PAYMENT_SUCCESS":
+    case "PaymentSuccess":
       return {
         Icon: CheckCircle2,
         text: "Confirmed",
         className:
           "bg-emerald-400/15 text-emerald-200 ring-1 ring-inset ring-emerald-400/40",
       };
-    case "CHECKED_IN":
+    case "CheckedIn":
       return {
         Icon: TicketCheck,
         text: "Checked in",
         className:
           "bg-sky-400/15 text-sky-200 ring-1 ring-inset ring-sky-400/40",
       };
-    case "PAYMENT_PENDING":
+    case "PaymentPending":
       return {
         Icon: Clock,
         text: "Pending",
         className:
           "bg-amber-400/15 text-amber-200 ring-1 ring-inset ring-amber-400/40",
       };
-    case "PAYMENT_FAILED":
-    case "CANCELLED":
-    case "SUPERSEDED":
+    case "PaymentFailed":
+    case "Cancelled":
+    case "Superseded":
       return {
         Icon: XCircle,
-        text: status === "SUPERSEDED" ? "Replaced" : "CANCELLED",
+        text: status === "Superseded" ? "Replaced" : "Cancelled",
         className:
           "bg-white/10 text-white/70 ring-1 ring-inset ring-white/15",
       };
-    case "REFUNDED":
+    case "Refunded":
       return {
         Icon: XCircle,
-        text: "REFUNDED",
+        text: "Refunded",
         className:
           "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/40",
       };
@@ -86,39 +86,39 @@ const ticketStatusBadge = (status: OrderStatus) => {
 
 const merchStatusBadge = (status: ArtistMerchOrderStatus) => {
   switch (status) {
-    case "PAYMENT_SUCCESS":
+    case "PaymentSuccess":
       return {
         Icon: CheckCircle2,
         text: "Paid",
         className:
           "bg-sky-400/15 text-sky-200 ring-1 ring-inset ring-sky-400/40",
       };
-    case "FULFILLED":
+    case "Fulfilled":
       return {
         Icon: Package,
         text: "Shipped",
         className:
           "bg-emerald-400/15 text-emerald-200 ring-1 ring-inset ring-emerald-400/40",
       };
-    case "PAYMENT_PENDING":
+    case "PaymentPending":
       return {
         Icon: Clock,
         text: "Pending",
         className:
           "bg-amber-400/15 text-amber-200 ring-1 ring-inset ring-amber-400/40",
       };
-    case "PAYMENT_FAILED":
-    case "CANCELLED":
+    case "PaymentFailed":
+    case "Cancelled":
       return {
         Icon: XCircle,
-        text: status === "CANCELLED" ? "CANCELLED" : "Payment failed",
+        text: status === "Cancelled" ? "Cancelled" : "Payment failed",
         className:
           "bg-white/10 text-white/70 ring-1 ring-inset ring-white/15",
       };
-    case "REFUNDED":
+    case "Refunded":
       return {
         Icon: XCircle,
-        text: "REFUNDED",
+        text: "Refunded",
         className:
           "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/40",
       };
@@ -195,7 +195,7 @@ export const OrdersClient = () => {
   const merchCount = useMemo(
     () =>
       merchOrders.filter(
-        (o) => o.status === "PAYMENT_SUCCESS" || o.status === "FULFILLED"
+        (o) => o.status === "PaymentSuccess" || o.status === "Fulfilled"
       ).length,
     [merchOrders]
   );
@@ -341,7 +341,7 @@ export const OrdersClient = () => {
                           : ""}
                       </div>
                     ) : null}
-                    {order.status === "FULFILLED" &&
+                    {order.status === "Fulfilled" &&
                     (order.shippedAt || order.carrier || order.trackingNumber) ? (
                       <div className="mt-1 text-xs text-white/55">
                         Shipped

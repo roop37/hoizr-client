@@ -254,7 +254,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     fetchOrder();
 
     const orderConfirmed =
-      order?.orderStatus === "PaymentSuccess" || order?.orderStatus === "CheckedIn";
+      order?.orderStatus === "PAYMENT_SUCCESS" || order?.orderStatus === "CHECKED_IN";
 
     // Razorpay webhooks can arrive tens of seconds after the checkout
     // callback. Keep polling the just-paid page long enough for delayed
@@ -447,14 +447,14 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   }
 
   const confirmed =
-    order.orderStatus === "PaymentSuccess" || order.orderStatus === "CheckedIn";
+    order.orderStatus === "PAYMENT_SUCCESS" || order.orderStatus === "CHECKED_IN";
   const waitingForWebhook =
     justPaid &&
-    order.orderStatus === "PaymentPending" &&
+    order.orderStatus === "PAYMENT_PENDING" &&
     polls < PAYMENT_CONFIRMATION_MAX_POLLS;
   const webhookTimedOut =
     justPaid &&
-    order.orderStatus === "PaymentPending" &&
+    order.orderStatus === "PAYMENT_PENDING" &&
     polls >= PAYMENT_CONFIRMATION_MAX_POLLS;
   // Only offer the "continue this order" retry for orders the customer
   // *abandoned* (never reached the Razorpay handler). If they came back
@@ -464,7 +464,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   // first capture is still reconciling. Show the timeout/refund banner
   // instead and let the webhook (or admin reconciliation) finalise.
   const canContinuePendingOrder =
-    order.orderStatus === "PaymentPending" &&
+    order.orderStatus === "PAYMENT_PENDING" &&
     !waitingForWebhook &&
     !webhookTimedOut &&
     !justPaid;
@@ -481,7 +481,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   const refundAlreadyRequested = Boolean(
     order.refundRequestStatus || order.refundRequestedAt
   );
-  const refundableOrder = order.orderStatus === "PaymentSuccess" && !order.checkedIn;
+  const refundableOrder = order.orderStatus === "PAYMENT_SUCCESS" && !order.checkedIn;
   const canRequestRefund =
     refundableOrder && refundWindowOpen && !refundAlreadyRequested;
   const refundPolicyText =
@@ -529,27 +529,27 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
 
   const statusBadge = (() => {
     switch (order.orderStatus) {
-      case "PaymentSuccess":
+      case "PAYMENT_SUCCESS":
         return {
           label: "Booking confirmed",
           tone: "bg-emerald-400/15 text-emerald-200 ring-emerald-400/40",
         };
-      case "CheckedIn":
+      case "CHECKED_IN":
         return {
           label: "Checked in",
           tone: "bg-sky-400/15 text-sky-200 ring-sky-400/40",
         };
-      case "PaymentPending":
+      case "PAYMENT_PENDING":
         return {
           label: "Pending payment",
           tone: "bg-amber-400/15 text-amber-200 ring-amber-400/40",
         };
-      case "PaymentFailed":
+      case "PAYMENT_FAILED":
         return {
           label: "Payment failed",
           tone: "bg-rose-400/15 text-rose-200 ring-rose-400/40",
         };
-      case "Superseded":
+      case "SUPERSEDED":
         return {
           label: "Replaced by newer order",
           tone: "bg-slate-400/15 text-slate-200 ring-slate-400/40",
@@ -927,7 +927,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                         ? "This ticket has already been checked in."
                         : !refundWindowOpen
                         ? "The refund request window is closed for this event."
-                        : order.orderStatus !== "PaymentSuccess"
+                        : order.orderStatus !== "PAYMENT_SUCCESS"
                         ? "Refund requests are available after payment is confirmed."
                         : "This order is not eligible for a self-service refund request."}
                     </div>
@@ -951,7 +951,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
       {/* Description modal — one concern per modal, per design. */}
       {descriptionOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
+          className="fixed inset-0 z-[120] flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
           onClick={() => setDescriptionOpen(false)}
         >
           <div
@@ -986,7 +986,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
       ) : null}
 
       {refundModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/70 px-4 py-5 sm:items-center">
+        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-ink/70 px-4 py-5 sm:items-center">
           <div className="w-full max-w-md rounded-2xl bg-cream p-5 text-ink shadow-xl">
             <div className="flex items-start justify-between gap-3">
               <div>

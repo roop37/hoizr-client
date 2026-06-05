@@ -1960,7 +1960,11 @@ body,
 .h-evt-sheet-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  /* Needs to clear the mobile bottom-tab pill (z-index 80) AND the
+     cart-resume bar (z-index 80) on small screens so the sheet visually
+     swallows them instead of letting them peek through over the
+     overlay. */
+  z-index: 120;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -2960,6 +2964,19 @@ body,
   gap: 48px;
   margin-top: 32px;
   align-items: flex-start;
+}
+/* Portrait-only events promote the booking panel above the body — but
+   the underlying grid template was still 1.7fr/1fr, which left the
+   body card in the right column (~37% width) while the booking panel
+   spanned both columns. That made the description and gallery slide
+   under the booking sticky panel and overlap on scroll. Collapse to a
+   single column when this modifier is on so everything stacks cleanly. */
+.h-detail-grid--portrait {
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+.h-detail-grid--portrait > .h-detail-body-card {
+  grid-column: 1 / -1;
 }
 /* Right column wraps all body content in one glass card so the page
    reads as a single composed surface beneath the flyer instead of a
