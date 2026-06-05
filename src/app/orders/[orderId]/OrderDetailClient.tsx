@@ -22,6 +22,7 @@ import QRCode from "qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { rupee } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
+import { sanitizeRichText } from "@/lib/sanitize";
 import {
   MY_ORDER_BY_ID_QUERY,
   MY_ORDER_INVOICE_QUERY,
@@ -49,7 +50,12 @@ type OrderEventSummary = Pick<
 
 const REFUND_WINDOW_DAYS = 2;
 const PAYMENT_CONFIRMATION_POLL_INTERVAL_MS = 2000;
-const PAYMENT_CONFIRMATION_MAX_POLLS = 60;
+// 30 × 2s = 60s. The user-facing contract is "we wait one minute for
+// the gateway, then call it failed and tell you any captured payment
+// will be refunded." BullMQ webhook retries take seconds, so a minute
+// is generous for the happy path and short enough that a stuck
+// pending order doesn't keep the customer staring at a spinner.
+const PAYMENT_CONFIRMATION_MAX_POLLS = 30;
 
 // AUDIT-033: never silently swallow a QR render failure — the 6-char
 // order suffix the previous fallback implied is NOT a scanner-readable
@@ -208,6 +214,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   const [refundSubmitting, setRefundSubmitting] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [refundPolicyOpen, setRefundPolicyOpen] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [invoiceState, setInvoiceState] = useState<{
     busy: boolean;
@@ -623,7 +630,11 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                   <div className="h-[220px] w-[180px] bg-gradient-to-br from-emerald-700/40 via-ink to-ink" />
                 )}
               </div>
-              <div className="flex flex-1 flex-col items-center text-center md:items-start md:justify-center md:text-left">
+              {/* Desktop-only meta column. On mobile the same fields are
+                  composed inside the white ticket card so the flyer can
+                  stay clean and the meta sits above the QR with a
+                  divider, per request. */}
+              <div className="hidden flex-1 flex-col items-start justify-center text-left md:flex">
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${statusBadge.tone}`}
                 >
@@ -635,7 +646,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                     {eventSummary.title}
                   </h1>
                 ) : null}
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-cream/80 md:justify-start">
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-cream/80">
                   {eventWhenLabel ? (
                     <span className="inline-flex items-center gap-1.5">
                       <CalendarDays size={14} className="text-cream/60" />
@@ -717,6 +728,36 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 first on mobile via order-first. */}
             <aside className="order-first md:order-last md:sticky md:top-6">
               <div className="overflow-hidden rounded-3xl bg-cream text-ink shadow-[0_30px_70px_-25px_rgba(0,0,0,0.7)]">
+                {/* Mobile-only event meta block inside the white card —
+                    badge + title + date + venue then a dashed divider
+                    before the QR. Hidden on desktop because the same
+                    fields already render in the hero meta column. */}
+                <div className="border-b border-dashed border-border px-5 pb-4 pt-5 text-ink md:hidden">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${statusBadge.tone}`}
+                  >
+                    <Ticket size={12} />
+                    {statusBadge.label}
+                  </span>
+                  {eventSummary?.title ? (
+                    <h1 className="mt-2 text-lg font-semibold leading-snug text-ink">
+                      {eventSummary.title}
+                    </h1>
+                  ) : null}
+                  {eventWhenLabel ? (
+                    <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted">
+                      <CalendarDays size={13} />
+                      {eventWhenLabel}
+                    </div>
+                  ) : null}
+                  {venueLine ? (
+                    <div className="mt-1 flex items-start gap-1.5 text-xs text-muted">
+                      <MapPin size={13} className="mt-0.5 shrink-0" />
+                      <span className="line-clamp-2">{venueLine}</span>
+                    </div>
+                  ) : null}
+                </div>
+
                 <div className="flex flex-col items-center gap-4 px-5 pb-5 pt-6">
                   {confirmed && order.qrCodeData ? (
                     <>
@@ -876,14 +917,24 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                         <RefreshCcw size={14} />
                         Refund request
                       </div>
-                      <p className="mt-2 line-clamp-3 text-cream/75">
-                        {refundPolicyText}
+                      {/* The policy is rich text from the organiser. We
+                          deliberately don't render it inline (it ranges
+                          from a sentence to a multi-paragraph essay
+                          with bullet points and would clobber the card
+                          layout). Surface a single "View refund policy"
+                          chip that opens a dedicated modal — same one-
+                          concern-per-modal rule as the description. */}
+                      <p className="mt-2 text-cream/75">
+                        Refunds follow the organiser's policy and Hoizr's
+                        platform terms.
                       </p>
-                      {refundDeadlineLabel ? (
-                        <p className="mt-2 text-xs font-semibold text-cream">
-                          Request deadline: {refundDeadlineLabel}
-                        </p>
-                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setRefundPolicyOpen(true)}
+                        className="mt-3 inline-flex h-8 items-center justify-center gap-1 rounded-full border border-cream/15 bg-cream/[0.04] px-3 text-xs font-semibold text-cream/80 transition hover:bg-cream/10"
+                      >
+                        View refund policy
+                      </button>
                     </div>
 
                     {canRequestRefund ? (
@@ -980,6 +1031,62 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
               <div className="whitespace-pre-line">
                 {eventDescription || "No description provided."}
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Refund policy modal — sanitised rich text + the deadline that
+          used to sit inline on the card. Hidden by default so the card
+          stays composed even when the organiser writes a multi-section
+          policy. */}
+      {refundPolicyOpen ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
+          onClick={() => setRefundPolicyOpen(false)}
+        >
+          <div
+            className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-cream/10 bg-ink text-cream shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-cream/10 px-5 py-4">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                  Refund policy
+                </div>
+                <div className="mt-1 text-base font-semibold text-cream">
+                  {eventSummary?.title ?? "Event"}
+                </div>
+                {refundDeadlineLabel ? (
+                  <div className="mt-1 text-xs text-cream/65">
+                    Request by {refundDeadlineLabel}
+                  </div>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setRefundPolicyOpen(false)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cream/15 text-cream/70 hover:text-cream"
+                aria-label="Close refund policy"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="overflow-y-auto px-5 py-4 text-sm leading-relaxed text-cream/85">
+              {refundPolicyText ? (
+                <div
+                  className="rich-text"
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeRichText(refundPolicyText),
+                  }}
+                />
+              ) : (
+                <p>
+                  This organiser hasn't published a custom policy. The
+                  default Hoizr refund window of {REFUND_WINDOW_DAYS}{" "}
+                  days after the event still applies.
+                </p>
+              )}
             </div>
           </div>
         </div>

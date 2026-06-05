@@ -2965,18 +2965,52 @@ body,
   margin-top: 32px;
   align-items: flex-start;
 }
-/* Portrait-only events promote the booking panel above the body — but
-   the underlying grid template was still 1.7fr/1fr, which left the
-   body card in the right column (~37% width) while the booking panel
-   spanned both columns. That made the description and gallery slide
-   under the booking sticky panel and overlap on scroll. Collapse to a
-   single column when this modifier is on so everything stacks cleanly. */
-.h-detail-grid--portrait {
+/* Single-column layout for both the "portrait-only" pivot AND the
+   default detail page now that ticket selection has moved to its own
+   route — the body card always spans the full readable column. */
+.h-detail-grid--portrait,
+.h-detail-grid--single {
   grid-template-columns: 1fr;
   gap: 24px;
 }
-.h-detail-grid--portrait > .h-detail-body-card {
+.h-detail-grid--portrait > .h-detail-body-card,
+.h-detail-grid--single > .h-detail-body-card {
   grid-column: 1 / -1;
+}
+
+/* Sticky "Book tickets" CTA pinned below the detail body. On desktop
+   it sits centered under the body card; on mobile it floats above the
+   bottom-tabs pill so it's always one tap away. */
+.h-detail-bottom-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 420px;
+  height: 52px;
+  margin: 28px auto 0;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: #060616;
+  font-family: var(--h-font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  box-shadow: 0 16px 32px rgba(197, 255, 61, 0.18);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+.h-detail-bottom-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 40px rgba(197, 255, 61, 0.24);
+  opacity: 0.95;
+}
+@media (max-width: 1100px) {
+  .h-detail-bottom-cta {
+    position: sticky;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    z-index: 30;
+  }
 }
 /* Right column wraps all body content in one glass card so the page
    reads as a single composed surface beneath the flyer instead of a
