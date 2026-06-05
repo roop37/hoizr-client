@@ -37,7 +37,16 @@ export const EventCard = ({ event }: Props) => {
   return (
     <Link href={`/events/${event.slug}`} className="h-tile">
       <div className="h-tile-flyer">
-        {event.image ? (
+        {event.videoSneakPeek ? (
+          <video
+            src={event.videoSneakPeek}
+            muted
+            playsInline
+            autoPlay
+            loop
+            aria-label={event.title}
+          />
+        ) : event.image ? (
           <img
             src={event.image}
             alt={event.title}

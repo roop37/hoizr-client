@@ -7,6 +7,9 @@ export type DisplayEvent = {
   title: string;
   image: string | null;
   horizontalImage: string | null;
+  portraitImage: string | null;
+  videoSneakPeek: string | null;
+  gallery: PublicEvent["gallery"];
   imageStyle: string;
   city: string;
   cityId?: string;
@@ -33,6 +36,10 @@ export type DisplayEvent = {
   ticketingTerms?: string;
   refundPolicy?: string;
   cancellationPolicy?: string;
+  eventGuide?: PublicEvent["eventGuide"];
+  faqs: NonNullable<PublicEvent["faqs"]>;
+  eventInstructions: string[];
+  prohibitedItems: string[];
 };
 
 const PLACEHOLDER_GRADIENTS = [
@@ -121,6 +128,9 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     title: e.title ?? "Untitled event",
     image: e.horizontalFlyer ?? e.eventFlyer ?? null,
     horizontalImage: e.horizontalFlyer ?? null,
+    portraitImage: e.eventFlyer ?? null,
+    videoSneakPeek: e.videoSneakPeek ?? null,
+    gallery: e.gallery ?? [],
     imageStyle: PLACEHOLDER_GRADIENTS[hashString(e._id) % PLACEHOLDER_GRADIENTS.length],
     city: e.city ?? "India",
     cityId: e.cityId,
@@ -144,6 +154,10 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     ticketingTerms: (e as any).ticketingTerms,
     refundPolicy: e.refundPolicy,
     cancellationPolicy: e.cancellationPolicy,
+    eventGuide: e.eventGuide,
+    faqs: (e.faqs ?? []).filter((faq) => faq.question && faq.answer),
+    eventInstructions: e.eventInstructions ?? [],
+    prohibitedItems: e.prohibitedItems ?? [],
   };
 };
 

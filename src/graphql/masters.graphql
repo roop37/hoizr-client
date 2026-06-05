@@ -29,6 +29,23 @@ query ActiveGenreTags {
   }
 }
 
+query ActiveLanguages {
+  getActiveLanguages {
+    _id
+    value
+    code
+    nativeName
+  }
+}
+
+query ActiveProhibitedItems {
+  getActiveProhibitedItems {
+    _id
+    value
+    slug
+  }
+}
+
 query ActiveEventCategories {
   getActiveEventCategories {
     _id

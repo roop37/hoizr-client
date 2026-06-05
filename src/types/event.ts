@@ -26,6 +26,30 @@ export type PublicExtra = {
   type: string;
 };
 
+export type PublicEventGalleryItem = {
+  url: string;
+  type: "IMAGE" | "VIDEO" | string;
+};
+
+export type PublicEventGuide = {
+  languageIds?: string[];
+  minimumEntryAge?: string;
+  paidEntryAge?: string;
+  venueLayout?: string;
+  seatingArrangement?: string;
+  kidFriendly?: string;
+  petFriendly?: string;
+  gatesOpenBeforeEvent?: boolean;
+  gatesOpenLeadHours?: number;
+  gatesOpenLeadMinutes?: number;
+  youtubeLink?: string;
+};
+
+export type PublicEventFAQ = {
+  question: string;
+  answer: string;
+};
+
 export type PublicPlaceInfo = {
   placeId?: string;
   displayName?: string;
@@ -48,6 +72,8 @@ export type PublicEvent = {
   description?: string;
   eventFlyer?: string;
   horizontalFlyer?: string;
+  videoSneakPeek?: string;
+  gallery?: PublicEventGalleryItem[];
   eventType?: string[];
   startDate?: string;
   endDate?: string;
@@ -63,6 +89,23 @@ export type PublicEvent = {
   ticketingTerms?: string;
   refundPolicy?: string;
   cancellationPolicy?: string;
+  eventGuide?: PublicEventGuide;
+  faqs?: PublicEventFAQ[];
+  eventInstructions?: string[];
+  prohibitedItems?: string[];
+};
+
+export type PublicLanguageMaster = {
+  _id: string;
+  value: string;
+  code?: string;
+  nativeName?: string;
+};
+
+export type PublicProhibitedItemMaster = {
+  _id: string;
+  value: string;
+  slug: string;
 };
 
 export type PublicEventListResponse = {

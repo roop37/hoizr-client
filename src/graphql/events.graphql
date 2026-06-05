@@ -7,6 +7,7 @@ query GetPublishedEvents($input: PublicEventFilterInput) {
       description
       eventFlyer
       horizontalFlyer
+      videoSneakPeek
       eventType
       startDate
       endDate
@@ -42,6 +43,11 @@ query GetPublicEventBySlug($slug: String!) {
     description
     eventFlyer
     horizontalFlyer
+    videoSneakPeek
+    gallery {
+      url
+      type
+    }
     eventType
     startDate
     endDate
@@ -63,6 +69,25 @@ query GetPublicEventBySlug($slug: String!) {
     ticketingTerms
     refundPolicy
     cancellationPolicy
+    eventGuide {
+      languageIds
+      minimumEntryAge
+      paidEntryAge
+      venueLayout
+      seatingArrangement
+      kidFriendly
+      petFriendly
+      gatesOpenBeforeEvent
+      gatesOpenLeadHours
+      gatesOpenLeadMinutes
+      youtubeLink
+    }
+    faqs {
+      question
+      answer
+    }
+    eventInstructions
+    prohibitedItems
     ticketingEnabled
     isHighDemand
     tickets {
