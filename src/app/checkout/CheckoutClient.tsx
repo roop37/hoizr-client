@@ -506,6 +506,97 @@ export const CheckoutClient = () => {
       </p>
 
       <div className="mt-6 space-y-4">
+        {/* "Your details" sits at the top so identity is captured
+            before the customer reviews tickets + totals. The form is
+            prefilled from the signed-in profile and the Ready/Needed
+            chip mirrors the validity check on Pay. */}
+        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="font-semibold text-white">Your details</div>
+              <p className="mt-1 text-xs text-white/60">
+                These details appear on the booking and payment receipt.
+              </p>
+            </div>
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${
+                guestInfoReady
+                  ? "bg-emerald-400/15 text-emerald-200 ring-emerald-400/40"
+                  : "bg-amber-400/15 text-amber-200 ring-amber-400/40"
+              }`}
+            >
+              {guestInfoReady ? "Ready" : "Needed"}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                First name
+              </span>
+              <input
+                value={guestInfo.firstName ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    firstName: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="given-name"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Last name
+              </span>
+              <input
+                value={guestInfo.lastName ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    lastName: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="family-name"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Email
+              </span>
+              <input
+                type="email"
+                value={guestInfo.email ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    email: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="email"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Phone
+              </span>
+              <input
+                value={guestInfo.phone ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    phone: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="tel"
+              />
+            </label>
+          </div>
+        </div>
+
         <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.04] text-white backdrop-blur-xl">
           <div className="border-b border-white/[0.06] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
             Tickets
@@ -655,93 +746,6 @@ export const CheckoutClient = () => {
             <span className="font-semibold text-white">
               {rupee(cart.pricing.totalAmount)}
             </span>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="font-semibold text-white">Your details</div>
-              <p className="mt-1 text-xs text-white/60">
-                These details appear on the booking and payment receipt.
-              </p>
-            </div>
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${
-                guestInfoReady
-                  ? "bg-emerald-400/15 text-emerald-200 ring-emerald-400/40"
-                  : "bg-amber-400/15 text-amber-200 ring-amber-400/40"
-              }`}
-            >
-              {guestInfoReady ? "Ready" : "Needed"}
-            </span>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
-                First name
-              </span>
-              <input
-                value={guestInfo.firstName ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    firstName: e.target.value,
-                  }))
-                }
-                className={inputClass}
-                autoComplete="given-name"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
-                Last name
-              </span>
-              <input
-                value={guestInfo.lastName ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    lastName: e.target.value,
-                  }))
-                }
-                className={inputClass}
-                autoComplete="family-name"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
-                Email
-              </span>
-              <input
-                type="email"
-                value={guestInfo.email ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    email: e.target.value,
-                  }))
-                }
-                className={inputClass}
-                autoComplete="email"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
-                Phone
-              </span>
-              <input
-                value={guestInfo.phone ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    phone: e.target.value,
-                  }))
-                }
-                className={inputClass}
-                autoComplete="tel"
-              />
-            </label>
           </div>
         </div>
 
