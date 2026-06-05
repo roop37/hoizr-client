@@ -15,6 +15,7 @@ export const PUBLIC_EVENT_LIST_QUERY = `
         description
         eventFlyer
         horizontalFlyer
+        videoSneakPeek
         eventType
         startDate
         endDate
@@ -52,6 +53,11 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
       description
       eventFlyer
       horizontalFlyer
+      videoSneakPeek
+      gallery {
+        url
+        type
+      }
       eventType
       startDate
       endDate
@@ -73,6 +79,25 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
       ticketingTerms
       refundPolicy
       cancellationPolicy
+      eventGuide {
+        languageIds
+        minimumEntryAge
+        paidEntryAge
+        venueLayout
+        seatingArrangement
+        kidFriendly
+        petFriendly
+        gatesOpenBeforeEvent
+        gatesOpenLeadHours
+        gatesOpenLeadMinutes
+        youtubeLink
+      }
+      faqs {
+        question
+        answer
+      }
+      eventInstructions
+      prohibitedItems
       ticketingEnabled
       isHighDemand
       tickets {
@@ -196,6 +221,27 @@ export const ACTIVE_GENRE_TAGS_QUERY = `
     getActiveGenreTags {
       _id
       value
+    }
+  }
+`;
+
+export const ACTIVE_LANGUAGES_QUERY = `
+  query ActiveLanguages {
+    getActiveLanguages {
+      _id
+      value
+      code
+      nativeName
+    }
+  }
+`;
+
+export const ACTIVE_PROHIBITED_ITEMS_QUERY = `
+  query ActiveProhibitedItems {
+    getActiveProhibitedItems {
+      _id
+      value
+      slug
     }
   }
 `;

@@ -442,6 +442,15 @@ export type CustomerTokenRefreshResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export enum EntryAgeBand {
+  Age_13Plus = 'AGE_13_PLUS',
+  Age_16Plus = 'AGE_16_PLUS',
+  Age_18Plus = 'AGE_18_PLUS',
+  Age_21Plus = 'AGE_21_PLUS',
+  Age_25Plus = 'AGE_25_PLUS',
+  AllAges = 'ALL_AGES'
+}
+
 export type Event = {
   __typename?: 'Event';
   _id: Scalars['ID']['output'];
@@ -479,15 +488,19 @@ export type Event = {
   eventCategoryId?: Maybe<Scalars['String']['output']>;
   eventCollaborationBusiness?: Maybe<Array<EventBusinessPartner>>;
   eventFlyer?: Maybe<Scalars['String']['output']>;
+  eventGuide?: Maybe<EventGuide>;
+  eventInstructions?: Maybe<Array<Scalars['String']['output']>>;
   eventLocationDecided?: Maybe<Scalars['Boolean']['output']>;
   eventScore?: Maybe<Scalars['Float']['output']>;
   eventType?: Maybe<Array<EventType>>;
   expectedAudience?: Maybe<Scalars['Float']['output']>;
   expectedEventsDoneTillNow?: Maybe<Scalars['Float']['output']>;
   extras?: Maybe<Array<HoizrExtra>>;
+  faqs?: Maybe<Array<EventFaq>>;
   feeSettlementMode?: Maybe<EventFeeSettlementMode>;
   firstSaleAt?: Maybe<Scalars['DateTimeISO']['output']>;
   firstStepCompleted: Scalars['Boolean']['output'];
+  gallery?: Maybe<Array<EventGalleryItem>>;
   genreTagIds?: Maybe<Array<Scalars['String']['output']>>;
   genresPreferred?: Maybe<Array<Genre>>;
   horizontalFlyer?: Maybe<Scalars['String']['output']>;
@@ -514,6 +527,7 @@ export type Event = {
   popularityRating?: Maybe<Scalars['Float']['output']>;
   pricingSelectedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   pricingSnapshot?: Maybe<EventPricingSnapshot>;
+  prohibitedItems?: Maybe<Array<Scalars['String']['output']>>;
   publishedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   refundPolicy?: Maybe<Scalars['String']['output']>;
   requiresIDVerification?: Maybe<Scalars['Boolean']['output']>;
@@ -535,6 +549,7 @@ export type Event = {
   title?: Maybe<Scalars['String']['output']>;
   updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   verticalVideo?: Maybe<Scalars['String']['output']>;
+  videoSneakPeek?: Maybe<Scalars['String']['output']>;
 };
 
 export type EventBusinessPartner = {
@@ -575,10 +590,42 @@ export enum EventCollabStatus {
   Invited = 'INVITED'
 }
 
+export type EventFaq = {
+  __typename?: 'EventFAQ';
+  answer: Scalars['String']['output'];
+  question: Scalars['String']['output'];
+};
+
 export enum EventFeeSettlementMode {
   DeductFromPayout = 'DEDUCT_FROM_PAYOUT',
   PayAfterEvent = 'PAY_AFTER_EVENT'
 }
+
+export type EventGalleryItem = {
+  __typename?: 'EventGalleryItem';
+  type: EventGalleryItemType;
+  url: Scalars['String']['output'];
+};
+
+export enum EventGalleryItemType {
+  Image = 'IMAGE',
+  Video = 'VIDEO'
+}
+
+export type EventGuide = {
+  __typename?: 'EventGuide';
+  gatesOpenBeforeEvent?: Maybe<Scalars['Boolean']['output']>;
+  gatesOpenLeadHours?: Maybe<Scalars['Float']['output']>;
+  gatesOpenLeadMinutes?: Maybe<Scalars['Float']['output']>;
+  kidFriendly?: Maybe<KidFriendlyPolicy>;
+  languageIds?: Maybe<Array<Scalars['String']['output']>>;
+  minimumEntryAge?: Maybe<EntryAgeBand>;
+  paidEntryAge?: Maybe<EntryAgeBand>;
+  petFriendly?: Maybe<PetFriendlyPolicy>;
+  seatingArrangement?: Maybe<SeatingArrangement>;
+  venueLayout?: Maybe<VenueLayout>;
+  youtubeLink?: Maybe<Scalars['String']['output']>;
+};
 
 export type EventLineupArtist = {
   __typename?: 'EventLineupArtist';
@@ -838,6 +885,27 @@ export type IndianCity = {
   value: Scalars['String']['output'];
 };
 
+export enum KidFriendlyPolicy {
+  KidsNotAllowed = 'KIDS_NOT_ALLOWED',
+  KidsWelcome = 'KIDS_WELCOME',
+  KidsWithGuardian = 'KIDS_WITH_GUARDIAN'
+}
+
+export type LanguageMaster = {
+  __typename?: 'LanguageMaster';
+  _id: Scalars['ID']['output'];
+  code: Scalars['String']['output'];
+  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  createdBy?: Maybe<Admin>;
+  isIndian: Scalars['Boolean']['output'];
+  nativeName?: Maybe<Scalars['String']['output']>;
+  order: Scalars['Float']['output'];
+  status: Scalars['Boolean']['output'];
+  updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  updatedBy?: Maybe<Admin>;
+  value: Scalars['String']['output'];
+};
+
 export enum MerchCurrency {
   Inr = 'INR',
   Usd = 'USD'
@@ -1022,10 +1090,30 @@ export enum PendingSignupOutcome {
   NewAccount = 'NEW_ACCOUNT'
 }
 
+export enum PetFriendlyPolicy {
+  PetsNotAllowed = 'PETS_NOT_ALLOWED',
+  PetsWelcome = 'PETS_WELCOME',
+  ServiceAnimalsOnly = 'SERVICE_ANIMALS_ONLY'
+}
+
 export type PlaceInfo = {
   __typename?: 'PlaceInfo';
   displayName?: Maybe<Scalars['String']['output']>;
   placeId?: Maybe<Scalars['String']['output']>;
+};
+
+export type ProhibitedItemMaster = {
+  __typename?: 'ProhibitedItemMaster';
+  _id: Scalars['ID']['output'];
+  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  createdBy?: Maybe<Admin>;
+  description?: Maybe<Scalars['String']['output']>;
+  order: Scalars['Float']['output'];
+  slug: Scalars['String']['output'];
+  status: Scalars['Boolean']['output'];
+  updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  updatedBy?: Maybe<Admin>;
+  value: Scalars['String']['output'];
 };
 
 export type PublicEventArtistEntry = {
@@ -1085,6 +1173,8 @@ export type Query = {
   getActiveEventCategories: Array<EventCategory>;
   getActiveGenreTags: Array<GenreTag>;
   getActiveIndianCities: Array<IndianCity>;
+  getActiveLanguages: Array<LanguageMaster>;
+  getActiveProhibitedItems: Array<ProhibitedItemMaster>;
   getCart?: Maybe<CartResponse>;
   getMyOrderById?: Maybe<CustomerOrderView>;
   getMyOrders: Array<CustomerOrderView>;
@@ -1229,6 +1319,12 @@ export type ScannerRefreshResponse = {
   refreshToken: Scalars['String']['output'];
 };
 
+export enum SeatingArrangement {
+  Seated = 'SEATED',
+  SeatedAndStanding = 'SEATED_AND_STANDING',
+  Standing = 'STANDING'
+}
+
 export type SetCartInput = {
   eventId: Scalars['String']['input'];
   extras?: InputMaybe<Array<CartExtraLineInput>>;
@@ -1289,6 +1385,12 @@ export type UpdateCustomerProfileInput = {
   smsMarketingOptIn?: InputMaybe<Scalars['Boolean']['input']>;
   whatsappMarketingOptIn?: InputMaybe<Scalars['Boolean']['input']>;
 };
+
+export enum VenueLayout {
+  Indoor = 'INDOOR',
+  Mixed = 'MIXED',
+  Outdoor = 'OUTDOOR'
+}
 
 export type CustomerRequestOtpMutationVariables = Exact<{
   input: CustomerOtpRequestInput;
@@ -1365,14 +1467,14 @@ export type GetPublishedEventsQueryVariables = Exact<{
 }>;
 
 
-export type GetPublishedEventsQuery = { __typename?: 'Query', getPublishedEvents: { __typename?: 'PublicEventPaginatedResponse', total: number, page: number, pageSize: number, events: Array<{ __typename?: 'Event', _id: string, title?: string | null, slug?: string | null, description?: string | null, eventFlyer?: string | null, horizontalFlyer?: string | null, eventType?: Array<EventType> | null, startDate?: any | null, endDate?: any | null, city?: string | null, cityId?: string | null, genreTagIds?: Array<string> | null, ticketingEnabled?: boolean | null, isHighDemand?: boolean | null, isComingSoon?: boolean | null, tickets?: Array<{ __typename?: 'EventTicket', _id: string, ticketName: string, ticketCategory: TicketCategory, ticketCapacity: number, ticketSold: number, ticketPrice: number, markAsComingSoon?: boolean | null, markAsOnGroundOnly?: boolean | null, ticketVisible?: boolean | null }> | null }> } };
+export type GetPublishedEventsQuery = { __typename?: 'Query', getPublishedEvents: { __typename?: 'PublicEventPaginatedResponse', total: number, page: number, pageSize: number, events: Array<{ __typename?: 'Event', _id: string, title?: string | null, slug?: string | null, description?: string | null, eventFlyer?: string | null, horizontalFlyer?: string | null, videoSneakPeek?: string | null, eventType?: Array<EventType> | null, startDate?: any | null, endDate?: any | null, city?: string | null, cityId?: string | null, genreTagIds?: Array<string> | null, ticketingEnabled?: boolean | null, isHighDemand?: boolean | null, isComingSoon?: boolean | null, tickets?: Array<{ __typename?: 'EventTicket', _id: string, ticketName: string, ticketCategory: TicketCategory, ticketCapacity: number, ticketSold: number, ticketPrice: number, markAsComingSoon?: boolean | null, markAsOnGroundOnly?: boolean | null, ticketVisible?: boolean | null }> | null }> } };
 
 export type GetPublicEventBySlugQueryVariables = Exact<{
   slug: Scalars['String']['input'];
 }>;
 
 
-export type GetPublicEventBySlugQuery = { __typename?: 'Query', getPublicEventBySlug?: { __typename?: 'Event', _id: string, title?: string | null, slug?: string | null, description?: string | null, eventFlyer?: string | null, horizontalFlyer?: string | null, eventType?: Array<EventType> | null, startDate?: any | null, endDate?: any | null, city?: string | null, cityId?: string | null, genreTagIds?: Array<string> | null, ticketingTerms?: string | null, refundPolicy?: string | null, cancellationPolicy?: string | null, ticketingEnabled?: boolean | null, isHighDemand?: boolean | null, location?: { __typename?: 'AddressInfo', addressLine1?: string | null, addressLine2?: string | null, city?: string | null, state?: string | null, pincode?: string | null, formattedAddress?: string | null, place?: { __typename?: 'PlaceInfo', placeId?: string | null, displayName?: string | null } | null } | null, tickets?: Array<{ __typename?: 'EventTicket', _id: string, ticketName: string, ticketCategory: TicketCategory, ticketType?: TicketType | null, ticketCapacity: number, ticketSold: number, ticketPrice: number, ticketInfo?: string | null, maxTicketPerUser?: number | null, ticketGST?: TicketGst | null, gstRate?: number | null, markAsComingSoon?: boolean | null, markAsOnGroundOnly?: boolean | null, ticketVisible?: boolean | null }> | null, extras?: Array<{ __typename?: 'HoizrExtra', _id: string, name: string, description?: string | null, price: number, quantity: number, sold: number, image?: string | null, type: HoizrExtraType }> | null } | null };
+export type GetPublicEventBySlugQuery = { __typename?: 'Query', getPublicEventBySlug?: { __typename?: 'Event', _id: string, title?: string | null, slug?: string | null, description?: string | null, eventFlyer?: string | null, horizontalFlyer?: string | null, videoSneakPeek?: string | null, eventType?: Array<EventType> | null, startDate?: any | null, endDate?: any | null, city?: string | null, cityId?: string | null, genreTagIds?: Array<string> | null, ticketingTerms?: string | null, refundPolicy?: string | null, cancellationPolicy?: string | null, eventInstructions?: Array<string> | null, prohibitedItems?: Array<string> | null, ticketingEnabled?: boolean | null, isHighDemand?: boolean | null, gallery?: Array<{ __typename?: 'EventGalleryItem', url: string, type: EventGalleryItemType }> | null, location?: { __typename?: 'AddressInfo', addressLine1?: string | null, addressLine2?: string | null, city?: string | null, state?: string | null, pincode?: string | null, formattedAddress?: string | null, place?: { __typename?: 'PlaceInfo', placeId?: string | null, displayName?: string | null } | null } | null, eventGuide?: { __typename?: 'EventGuide', languageIds?: Array<string> | null, minimumEntryAge?: EntryAgeBand | null, paidEntryAge?: EntryAgeBand | null, venueLayout?: VenueLayout | null, seatingArrangement?: SeatingArrangement | null, kidFriendly?: KidFriendlyPolicy | null, petFriendly?: PetFriendlyPolicy | null, gatesOpenBeforeEvent?: boolean | null, gatesOpenLeadHours?: number | null, gatesOpenLeadMinutes?: number | null, youtubeLink?: string | null } | null, faqs?: Array<{ __typename?: 'EventFAQ', question: string, answer: string }> | null, tickets?: Array<{ __typename?: 'EventTicket', _id: string, ticketName: string, ticketCategory: TicketCategory, ticketType?: TicketType | null, ticketCapacity: number, ticketSold: number, ticketPrice: number, ticketInfo?: string | null, maxTicketPerUser?: number | null, ticketGST?: TicketGst | null, gstRate?: number | null, markAsComingSoon?: boolean | null, markAsOnGroundOnly?: boolean | null, ticketVisible?: boolean | null }> | null, extras?: Array<{ __typename?: 'HoizrExtra', _id: string, name: string, description?: string | null, price: number, quantity: number, sold: number, image?: string | null, type: HoizrExtraType }> | null } | null };
 
 export type GetPublicEventPeopleQueryVariables = Exact<{
   eventId: Scalars['String']['input'];
@@ -1402,6 +1504,16 @@ export type ActiveGenreTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type ActiveGenreTagsQuery = { __typename?: 'Query', getActiveGenreTags: Array<{ __typename?: 'GenreTag', _id: string, value: string }> };
+
+export type ActiveLanguagesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ActiveLanguagesQuery = { __typename?: 'Query', getActiveLanguages: Array<{ __typename?: 'LanguageMaster', _id: string, value: string, code: string, nativeName?: string | null }> };
+
+export type ActiveProhibitedItemsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ActiveProhibitedItemsQuery = { __typename?: 'Query', getActiveProhibitedItems: Array<{ __typename?: 'ProhibitedItemMaster', _id: string, value: string, slug: string }> };
 
 export type ActiveEventCategoriesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1656,6 +1768,7 @@ export const GetPublishedEventsDocument = gql`
       description
       eventFlyer
       horizontalFlyer
+      videoSneakPeek
       eventType
       startDate
       endDate
@@ -1692,6 +1805,11 @@ export const GetPublicEventBySlugDocument = gql`
     description
     eventFlyer
     horizontalFlyer
+    videoSneakPeek
+    gallery {
+      url
+      type
+    }
     eventType
     startDate
     endDate
@@ -1713,6 +1831,25 @@ export const GetPublicEventBySlugDocument = gql`
     ticketingTerms
     refundPolicy
     cancellationPolicy
+    eventGuide {
+      languageIds
+      minimumEntryAge
+      paidEntryAge
+      venueLayout
+      seatingArrangement
+      kidFriendly
+      petFriendly
+      gatesOpenBeforeEvent
+      gatesOpenLeadHours
+      gatesOpenLeadMinutes
+      youtubeLink
+    }
+    faqs {
+      question
+      answer
+    }
+    eventInstructions
+    prohibitedItems
     ticketingEnabled
     isHighDemand
     tickets {
@@ -1820,6 +1957,25 @@ export const ActiveGenreTagsDocument = gql`
   getActiveGenreTags {
     _id
     value
+  }
+}
+    `;
+export const ActiveLanguagesDocument = gql`
+    query ActiveLanguages {
+  getActiveLanguages {
+    _id
+    value
+    code
+    nativeName
+  }
+}
+    `;
+export const ActiveProhibitedItemsDocument = gql`
+    query ActiveProhibitedItems {
+  getActiveProhibitedItems {
+    _id
+    value
+    slug
   }
 }
     `;
@@ -2035,6 +2191,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     ActiveGenreTags(variables?: ActiveGenreTagsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ActiveGenreTagsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<ActiveGenreTagsQuery>({ document: ActiveGenreTagsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ActiveGenreTags', 'query', variables);
+    },
+    ActiveLanguages(variables?: ActiveLanguagesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ActiveLanguagesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ActiveLanguagesQuery>({ document: ActiveLanguagesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ActiveLanguages', 'query', variables);
+    },
+    ActiveProhibitedItems(variables?: ActiveProhibitedItemsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ActiveProhibitedItemsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ActiveProhibitedItemsQuery>({ document: ActiveProhibitedItemsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ActiveProhibitedItems', 'query', variables);
     },
     ActiveEventCategories(variables?: ActiveEventCategoriesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ActiveEventCategoriesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<ActiveEventCategoriesQuery>({ document: ActiveEventCategoriesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ActiveEventCategories', 'query', variables);

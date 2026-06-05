@@ -6,12 +6,16 @@ import { BreadcrumbJsonLd, EventJsonLd } from "@/components/hoizr-ui/seo/JsonLd"
 import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 import { gqlRequest } from "@/lib/graphql";
 import {
+  ACTIVE_LANGUAGES_QUERY,
+  ACTIVE_PROHIBITED_ITEMS_QUERY,
   PUBLIC_EVENT_BY_SLUG_QUERY,
   PUBLIC_EVENT_PEOPLE_QUERY,
 } from "@/lib/queries";
 import type {
   PublicEvent,
+  PublicLanguageMaster,
   PublicEventPeopleResponse,
+  PublicProhibitedItemMaster,
 } from "@/types/event";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +46,26 @@ async function fetchPeople(
   } catch {
     return { artists: [], organizers: [] };
   }
+}
+
+async function fetchDetailLookups(): Promise<{
+  languages: PublicLanguageMaster[];
+  prohibitedItems: PublicProhibitedItemMaster[];
+}> {
+  const [languages, prohibitedItems] = await Promise.all([
+    gqlRequest<{ getActiveLanguages: PublicLanguageMaster[] }>(
+      ACTIVE_LANGUAGES_QUERY,
+    )
+      .then((data) => data.getActiveLanguages ?? [])
+      .catch(() => []),
+    gqlRequest<{ getActiveProhibitedItems: PublicProhibitedItemMaster[] }>(
+      ACTIVE_PROHIBITED_ITEMS_QUERY,
+    )
+      .then((data) => data.getActiveProhibitedItems ?? [])
+      .catch(() => []),
+  ]);
+
+  return { languages, prohibitedItems };
 }
 
 export async function generateMetadata({
@@ -94,7 +118,10 @@ export default async function EventDetailPage({
 }) {
   const event = await fetchEvent(params.slug);
   if (!event) notFound();
-  const people = await fetchPeople(event._id);
+  const [people, detailLookups] = await Promise.all([
+    fetchPeople(event._id),
+    fetchDetailLookups(),
+  ]);
   return (
     <>
       <FreshnessRevalidate />
@@ -118,7 +145,11 @@ export default async function EventDetailPage({
           },
         }}
       />
-      <EventDetailClient event={event} people={people} />
+      <EventDetailClient
+        event={event}
+        people={people}
+        detailLookups={detailLookups}
+      />
     </>
   );
 }
