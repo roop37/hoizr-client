@@ -359,6 +359,14 @@ export type CustomerGoogleStartResponse = {
   uniqueId?: Maybe<Scalars['String']['output']>;
 };
 
+export type CustomerOrderInvoice = {
+  __typename?: 'CustomerOrderInvoice';
+  dateOfIssue?: Maybe<Scalars['DateTimeISO']['output']>;
+  expiresAt: Scalars['DateTimeISO']['output'];
+  invoiceNumber: Scalars['String']['output'];
+  pdfUrl: Scalars['String']['output'];
+};
+
 export type CustomerOrderView = {
   __typename?: 'CustomerOrderView';
   _id: Scalars['ID']['output'];
@@ -1177,6 +1185,7 @@ export type Query = {
   getActiveProhibitedItems: Array<ProhibitedItemMaster>;
   getCart?: Maybe<CartResponse>;
   getMyOrderById?: Maybe<CustomerOrderView>;
+  getMyOrderInvoice?: Maybe<CustomerOrderInvoice>;
   getMyOrders: Array<CustomerOrderView>;
   getMyProfile: Customer;
   getPublicEventById?: Maybe<Event>;
@@ -1196,6 +1205,11 @@ export type QueryGetCartArgs = {
 
 
 export type QueryGetMyOrderByIdArgs = {
+  orderId: Scalars['String']['input'];
+};
+
+
+export type QueryGetMyOrderInvoiceArgs = {
   orderId: Scalars['String']['input'];
 };
 

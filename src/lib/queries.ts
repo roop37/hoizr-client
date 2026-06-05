@@ -177,6 +177,7 @@ export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
       startDate
       endDate
       city
+      description
       location {
         addressLine1
         city
@@ -540,6 +541,17 @@ export const MY_ORDER_BY_ID_QUERY = `
   query MyOrderById($orderId: String!) {
     getMyOrderById(orderId: $orderId) {
       ${ORDER_FIELDS}
+    }
+  }
+`;
+
+export const MY_ORDER_INVOICE_QUERY = `
+  query GetMyOrderInvoice($orderId: String!) {
+    getMyOrderInvoice(orderId: $orderId) {
+      invoiceNumber
+      pdfUrl
+      expiresAt
+      dateOfIssue
     }
   }
 `;
