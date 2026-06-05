@@ -11,8 +11,11 @@ import type {
 import { toDisplayEvent } from "@/lib/event-display";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { HICONS, THING_ICONS } from "./icons";
+import Link from "next/link";
 // HFooter rendered once at the layout level.
-import { EventBookingPanel } from "@/app/events/[slug]/EventBookingPanel";
+// The inline booking panel was removed when ticket selection moved to
+// its own /events/[slug]/tickets route — the event detail page now
+// only carries the pitch + a "Book tickets" CTA that navigates there.
 
 type Props = {
   event: PublicEvent;
@@ -224,17 +227,11 @@ export const EventDetailClient = ({
     : display.portraitImage
       ? "portrait"
       : "fallback";
-  const promoteBooking = heroMode === "portrait";
+  const ticketsHref = `/events/${display.slug}/tickets`;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [event._id]);
-
-  const scrollToBooking = () => {
-    document
-      .querySelector(".h-book")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   return (
     <div className="h-page h-detail">
@@ -301,21 +298,19 @@ export const EventDetailClient = ({
             <span>{display.venueShort}</span>
           </div>
         </div>
-        <button type="button" className="h-detail-cta" onClick={scrollToBooking}>
-          {display.ticketingEnabled ? "Book tickets" : "View entry"}
-        </button>
+        {display.ticketingEnabled ? (
+          <Link href={ticketsHref} className="h-detail-cta">
+            Book tickets
+          </Link>
+        ) : (
+          <span className="h-detail-cta" aria-disabled>
+            View entry
+          </span>
+        )}
       </div>
 
-      <div
-        className={`h-detail-grid ${
-          promoteBooking ? "h-detail-grid--portrait" : ""
-        }`}
-      >
-        {promoteBooking ? (
-          <aside className="h-book h-book--inline">
-            <EventBookingPanel event={event} />
-          </aside>
-        ) : null}
+      <div className="h-detail-grid h-detail-grid--single">
+
 
         <div className="h-detail-body-card">
           {display.about ? (
@@ -515,12 +510,13 @@ export const EventDetailClient = ({
           </p>
         </div>
 
-        {!promoteBooking ? (
-          <aside className="h-book">
-            <EventBookingPanel event={event} />
-          </aside>
-        ) : null}
       </div>
+
+      {display.ticketingEnabled ? (
+        <Link href={ticketsHref} className="h-detail-bottom-cta">
+          Book tickets
+        </Link>
+      ) : null}
 
       {moreOpen ? (
         <div className="h-scrim" role="dialog" aria-modal="true">
