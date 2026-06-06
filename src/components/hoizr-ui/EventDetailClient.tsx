@@ -9,6 +9,11 @@ import type {
   PublicProhibitedItemMaster,
 } from "@/types/event";
 import { formatPrice, toDisplayEvent } from "@/lib/event-display";
+import { gqlRequest } from "@/lib/graphql";
+import {
+  ARTIST_PAST_UPCOMING_EVENTS_QUERY,
+  ORGANIZER_PAST_UPCOMING_EVENTS_QUERY,
+} from "@/lib/queries";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { HICONS, THING_ICONS } from "./icons";
 import Link from "next/link";
@@ -111,9 +116,16 @@ export const EventDetailClient = ({
   const [moreOpen, setMoreOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   type PeopleModalEntry =
-    | { kind: "artist"; name: string; tagline?: string; picture?: string }
+    | {
+        kind: "artist";
+        id?: string;
+        name: string;
+        tagline?: string;
+        picture?: string;
+      }
     | {
         kind: "organizer";
+        id?: string;
         name: string;
         tagline?: string;
         picture?: string;
@@ -121,6 +133,110 @@ export const EventDetailClient = ({
         isPrimary?: boolean;
       };
   const [peopleModal, setPeopleModal] = useState<PeopleModalEntry | null>(null);
+  type PastUpcomingEvent = {
+    _id: string;
+    title?: string;
+    slug?: string;
+    eventFlyer?: string;
+    horizontalFlyer?: string;
+    city?: string;
+    startDate?: string;
+  };
+  const [peopleEvents, setPeopleEvents] = useState<{
+    upcoming: PastUpcomingEvent[];
+    past: PastUpcomingEvent[];
+    loading: boolean;
+  }>({ upcoming: [], past: [], loading: false });
+  useEffect(() => {
+    if (!peopleModal?.id) {
+      setPeopleEvents({ upcoming: [], past: [], loading: false });
+      return;
+    }
+    let cancelled = false;
+    setPeopleEvents({ upcoming: [], past: [], loading: true });
+    const query =
+      peopleModal.kind === "artist"
+        ? ARTIST_PAST_UPCOMING_EVENTS_QUERY
+        : ORGANIZER_PAST_UPCOMING_EVENTS_QUERY;
+    const variables =
+      peopleModal.kind === "artist"
+        ? { artistId: peopleModal.id }
+        : { hostId: peopleModal.id };
+    gqlRequest<{
+      getArtistPastUpcomingEvents?: {
+        upcoming: PastUpcomingEvent[];
+        past: PastUpcomingEvent[];
+      };
+      getOrganizerPastUpcomingEvents?: {
+        upcoming: PastUpcomingEvent[];
+        past: PastUpcomingEvent[];
+      };
+    }>(query, variables)
+      .then((data) => {
+        if (cancelled) return;
+        const payload =
+          peopleModal.kind === "artist"
+            ? data.getArtistPastUpcomingEvents
+            : data.getOrganizerPastUpcomingEvents;
+        setPeopleEvents({
+          upcoming: payload?.upcoming ?? [],
+          past: payload?.past ?? [],
+          loading: false,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPeopleEvents({ upcoming: [], past: [], loading: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [peopleModal?.id, peopleModal?.kind]);
+  const [venueOpen, setVenueOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+
+  const venueFullAddress =
+    event.location?.formattedAddress ??
+    [
+      event.location?.addressLine1,
+      event.location?.addressLine2,
+      event.location?.city ?? display.city,
+      event.location?.state,
+    ]
+      .filter(Boolean)
+      .join(", ");
+  const mapSrc = venueFullAddress
+    ? `https://www.google.com/maps?q=${encodeURIComponent(
+        venueFullAddress
+      )}&output=embed`
+    : "";
+  const mapOpenInGoogleHref = venueFullAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        venueFullAddress
+      )}${
+        event.location?.place?.placeId
+          ? `&query_place_id=${event.location.place.placeId}`
+          : ""
+      }`
+    : "";
+
+  const formatClockTime = (iso?: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
+  };
+  const gateLeadMs =
+    Number(display.eventGuide?.gatesOpenLeadHours ?? 0) * 3600000 +
+    Number(display.eventGuide?.gatesOpenLeadMinutes ?? 0) * 60000;
+  const gatesIso = display.startDateISO
+    ? new Date(new Date(display.startDateISO).getTime() - gateLeadMs).toISOString()
+    : undefined;
+  const gatesLabel = formatClockTime(gatesIso) || display.startTime;
   // The About card is rich-text on some events; render a plain-text
   // preview for the clamp + the sanitised HTML in the dedicated modal.
   const aboutPreview = useMemo(() => {
@@ -504,6 +620,7 @@ export const EventDetailClient = ({
                         } else {
                           setPeopleModal({
                             kind: "artist",
+                            id: artist._id ?? undefined,
                             name: artist.name,
                             tagline: artist.tagline ?? undefined,
                             picture: artist.picture ?? undefined,
@@ -559,6 +676,7 @@ export const EventDetailClient = ({
                       onClick={() =>
                         setPeopleModal({
                           kind: "organizer",
+                          id: org._id ?? undefined,
                           name: org.name,
                           picture: org.logo ?? undefined,
                           city: org.city ?? undefined,
@@ -586,35 +704,53 @@ export const EventDetailClient = ({
             customer scrolls through the body card on the left. */}
         <aside className="h-detail-booking-card" aria-label="Booking summary">
           <ul className="h-detail-booking-rows">
-            <li className="h-detail-booking-row">
-              <span className="h-detail-booking-row__icon" aria-hidden>
-                {HICONS.pin}
-              </span>
-              <span className="h-detail-booking-row__body">
-                <span className="h-detail-booking-row__title">
-                  {display.venueShort}
+            <li>
+              <button
+                type="button"
+                className="h-detail-booking-row h-detail-booking-row--button"
+                onClick={() => setVenueOpen(true)}
+              >
+                <span className="h-detail-booking-row__icon" aria-hidden>
+                  {HICONS.pin}
                 </span>
-                {display.city ? (
-                  <span className="h-detail-booking-row__sub">
-                    {display.city}
+                <span className="h-detail-booking-row__body">
+                  <span className="h-detail-booking-row__title">
+                    {display.venueShort}
                   </span>
-                ) : null}
-              </span>
+                  {display.city ? (
+                    <span className="h-detail-booking-row__sub">
+                      {display.city}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="h-detail-booking-row__chev" aria-hidden>
+                  {HICONS.chevR}
+                </span>
+              </button>
             </li>
-            <li className="h-detail-booking-row">
-              <span className="h-detail-booking-row__icon" aria-hidden>
-                {HICONS.clock}
-              </span>
-              <span className="h-detail-booking-row__body">
-                <span className="h-detail-booking-row__title">
-                  {display.startTime
-                    ? `Gates open at ${display.startTime}`
-                    : "Gates open soon"}
+            <li>
+              <button
+                type="button"
+                className="h-detail-booking-row h-detail-booking-row--button"
+                onClick={() => setScheduleOpen(true)}
+              >
+                <span className="h-detail-booking-row__icon" aria-hidden>
+                  {HICONS.clock}
                 </span>
-                <span className="h-detail-booking-row__sub">
-                  {display.dateLong}
+                <span className="h-detail-booking-row__body">
+                  <span className="h-detail-booking-row__title">
+                    {gatesLabel
+                      ? `Gates open at ${gatesLabel}`
+                      : "View timeline"}
+                  </span>
+                  <span className="h-detail-booking-row__sub">
+                    View full schedule & timeline
+                  </span>
                 </span>
-              </span>
+                <span className="h-detail-booking-row__chev" aria-hidden>
+                  {HICONS.chevR}
+                </span>
+              </button>
             </li>
           </ul>
 
@@ -655,6 +791,101 @@ export const EventDetailClient = ({
         >
           Book tickets
         </Link>
+      ) : null}
+
+      {venueOpen ? (
+        <div
+          className="h-scrim"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setVenueOpen(false)}
+        >
+          <div
+            className="h-modal wide h-map-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="h-modal-close"
+              onClick={() => setVenueOpen(false)}
+              aria-label="Close"
+            >
+              {HICONS.close}
+            </button>
+            <h2>{display.venueShort}</h2>
+            {venueFullAddress ? (
+              <p className="h-map-modal__addr">{venueFullAddress}</p>
+            ) : null}
+            {mapSrc ? (
+              <iframe
+                title={`Map of ${display.venueShort}`}
+                src={mapSrc}
+                className="h-map-modal__iframe"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            ) : (
+              <p className="h-map-modal__addr">
+                Map coordinates haven't been provided yet.
+              </p>
+            )}
+            {mapOpenInGoogleHref ? (
+              <a
+                href={mapOpenInGoogleHref}
+                target="_blank"
+                rel="noreferrer"
+                className="h-map-modal__cta"
+              >
+                Open in Google Maps
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {scheduleOpen ? (
+        <div
+          className="h-scrim"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setScheduleOpen(false)}
+        >
+          <div
+            className="h-modal h-schedule-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="h-modal-close"
+              onClick={() => setScheduleOpen(false)}
+              aria-label="Close"
+            >
+              {HICONS.close}
+            </button>
+            <h2>Schedule & timeline</h2>
+            <p className="h-schedule-modal__day">{display.dateLong}</p>
+            <ul className="h-schedule-list">
+              <li>
+                <span className="h-schedule-list__label">Gates open</span>
+                <span className="h-schedule-list__time">
+                  {gatesLabel || "TBA"}
+                </span>
+              </li>
+              <li>
+                <span className="h-schedule-list__label">Event starts</span>
+                <span className="h-schedule-list__time">
+                  {display.startTime || "TBA"}
+                </span>
+              </li>
+              <li>
+                <span className="h-schedule-list__label">Event ends</span>
+                <span className="h-schedule-list__time">
+                  {display.endTime || "TBA"}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
       ) : null}
 
       {aboutOpen ? (
@@ -733,11 +964,49 @@ export const EventDetailClient = ({
                 </div>
               </div>
             </div>
-            <p className="h-people-modal__note">
-              {peopleModal.kind === "artist"
-                ? "Past and upcoming events for this artist will appear here once they join Hoizr."
-                : "Past and upcoming events for this organiser will appear here soon."}
-            </p>
+            {peopleModal.id ? (
+              peopleEvents.loading ? (
+                <p className="h-people-modal__note">Loading events…</p>
+              ) : peopleEvents.upcoming.length === 0 &&
+                peopleEvents.past.length === 0 ? (
+                <p className="h-people-modal__note">
+                  No other events linked to{" "}
+                  {peopleModal.kind === "artist"
+                    ? "this artist"
+                    : "this organiser"}{" "}
+                  yet.
+                </p>
+              ) : (
+                <div className="h-people-modal__events">
+                  {peopleEvents.upcoming.length > 0 ? (
+                    <section>
+                      <h3 className="h-people-modal__section">Upcoming</h3>
+                      <ul className="h-people-modal__list">
+                        {peopleEvents.upcoming.map((evt) => (
+                          <PeopleEventRow key={evt._id} event={evt} />
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
+                  {peopleEvents.past.length > 0 ? (
+                    <section>
+                      <h3 className="h-people-modal__section">Past</h3>
+                      <ul className="h-people-modal__list">
+                        {peopleEvents.past.map((evt) => (
+                          <PeopleEventRow key={evt._id} event={evt} />
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
+                </div>
+              )
+            ) : (
+              <p className="h-people-modal__note">
+                {peopleModal.kind === "artist"
+                  ? "This artist isn't on Hoizr yet, so we can't surface their other shows."
+                  : "This organiser isn't linked to a Hoizr account yet."}
+              </p>
+            )}
           </div>
         </div>
       ) : null}
@@ -829,5 +1098,48 @@ export const EventDetailClient = ({
         </div>
       ) : null}
     </div>
+  );
+};
+
+const PeopleEventRow = ({
+  event,
+}: {
+  event: {
+    _id: string;
+    title?: string;
+    slug?: string;
+    eventFlyer?: string;
+    horizontalFlyer?: string;
+    city?: string;
+    startDate?: string;
+  };
+}) => {
+  const flyer = event.eventFlyer || event.horizontalFlyer || "";
+  const when = event.startDate
+    ? new Intl.DateTimeFormat("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(event.startDate))
+    : "";
+  const href = `/events/${event.slug ?? event._id}`;
+  return (
+    <li>
+      <Link href={href} className="h-people-modal__event">
+        <span
+          className="h-people-modal__event-flyer"
+          style={flyer ? { backgroundImage: `url(${flyer})` } : undefined}
+          aria-hidden
+        />
+        <span className="h-people-modal__event-body">
+          <span className="h-people-modal__event-title">
+            {event.title ?? "Untitled event"}
+          </span>
+          <span className="h-people-modal__event-sub">
+            {[when, event.city].filter(Boolean).join(" · ") || "Date TBA"}
+          </span>
+        </span>
+      </Link>
+    </li>
   );
 };

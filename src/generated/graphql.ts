@@ -1124,6 +1124,12 @@ export type ProhibitedItemMaster = {
   value: Scalars['String']['output'];
 };
 
+export type PublicArtistOrOrganizerEvents = {
+  __typename?: 'PublicArtistOrOrganizerEvents';
+  past: Array<PublicEventSummary>;
+  upcoming: Array<PublicEventSummary>;
+};
+
 export type PublicEventArtistEntry = {
   __typename?: 'PublicEventArtistEntry';
   _id?: Maybe<Scalars['String']['output']>;
@@ -1176,6 +1182,17 @@ export type PublicEventPeopleResponse = {
   organizers: Array<PublicEventOrganizerEntry>;
 };
 
+export type PublicEventSummary = {
+  __typename?: 'PublicEventSummary';
+  _id: Scalars['String']['output'];
+  city?: Maybe<Scalars['String']['output']>;
+  eventFlyer?: Maybe<Scalars['String']['output']>;
+  horizontalFlyer?: Maybe<Scalars['String']['output']>;
+  slug?: Maybe<Scalars['String']['output']>;
+  startDate?: Maybe<Scalars['DateTimeISO']['output']>;
+  title?: Maybe<Scalars['String']['output']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getActiveEventCategories: Array<EventCategory>;
@@ -1183,11 +1200,13 @@ export type Query = {
   getActiveIndianCities: Array<IndianCity>;
   getActiveLanguages: Array<LanguageMaster>;
   getActiveProhibitedItems: Array<ProhibitedItemMaster>;
+  getArtistPastUpcomingEvents: PublicArtistOrOrganizerEvents;
   getCart?: Maybe<CartResponse>;
   getMyOrderById?: Maybe<CustomerOrderView>;
   getMyOrderInvoice?: Maybe<CustomerOrderInvoice>;
   getMyOrders: Array<CustomerOrderView>;
   getMyProfile: Customer;
+  getOrganizerPastUpcomingEvents: PublicArtistOrOrganizerEvents;
   getPublicEventById?: Maybe<Event>;
   getPublicEventBySlug?: Maybe<Event>;
   getPublicEventPeople: PublicEventPeopleResponse;
@@ -1196,6 +1215,11 @@ export type Query = {
   myArtistMerchOrders: Array<ArtistMerchOrder>;
   myFollowedArtists: Array<Artist>;
   scannerEventSummary: ScannerEventSummary;
+};
+
+
+export type QueryGetArtistPastUpcomingEventsArgs = {
+  artistId: Scalars['String']['input'];
 };
 
 
@@ -1216,6 +1240,11 @@ export type QueryGetMyOrderInvoiceArgs = {
 
 export type QueryGetMyOrdersArgs = {
   input?: InputMaybe<MyOrdersFilterInput>;
+};
+
+
+export type QueryGetOrganizerPastUpcomingEventsArgs = {
+  hostId: Scalars['String']['input'];
 };
 
 

@@ -545,6 +545,36 @@ export const MY_ORDER_BY_ID_QUERY = `
   }
 `;
 
+// Past + upcoming events linked to an artist or organiser — feeds the
+// lineup/organizer mini-profile modal on the event detail page.
+const PEOPLE_EVENTS_FIELDS = `
+  _id
+  title
+  slug
+  eventFlyer
+  horizontalFlyer
+  city
+  startDate
+`;
+
+export const ARTIST_PAST_UPCOMING_EVENTS_QUERY = `
+  query GetArtistPastUpcomingEvents($artistId: String!) {
+    getArtistPastUpcomingEvents(artistId: $artistId) {
+      upcoming { ${PEOPLE_EVENTS_FIELDS} }
+      past { ${PEOPLE_EVENTS_FIELDS} }
+    }
+  }
+`;
+
+export const ORGANIZER_PAST_UPCOMING_EVENTS_QUERY = `
+  query GetOrganizerPastUpcomingEvents($hostId: String!) {
+    getOrganizerPastUpcomingEvents(hostId: $hostId) {
+      upcoming { ${PEOPLE_EVENTS_FIELDS} }
+      past { ${PEOPLE_EVENTS_FIELDS} }
+    }
+  }
+`;
+
 export const MY_ORDER_INVOICE_QUERY = `
   query GetMyOrderInvoice($orderId: String!) {
     getMyOrderInvoice(orderId: $orderId) {

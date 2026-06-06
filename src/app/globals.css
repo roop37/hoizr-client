@@ -1105,9 +1105,13 @@ body,
 .h-genrecol__title {
   font-family: var(--h-font-display);
   font-weight: 800;
-  font-size: clamp(28px, 2.8vw, 40px);
-  letter-spacing: -0.035em;
-  line-height: 0.96;
+  /* Was clamp(28, 2.8vw, 40px) — on wide desktop the upper bound made
+     short genre names ("Comedy", "Afro") look like billboards and
+     overlapped the rail's clean rhythm. Cap at 26 so the card reads
+     as a chip-with-context, not a hero card. */
+  font-size: clamp(20px, 2vw, 26px);
+  letter-spacing: -0.02em;
+  line-height: 1;
   text-transform: capitalize;
   word-break: break-word;
 }
@@ -2144,17 +2148,43 @@ body,
   }
 }
 @media (min-width: 769px) {
+  /* Desktop: right-side drawer. Sheet slides in from the right edge
+     instead of popping as a centred modal — matches the "swap the
+     side rail for filters" pattern used in the rest of the dashboard. */
   .h-evt-sheet-overlay {
-    align-items: center;
+    align-items: stretch;
+    justify-content: flex-end;
   }
   .h-evt-sheet {
-    border-radius: 24px;
-    border-top: none;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    animation: h-fade-in 0.2s ease;
+    width: min(420px, 100vw);
+    max-width: 420px;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    border: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -24px 0 64px rgba(0, 0, 0, 0.55);
+    animation: h-slide-in-right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .h-evt-sheet-handle {
     display: none;
+  }
+  .h-evt-sheet-head {
+    padding: 22px 22px 16px;
+  }
+  .h-evt-sheet-body {
+    padding: 4px 22px 18px;
+  }
+  .h-evt-sheet-foot {
+    padding: 16px 22px 22px;
+  }
+}
+@keyframes h-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 
@@ -2758,7 +2788,7 @@ body,
   align-items: center;
   justify-content: center;
   padding: 0 18px;
-  box-shadow: 0 16px 32px rgba(250, 45, 72, 0.24);
+  text-decoration: none;
 }
 .h-event-hero {
   position: relative;
@@ -3089,6 +3119,106 @@ body,
   gap: 12px;
   padding: 4px 0;
 }
+.h-detail-booking-row--button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: 6px 0;
+  border-radius: 12px;
+  transition: background-color 0.18s ease;
+}
+.h-detail-booking-row--button:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.h-detail-booking-row__chev {
+  margin-left: auto;
+  color: var(--h-ink-4);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.h-detail-booking-row__chev svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Map + schedule modals. Same .h-modal chrome on desktop; the global
+   mobile rule turns them into bottom sheets automatically. */
+.h-map-modal {
+  padding: 26px 0 0;
+  overflow: hidden;
+}
+.h-map-modal h2 {
+  padding: 0 24px;
+  margin: 0 0 4px;
+}
+.h-map-modal__addr {
+  padding: 0 24px;
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--h-ink-3);
+}
+.h-map-modal__iframe {
+  width: 100%;
+  height: 320px;
+  border: 0;
+  display: block;
+  background: var(--h-bg-3);
+}
+.h-map-modal__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  margin: 0;
+  border-radius: 0 0 16px 16px;
+  background: var(--h-accent);
+  color: #0a0a0e;
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+.h-schedule-modal {
+  padding: 26px 26px 22px;
+}
+.h-schedule-modal__day {
+  margin: 4px 0 16px;
+  font-size: 13px;
+  color: var(--h-ink-3);
+}
+.h-schedule-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.h-schedule-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+.h-schedule-list__label {
+  font-size: 13px;
+  color: var(--h-ink-2);
+  font-weight: 500;
+}
+.h-schedule-list__time {
+  font-family: var(--h-font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--h-ink);
+  font-variant-numeric: tabular-nums;
+}
 .h-detail-booking-row__icon {
   width: 42px;
   height: 42px;
@@ -3232,18 +3362,87 @@ body,
   line-height: 1.5;
   margin: 4px 0 0;
 }
+.h-people-modal__events {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px;
+}
+.h-people-modal__events ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.h-people-modal__section {
+  font-family: var(--h-font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--h-ink-3);
+  margin: 0 0 6px;
+}
+.h-people-modal__event {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.18s ease;
+}
+.h-people-modal__event:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.h-people-modal__event-flyer {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08) center / cover no-repeat;
+  flex-shrink: 0;
+}
+.h-people-modal__event-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.h-people-modal__event-title {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--h-ink);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h-people-modal__event-sub {
+  font-size: 12px;
+  color: var(--h-ink-3);
+  margin-top: 2px;
+}
 
 /* Sticky "Book tickets" CTA pinned below the detail body. On desktop
    it sits centered under the body card; on mobile it floats above the
    bottom-tabs pill so it's always one tap away. */
 .h-detail-bottom-cta {
-  display: inline-flex;
+  /* Spans the full body-card width on desktop and edge-to-edge on
+     mobile (overridden in the (max-width: 1100px) block below). The
+     lime drop-shadow was removed — it didn't match Hoizr's flat
+     button language and felt grafted on. */
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 420px;
+  max-width: none;
   height: 52px;
-  margin: 28px auto 0;
+  margin: 28px 0 0;
   border-radius: 999px;
   background: var(--h-accent);
   color: #060616;
@@ -3252,13 +3451,10 @@ body,
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration: none;
-  box-shadow: 0 16px 32px rgba(197, 255, 61, 0.18);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+  transition: transform 0.18s ease, opacity 0.18s ease;
 }
 .h-detail-bottom-cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 20px 40px rgba(197, 255, 61, 0.24);
-  opacity: 0.95;
+  opacity: 0.92;
 }
 @media (max-width: 1100px) {
   .h-detail-bottom-cta {
@@ -3727,6 +3923,86 @@ body,
 }
 .h-modal-close:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* MOBILE: every .h-scrim / .h-modal pair renders as a bottom sheet
+   so the same component code reads as a centred modal on desktop and
+   slides up from the bottom on phones (matches the AuthSheet /
+   evt-sheet aesthetic without each callsite having to re-implement
+   it). Z-index 130 keeps the sheet above the mobile bottom-tabs pill
+   (z 80) and the floating cart bar (z 80). */
+@media (max-width: 720px) {
+  .h-scrim {
+    align-items: flex-end;
+    padding: 0;
+    z-index: 130;
+  }
+  .h-modal,
+  .h-modal.wide {
+    max-width: none;
+    width: 100%;
+    border-radius: 22px 22px 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    padding: 22px 18px 28px;
+    max-height: 88vh;
+    overflow-y: auto;
+    animation: hSheetIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  /* Drag-handle pill so the surface reads as a sheet, not a popup. */
+  .h-modal::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    margin: 0 auto 14px;
+  }
+}
+@keyframes hSheetIn {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Utility for Tailwind-inline modal panels (OrderDetailClient
+   description/refund-policy/refund-request) so they slide up as
+   bottom sheets on mobile without re-writing each callsite. The
+   panel is already `rounded-3xl items-end` etc.; this rule forces
+   square-bottom edges, full-width, slide-up animation, and a
+   drag-handle pill on phones. Desktop unchanged. */
+@media (max-width: 720px) {
+  .h-tw-sheet-overlay {
+    padding: 0 !important;
+  }
+  .h-tw-sheet-panel {
+    border-radius: 22px 22px 0 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    animation: hSheetIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .h-tw-sheet-panel::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+  /* Drag handle on light-themed panels (refund-request cream card). */
+  .h-tw-sheet-panel.is-light::before {
+    background: rgba(15, 15, 18, 0.22);
+  }
 }
 
 .h-signin-real {
@@ -4788,4 +5064,147 @@ body,
   align-items: center;
   justify-content: center;
   color: var(--h-volt);
+}
+
+/* =============================================================================
+   MOBILE PERF + DENSITY PASS (≤ 720px)
+   ─────────────────────────────────────────────────────────────────────────────
+   The dark glass aesthetic uses ~40 `backdrop-filter` rules across the
+   stylesheet. On mobile GPUs that's the dominant cause of scroll jank
+   (every painted layer re-blurs the layer behind it on each frame).
+   This block:
+     1) kills `backdrop-filter` site-wide on phones and bumps the
+        underlying solid background opacity so surfaces still look
+        like glass without the compositor cost.
+     2) drops side padding to 0 so cards and rails are truly edge-to-
+        edge — the readable column is the viewport.
+     3) tightens vertical rhythm (page top padding, section + rail
+        head margins, card gaps) so multiple events fit per screen.
+   ============================================================================= */
+@media (max-width: 720px) {
+  /* Edge-to-edge: kill content side padding + indent. Page-level
+     sections that still need a tiny gutter add their own. */
+  :root {
+    --h-content-pad: 0px;
+    --h-content-indent: 0px;
+  }
+  .h-page {
+    padding-left: 0;
+    padding-right: 0;
+    /* Compensate for the floating bottom-tabs pill (height ~60px,
+       offset 18px) plus iOS safe area — otherwise the last row of
+       events / orders / artists hides permanently behind it on
+       mobile. 96px ≈ pill + offset + a comfortable breath. */
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    gap: 12px;
+  }
+  .h-page-head {
+    margin: 6px 12px 10px;
+  }
+  .h-page-head h1 {
+    font-size: clamp(26px, 7.5vw, 36px);
+  }
+
+  /* Rails — heading needs a tiny inset so text doesn't kiss the
+     edge, but the scroll container stays bleed-to-bleed. */
+  .h-rail-sec {
+    margin: 16px 0 4px;
+  }
+  .h-rail-head {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+  .h-rail-head h2 {
+    font-size: 18px;
+  }
+  .h-rail {
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-left: 0;
+    margin-right: 0;
+    scroll-padding-left: 12px;
+  }
+  .h-rail,
+  .h-rail-5,
+  .h-rail-6 {
+    grid-auto-columns: 158px;
+  }
+
+  /* Events page grid — 2 columns, tight gaps, edge-to-edge. */
+  .h-evt-grid {
+    gap: 8px;
+    padding: 0 8px;
+  }
+  .h-evt-count {
+    padding: 0 12px;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  /* Card densification — already shrunk under 640px; nudge a touch
+     more so a row of 2 leaves room for the next row above the fold. */
+  .h-tile {
+    border-radius: 12px;
+  }
+  .h-tile-info {
+    padding: 8px 10px 10px;
+  }
+  .h-tile-title {
+    font-size: 13.5px;
+    -webkit-line-clamp: 2;
+  }
+  .h-tile-date {
+    font-size: 10.5px;
+  }
+  .h-tile-venue {
+    font-size: 11px;
+  }
+  .h-tile-price {
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  /* GLOBAL BACKDROP-FILTER KILL. The selector matches everything;
+     the rules below restore solid translucent surfaces for the few
+     classes that depended on the blur for legibility. */
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Restore opacity on surfaces that used to look like floating glass —
+     without the blur, near-transparent backgrounds become unreadable
+     over busy backdrops. Each value below is the same hue used in
+     the original rule but bumped from ~0.04 to ~0.45+ so contrast
+     is preserved. */
+  .h-tile {
+    background: rgba(24, 24, 30, 0.94);
+  }
+  .h-tile-info {
+    background: rgba(20, 20, 26, 0.96);
+  }
+  .h-detail-body-card {
+    background: rgba(20, 20, 26, 0.92);
+  }
+  .h-detail-booking-card {
+    background: rgba(28, 28, 34, 0.96);
+  }
+  .h-cartbar-wrap > .glass-surface {
+    background: rgba(8, 8, 12, 0.92);
+  }
+  .h-mobile-tabs__row {
+    background: rgba(15, 15, 18, 0.94);
+  }
+  .h-auth-sheet,
+  .h-evt-sheet,
+  .h-auth-sheet-overlay,
+  .h-evt-sheet-overlay {
+    background-color: rgba(18, 18, 22, 0.98);
+  }
+  .h-evt-sheet-overlay,
+  .h-auth-sheet-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
 }
