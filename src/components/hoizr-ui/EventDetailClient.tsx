@@ -8,7 +8,7 @@ import type {
   PublicLanguageMaster,
   PublicProhibitedItemMaster,
 } from "@/types/event";
-import { toDisplayEvent } from "@/lib/event-display";
+import { formatPrice, toDisplayEvent } from "@/lib/event-display";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { HICONS, THING_ICONS } from "./icons";
 import Link from "next/link";
@@ -109,6 +109,30 @@ export const EventDetailClient = ({
   const router = useRouter();
   const display = toDisplayEvent(event);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  type PeopleModalEntry =
+    | { kind: "artist"; name: string; tagline?: string; picture?: string }
+    | {
+        kind: "organizer";
+        name: string;
+        tagline?: string;
+        picture?: string;
+        city?: string;
+        isPrimary?: boolean;
+      };
+  const [peopleModal, setPeopleModal] = useState<PeopleModalEntry | null>(null);
+  // The About card is rich-text on some events; render a plain-text
+  // preview for the clamp + the sanitised HTML in the dedicated modal.
+  const aboutPreview = useMemo(() => {
+    if (!display.about) return "";
+    return display.about
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/\s+/g, " ")
+      .trim();
+  }, [display.about]);
+  const aboutIsLong = aboutPreview.length > 280;
 
   const languageById = useMemo(() => {
     const map = new Map<string, string>();
@@ -333,14 +357,26 @@ export const EventDetailClient = ({
         </div>
       </div>
 
-      <div className="h-detail-grid h-detail-grid--single">
-
-
+      <div className="h-detail-grid h-detail-grid--with-aside">
         <div className="h-detail-body-card">
           {display.about ? (
             <div className="h-detail-section">
               <h2>About</h2>
-              <p style={{ whiteSpace: "pre-line" }}>{display.about}</p>
+              <p
+                className={`h-detail-about${aboutIsLong ? " is-clamped" : ""}`}
+                style={{ whiteSpace: "pre-line" }}
+              >
+                {aboutPreview}
+              </p>
+              {aboutIsLong ? (
+                <button
+                  type="button"
+                  className="readmore"
+                  onClick={() => setAboutOpen(true)}
+                >
+                  Read more {HICONS.chevR}
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -430,10 +466,7 @@ export const EventDetailClient = ({
               <h2>Lineup</h2>
               <div className="h-people-row">
                 {people.artists.map((artist, idx) => {
-                  const clickable = !artist.isPhantom && artist.slug;
-                  const href = clickable
-                    ? `/artists/${artist.slug}`
-                    : undefined;
+                  const realArtist = !artist.isPhantom && Boolean(artist.slug);
                   const inner = (
                     <>
                       <span
@@ -457,21 +490,29 @@ export const EventDetailClient = ({
                       ) : null}
                     </>
                   );
-                  return clickable ? (
-                    <a
+                  // Real artists with a Hoizr profile route to their page;
+                  // phantoms (entered as free text) open a quick mini-profile
+                  // modal so the card is still tappable and gives info.
+                  return (
+                    <button
+                      type="button"
                       key={`${artist._id ?? "lineup"}-${idx}`}
-                      href={href}
                       className="h-people-card h-glass-card h-people-card--linked"
+                      onClick={() => {
+                        if (realArtist) {
+                          router.push(`/artists/${artist.slug}`);
+                        } else {
+                          setPeopleModal({
+                            kind: "artist",
+                            name: artist.name,
+                            tagline: artist.tagline ?? undefined,
+                            picture: artist.picture ?? undefined,
+                          });
+                        }
+                      }}
                     >
                       {inner}
-                    </a>
-                  ) : (
-                    <div
-                      key={`${artist._id ?? "lineup"}-${idx}`}
-                      className="h-people-card h-glass-card"
-                    >
-                      {inner}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -483,7 +524,6 @@ export const EventDetailClient = ({
               <h2>Organizer{people.organizers.length > 1 ? "s" : ""}</h2>
               <div className="h-people-row">
                 {people.organizers.map((org, idx) => {
-                  const href = org._id ? `/hosts/${org._id}` : undefined;
                   const inner = (
                     <>
                       <span
@@ -508,21 +548,26 @@ export const EventDetailClient = ({
                       </span>
                     </>
                   );
-                  return href ? (
-                    <a
-                      key={`${org._id}-${idx}`}
-                      href={href}
+                  // Organizers always open the mini-profile modal first —
+                  // a public /hosts/{id} page exists but it's not the
+                  // primary affordance customers expect from this card.
+                  return (
+                    <button
+                      type="button"
+                      key={`${org._id ?? "org"}-${idx}`}
                       className="h-people-card h-glass-card h-people-card--linked"
+                      onClick={() =>
+                        setPeopleModal({
+                          kind: "organizer",
+                          name: org.name,
+                          picture: org.logo ?? undefined,
+                          city: org.city ?? undefined,
+                          isPrimary: org.isPrimary,
+                        })
+                      }
                     >
                       {inner}
-                    </a>
-                  ) : (
-                    <div
-                      key={`org-${idx}`}
-                      className="h-people-card h-glass-card"
-                    >
-                      {inner}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -534,6 +579,72 @@ export const EventDetailClient = ({
           </p>
         </div>
 
+        {/* Floating booking card — desktop right column only. Hidden
+            under 1101px because mobile already has the top hero CTA +
+            the IntersectionObserver-gated sticky bottom CTA. Sticky to
+            top so the price + Book button stay reachable while the
+            customer scrolls through the body card on the left. */}
+        <aside className="h-detail-booking-card" aria-label="Booking summary">
+          <ul className="h-detail-booking-rows">
+            <li className="h-detail-booking-row">
+              <span className="h-detail-booking-row__icon" aria-hidden>
+                {HICONS.pin}
+              </span>
+              <span className="h-detail-booking-row__body">
+                <span className="h-detail-booking-row__title">
+                  {display.venueShort}
+                </span>
+                {display.city ? (
+                  <span className="h-detail-booking-row__sub">
+                    {display.city}
+                  </span>
+                ) : null}
+              </span>
+            </li>
+            <li className="h-detail-booking-row">
+              <span className="h-detail-booking-row__icon" aria-hidden>
+                {HICONS.clock}
+              </span>
+              <span className="h-detail-booking-row__body">
+                <span className="h-detail-booking-row__title">
+                  {display.startTime
+                    ? `Gates open at ${display.startTime}`
+                    : "Gates open soon"}
+                </span>
+                <span className="h-detail-booking-row__sub">
+                  {display.dateLong}
+                </span>
+              </span>
+            </li>
+          </ul>
+
+          <div className="h-detail-booking-divider" aria-hidden />
+
+          <div className="h-detail-booking-foot">
+            <div className="h-detail-booking-price">
+              <span className="h-detail-booking-price__amount">
+                {formatPrice(display.fromPrice)}
+              </span>
+              <span className="h-detail-booking-price__suffix">
+                {display.fromPrice === null || display.fromPrice === 0
+                  ? ""
+                  : " onwards"}
+              </span>
+            </div>
+            {display.ticketingEnabled ? (
+              <Link
+                href={ticketsHref}
+                className="h-detail-booking-cta"
+              >
+                Book Tickets
+              </Link>
+            ) : (
+              <span className="h-detail-booking-cta is-disabled">
+                Entry only
+              </span>
+            )}
+          </div>
+        </aside>
       </div>
 
       {display.ticketingEnabled ? (
@@ -544,6 +655,91 @@ export const EventDetailClient = ({
         >
           Book tickets
         </Link>
+      ) : null}
+
+      {aboutOpen ? (
+        <div
+          className="h-scrim"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setAboutOpen(false)}
+        >
+          <div
+            className="h-modal wide h-more-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="h-modal-close"
+              onClick={() => setAboutOpen(false)}
+              aria-label="Close"
+            >
+              {HICONS.close}
+            </button>
+            <h2>About this event</h2>
+            <div
+              className="h-richtext"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeRichText(display.about),
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {peopleModal ? (
+        <div
+          className="h-scrim"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setPeopleModal(null)}
+        >
+          <div
+            className="h-modal h-people-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="h-modal-close"
+              onClick={() => setPeopleModal(null)}
+              aria-label="Close"
+            >
+              {HICONS.close}
+            </button>
+            <div className="h-people-modal__head">
+              <span
+                className="h-people-modal__avatar"
+                style={
+                  peopleModal.picture
+                    ? { backgroundImage: `url(${peopleModal.picture})` }
+                    : undefined
+                }
+                aria-hidden
+              >
+                {!peopleModal.picture ? (
+                  <span className="h-people-modal__initial">
+                    {peopleModal.name.charAt(0).toUpperCase()}
+                  </span>
+                ) : null}
+              </span>
+              <div className="min-w-0">
+                <div className="h-people-modal__name">{peopleModal.name}</div>
+                <div className="h-people-modal__sub">
+                  {peopleModal.kind === "artist"
+                    ? peopleModal.tagline || "Artist"
+                    : `${peopleModal.isPrimary ? "Organizer" : "Collaborator"}${
+                        peopleModal.city ? ` · ${peopleModal.city}` : ""
+                      }`}
+                </div>
+              </div>
+            </div>
+            <p className="h-people-modal__note">
+              {peopleModal.kind === "artist"
+                ? "Past and upcoming events for this artist will appear here once they join Hoizr."
+                : "Past and upcoming events for this organiser will appear here soon."}
+            </p>
+          </div>
+        </div>
       ) : null}
 
       {moreOpen ? (

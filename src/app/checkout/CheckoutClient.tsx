@@ -597,6 +597,37 @@ export const CheckoutClient = () => {
           </div>
         </div>
 
+        {/* Pay sits directly below the form so once the customer fills
+            their details the primary CTA is the very next thing under
+            their thumb. Tickets + totals stay below the Pay button so
+            they remain reviewable but don't push the action down. */}
+        {actionError ? (
+          <ErrorState
+            title="Couldn't update your order"
+            message={actionError}
+          />
+        ) : null}
+
+        <button
+          type="button"
+          disabled={paying || updatingLine !== null}
+          onClick={startPayment}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
+        >
+          {paying ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : cart.pricing.totalAmount <= 0 ? (
+            "Confirm booking"
+          ) : (
+            `Pay ${rupee(cart.pricing.totalAmount)}`
+          )}
+        </button>
+        <p className="text-center text-xs text-white/55">
+          {cart.pricing.totalAmount <= 0
+            ? "No payment is needed for this booking."
+            : "Secured by Razorpay. Cards, UPI, net-banking, and wallets supported."}
+        </p>
+
         <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.04] text-white backdrop-blur-xl">
           <div className="border-b border-white/[0.06] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
             Tickets
@@ -748,33 +779,6 @@ export const CheckoutClient = () => {
             </span>
           </div>
         </div>
-
-        {actionError ? (
-          <ErrorState
-            title="Couldn't update your order"
-            message={actionError}
-          />
-        ) : null}
-
-        <button
-          type="button"
-          disabled={paying || updatingLine !== null}
-          onClick={startPayment}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
-        >
-          {paying ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : cart.pricing.totalAmount <= 0 ? (
-            "Confirm booking"
-          ) : (
-            `Pay ${rupee(cart.pricing.totalAmount)}`
-          )}
-        </button>
-        <p className="text-center text-xs text-white/55">
-          {cart.pricing.totalAmount <= 0
-            ? "No payment is needed for this booking."
-            : "Secured by Razorpay. Cards, UPI, net-banking, and wallets supported."}
-        </p>
 
         {/* AUDIT-034: SoT §27 disclosure on point of sale. */}
         <p className="text-center text-xs text-white/50">
