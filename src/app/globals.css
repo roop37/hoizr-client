@@ -853,10 +853,51 @@ body,
    .h-page's indent + .h-content's right pad, then we re-apply matching
    padding to keep the first/last tile readable. The result: cards
    scroll UNDER the sidebar on the left, off the screen on the right. */
+/* Bleed section: the heading should sit just after the sidebar's
+   right edge (not at the full --h-content-indent, which adds an
+   extra 18+8px gap on top of the sidebar — that gap looked dead +
+   weird in the screenshot the host shared). The rail inside still
+   uses --h-content-indent for its first card's resting position so
+   the heading + first card line up vertically. */
+.h-rail-sec.h-bleed {
+  /* Pull the whole bleed section's left edge to just past the
+     sidebar's right edge so the heading sits at sidebar-edge + 14.
+     We do this with margin-left, NOT by changing --h-content-indent,
+     because the rail child needs to keep using the page-wide token
+     to align its first card with the heading text. */
+  margin-left: calc(
+    var(--h-sidebar) + var(--h-sidebar-edge) + 14px - var(--h-content-indent)
+  );
+}
 .h-rail-sec.h-bleed .h-rail-head {
-  /* head text stays in the readable column */
   padding-left: 0;
   padding-right: 0;
+}
+.h-rail-sec.h-bleed .h-rail {
+  /* The rail's negative margin already extends it under the sidebar.
+     Compensate for the section's shifted-left origin by adding back
+     the same offset so the first card's resting position is exactly
+     under the heading (i.e., right after sidebar + 14px). */
+  margin-left: calc(
+    -1 * var(--h-content-indent) +
+      (var(--h-content-indent) - var(--h-sidebar) - var(--h-sidebar-edge) - 14px)
+  );
+  padding-left: calc(var(--h-sidebar) + var(--h-sidebar-edge) + 14px);
+  scroll-padding-left: calc(
+    var(--h-sidebar) + var(--h-sidebar-edge) + 14px
+  );
+}
+/* Mobile (sidebar collapses to 0): bleed becomes irrelevant, drop
+   the desktop margin trick so the section sits at viewport edge. */
+@media (max-width: 1100px) {
+  .h-rail-sec.h-bleed {
+    margin-left: 0;
+  }
+  .h-rail-sec.h-bleed .h-rail {
+    margin-left: 0;
+    padding-left: 12px;
+    scroll-padding-left: 12px;
+  }
 }
 .h-rail {
   display: grid;

@@ -5,7 +5,7 @@ import { GenreCollectionCard } from "@/components/hoizr-ui/GenreCollectionCard";
 import { EventCard } from "@/components/hoizr-ui/EventCard";
 import { HTicker } from "@/components/hoizr-ui/HTicker";
 import { DomeGallery } from "@/components/hoizr-ui/DomeGallery";
-import { FeaturedHorizontalRail } from "@/components/hoizr-ui/FeaturedHorizontalRail";
+import { HHero } from "@/components/hoizr-ui/HHero";
 import { CollectionPageJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 
@@ -139,11 +139,13 @@ export default async function HomePage() {
   // it, the regular 4:5 grid below already covers the event.
   const featuredHorizontal = all.filter((e) => Boolean(e.horizontalImage)).slice(0, 6);
 
-  // Each card in the page-level rails should be distinct from the
-  // landscape-flyer rail above, otherwise the top picks repeat in
-  // "Tonight" and "Recently Added".
-  const featuredIds = new Set(featuredHorizontal.map((e) => e.id));
-  const others = all.filter((e) => !featuredIds.has(e.id));
+  // Compact top hero (HHero): single SELLING NOW header that scrolls
+  // through events with a landscape flyer. Falls back to the first
+  // high-demand event, then the first event overall, so the home
+  // always has something at the top.
+  const heroEvent =
+    featuredHorizontal[0] ?? all.find((e) => e.isHighDemand) ?? all[0];
+  const others = all.filter((e) => e.id !== heroEvent.id);
 
   // Genres collection rail — surface the full active genre catalogue
   // (same list the event-journey "Genre" picker uses on business-client)
@@ -174,14 +176,12 @@ export default async function HomePage() {
           name: e.title,
         }))}
       />
-      {/* Single landscape-flyer rail replaces the old HHero block. The
-          big featured card dominated the viewport without driving
-          extra clicks; a horizontally-scrollable rail of all events
-          with a landscape asset gives the same selling-now energy
-          while leaving room for genres + Tonight above the fold. */}
-      {featuredHorizontal.length > 0 ? (
-        <FeaturedHorizontalRail events={featuredHorizontal} />
-      ) : null}
+      {/* Compact "SELLING NOW" single-card hero. Reverted to HHero from
+          the previously-shipped FeaturedHorizontalRail because the
+          rail version rendered each card at full landscape size and
+          dominated the viewport. HHero is one card with built-in
+          progression through the landscape-flyer pool. */}
+      <HHero event={heroEvent} />
 
       {liveGenres.length > 0 ? (
         <div className="h-rail-sec h-bleed">
