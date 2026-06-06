@@ -1,5 +1,6 @@
 import type { PublicEvent, PublicTicket } from "@/types/event";
 import { minTicketPrice } from "./format";
+import { coordToLatLng } from "./geo";
 
 export type DisplayEvent = {
   id: string;
@@ -136,11 +137,7 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     imageStyle: PLACEHOLDER_GRADIENTS[hashString(e._id) % PLACEHOLDER_GRADIENTS.length],
     city: e.city ?? "India",
     cityId: e.cityId,
-    coordinate:
-      typeof e.location?.coordinate?.lat === "number" &&
-      typeof e.location?.coordinate?.lng === "number"
-        ? { lat: e.location.coordinate.lat, lng: e.location.coordinate.lng }
-        : undefined,
+    coordinate: coordToLatLng(e.location?.coordinate) ?? undefined,
     genreTagIds: e.genreTagIds ?? [],
     venueShort,
     venueLong: venueLong || venueShort,

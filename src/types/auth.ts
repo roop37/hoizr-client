@@ -5,7 +5,14 @@ export type CustomerAddress = {
   state?: string | null;
   pincode?: string | null;
   formattedAddress?: string | null;
-  coordinate?: { lat?: number | null; lng?: number | null } | null;
+  /**
+   * GeoJSON-style point matching `hoizr-shared` CoordinatePoint:
+   * `coordinates` is `[lng, lat]`. Use `coordToLatLng()` to unpack.
+   */
+  coordinate?: {
+    type?: string | null;
+    coordinates?: number[] | null;
+  } | null;
 };
 
 export type CustomerProfile = {
