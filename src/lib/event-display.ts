@@ -13,6 +13,8 @@ export type DisplayEvent = {
   imageStyle: string;
   city: string;
   cityId?: string;
+  /** Geocoded venue position when the host saved a Google Place. */
+  coordinate?: { lat: number; lng: number };
   genreTagIds: string[];
   venueShort: string;
   venueLong: string;
@@ -134,6 +136,11 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     imageStyle: PLACEHOLDER_GRADIENTS[hashString(e._id) % PLACEHOLDER_GRADIENTS.length],
     city: e.city ?? "India",
     cityId: e.cityId,
+    coordinate:
+      typeof e.location?.coordinate?.lat === "number" &&
+      typeof e.location?.coordinate?.lng === "number"
+        ? { lat: e.location.coordinate.lat, lng: e.location.coordinate.lng }
+        : undefined,
     genreTagIds: e.genreTagIds ?? [],
     venueShort,
     venueLong: venueLong || venueShort,

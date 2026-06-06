@@ -3,6 +3,8 @@
 import Link from "next/link";
 import type { DisplayEvent } from "@/lib/event-display";
 import { formatPrice } from "@/lib/event-display";
+import { formatKmBadge, kmBetween, sameCity } from "@/lib/geo";
+import { useAuthStore } from "@/store/auth";
 
 type Props = {
   event: DisplayEvent;
@@ -36,9 +38,47 @@ export const EventCard = ({ event }: Props) => {
   const price = formatPrice(event.fromPrice);
   const priceSuffix = price === "Guestlist" || price === "Free" ? "" : " onwards";
   const cardImage = event.portraitImage ?? event.image;
+
+  // Distance badge: shown only when the user has a saved address with
+  // a coordinate, the event has its own venue coord, AND they're in
+  // the same city (manual entries with no lat/lng intentionally suppress
+  // the badge — a wrong km figure is worse than no figure).
+  const userAddress = useAuthStore((s) => s.profile?.address);
+  const distanceLabel = (() => {
+    if (!userAddress) return null;
+    if (!sameCity(userAddress.city, event.city)) return null;
+    const km = kmBetween(
+      {
+        lat: userAddress.coordinate?.lat ?? undefined,
+        lng: userAddress.coordinate?.lng ?? undefined,
+      },
+      event.coordinate
+    );
+    return formatKmBadge(km);
+  })();
+
   return (
     <Link href={`/events/${event.slug}`} className="h-tile">
       <div className="h-tile-flyer">
+        {distanceLabel ? (
+          <span className="h-tile-distance" aria-label={`${distanceLabel} from you`}>
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M12 22s7-7.8 7-13a7 7 0 1 0-14 0c0 5.2 7 13 7 13Z" />
+              <circle cx="12" cy="9" r="2.5" />
+            </svg>
+            {distanceLabel}
+          </span>
+        ) : null}
         {event.videoSneakPeek ? (
           <video
             src={event.videoSneakPeek}

@@ -415,6 +415,15 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     [eventSummary?.eventFlyer, eventSummary?.horizontalFlyer]
   );
 
+  // Mobile ticket card shows the full portrait flyer (3:4) — the
+  // landscape crop hides too much of the artwork on a phone-width
+  // surface. Portrait first, landscape only as a fallback when a host
+  // didn't upload a portrait yet.
+  const mobileTicketFlyer = useMemo(
+    () => eventSummary?.eventFlyer || eventSummary?.horizontalFlyer || "",
+    [eventSummary?.eventFlyer, eventSummary?.horizontalFlyer]
+  );
+
   // Mobile ambient glow is sampled from the portrait flyer (more
   // saturated hues than the often-letterboxed landscape variant).
   const ambientColor = useAmbientColor(
@@ -918,12 +927,12 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                     <Ticket size={12} />
                     {statusBadge.label}
                   </span>
-                  {heroFlyer ? (
-                    <div className="mt-3 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-border">
+                  {mobileTicketFlyer ? (
+                    <div className="mt-3 flex items-center justify-center overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-border">
                       <img
-                        src={heroFlyer}
+                        src={mobileTicketFlyer}
                         alt={eventSummary?.title ?? "Event flyer"}
-                        className="block h-[200px] w-full object-cover"
+                        className="block max-h-[480px] w-full object-contain"
                       />
                     </div>
                   ) : null}
@@ -1085,20 +1094,29 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 page. */}
             <div className="space-y-6">
               {eventDescription ? (
-                <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
+                <section
+                  className="cursor-pointer rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl transition hover:bg-cream/[0.06] md:p-6"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setDescriptionOpen(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setDescriptionOpen(true);
+                    }
+                  }}
+                >
                   <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
                     About the event
                   </div>
                   <p className="mt-3 line-clamp-3 text-cream/80">
                     {eventDescriptionPreview}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setDescriptionOpen(true)}
-                    className="mt-3 inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-cream/15 bg-cream/[0.04] px-3 text-xs font-semibold text-cream/85 transition hover:bg-cream/10"
+                  <span
+                    className="mt-3 inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-cream/15 bg-cream/[0.04] px-3 text-xs font-semibold text-cream/85"
                   >
                     Read more
-                  </button>
+                  </span>
                 </section>
               ) : null}
 

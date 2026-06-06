@@ -7,7 +7,6 @@ import {
   Loader2,
   RefreshCcw,
   Unplug,
-  Users,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -19,26 +18,6 @@ import {
   UPDATE_INSTAGRAM_VISIBILITY_MUTATION,
 } from "@/lib/queries";
 import type { CustomerInstagram } from "@/types/instagram";
-
-const formatCount = (n?: number | null): string => {
-  if (n == null) return "—";
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return `${n}`;
-};
-
-const formatRelativeSync = (iso?: string | null): string | null => {
-  if (!iso) return null;
-  const date = new Date(iso);
-  const delta = Date.now() - date.getTime();
-  const minutes = Math.round(delta / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} hr ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
-};
 
 export const InstagramConnectCard = () => {
   const router = useRouter();
@@ -206,7 +185,6 @@ export const InstagramConnectCard = () => {
   }
 
   const isConnected = Boolean(data?.connected);
-  const lastSyncLabel = formatRelativeSync(data?.lastSyncedAt);
   const media = data?.recentMedia ?? [];
 
   return (
@@ -218,9 +196,9 @@ export const InstagramConnectCard = () => {
             Instagram
           </div>
           <p className="mt-2 text-sm text-cream/75">
-            Connect your Instagram so other Hoizr-goers can find you at
-            events you&apos;ve booked. We pull your handle, recent
-            photos, and follower count.
+            Connect your Instagram and find out who the crazy people at
+            the parties are. We&apos;ll show your handle, profile pic,
+            and a few recent photos to other Hoizr-goers — that&apos;s it.
           </p>
         </div>
         {isConnected ? (
@@ -248,10 +226,10 @@ export const InstagramConnectCard = () => {
           </button>
           <p className="text-[11px] leading-relaxed text-cream/55">
             We&apos;ll redirect you to Instagram&apos;s sign-in. We only
-            request <span className="font-semibold text-cream/75">read
-            access</span> to your handle, biography, follower count, and
-            last 10 posts. Personal accounts may be asked to convert to a
-            free Creator account during sign-in.
+            show your <span className="font-semibold text-cream/75">profile
+            picture, handle, and last few photos</span> — never followers,
+            DMs, or anything else. Personal accounts may be asked to
+            convert to a free Creator account during sign-in.
           </p>
         </div>
       ) : (
@@ -274,21 +252,10 @@ export const InstagramConnectCard = () => {
               <div className="truncate text-sm font-semibold">
                 @{data?.handle ?? "instagram"}
               </div>
-              <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 text-xs text-cream/65">
-                <span className="inline-flex items-center gap-1">
-                  <Users size={12} />
-                  {formatCount(data?.followerCount)} followers
-                </span>
-                <span>{formatCount(data?.mediaCount)} posts</span>
-                {lastSyncLabel ? (
-                  <span>Synced {lastSyncLabel}</span>
-                ) : null}
-              </div>
-              {data?.biography ? (
-                <div className="mt-1 line-clamp-1 text-xs text-cream/55">
-                  {data.biography}
-                </div>
-              ) : null}
+              <p className="mt-0.5 text-xs text-cream/55">
+                Other Hoizr-goers at your events will see this — and your
+                last few photos below. Nothing else leaves Instagram.
+              </p>
             </div>
           </div>
 
@@ -310,36 +277,51 @@ export const InstagramConnectCard = () => {
             </div>
           ) : null}
 
-          <div className="mt-5 flex items-start justify-between gap-3 rounded-2xl border border-cream/10 bg-cream/[0.03] p-3">
-            <div className="min-w-0">
-              <div className="text-sm font-semibold">
-                Show me on events I&apos;ve booked
+          {/* Visibility lives behind a disclosure on purpose — the
+              event-detail "Who's coming" card no longer exposes it, so
+              this is the only place a user can flip it. Default off
+              keeps the privacy posture conservative; folks who want to
+              be discoverable expand the panel themselves. */}
+          <details className="group mt-5 rounded-2xl border border-cream/10 bg-cream/[0.03]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-xs font-semibold text-cream/70 transition hover:text-cream">
+              <span>Additional details</span>
+              <span className="text-cream/50 transition group-open:rotate-180">
+                ▾
+              </span>
+            </summary>
+            <div className="flex items-start justify-between gap-3 border-t border-cream/10 px-3 py-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">
+                  Show me on events I&apos;ve booked
+                </div>
+                <p className="mt-0.5 text-xs text-cream/55">
+                  With this on, other ticket-holders can see your handle
+                  and avatar in the event&apos;s attendee row. They have
+                  to connect Instagram to see anyone.
+                </p>
               </div>
-              <p className="mt-0.5 text-xs text-cream/55">
-                With this on, other ticket-holders can see your handle
-                and avatar in the event&apos;s attendee row. They have to
-                connect Instagram to see anyone.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={Boolean(data?.attendeeVisibility)}
-              disabled={busy === "visibility"}
-              onClick={toggleVisibility}
-              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
-                data?.attendeeVisibility
-                  ? "bg-[#c5ff3d]"
-                  : "bg-cream/[0.12] ring-1 ring-inset ring-cream/15"
-              }`}
-            >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-ink shadow transition ${
-                  data?.attendeeVisibility ? "translate-x-5" : "translate-x-0.5"
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(data?.attendeeVisibility)}
+                disabled={busy === "visibility"}
+                onClick={toggleVisibility}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                  data?.attendeeVisibility
+                    ? "bg-[#c5ff3d]"
+                    : "bg-cream/[0.12] ring-1 ring-inset ring-cream/15"
                 }`}
-              />
-            </button>
-          </div>
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-ink shadow transition ${
+                    data?.attendeeVisibility
+                      ? "translate-x-5"
+                      : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+          </details>
 
           <div className="mt-4 flex flex-wrap gap-2">
             <button
