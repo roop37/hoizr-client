@@ -22,6 +22,10 @@ export const PUBLIC_EVENT_LIST_QUERY = `
         city
         cityId
         genreTagIds
+        location {
+          city
+          coordinate { lat lng }
+        }
         ticketingEnabled
         isHighDemand
         isComingSoon
@@ -75,6 +79,7 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
           placeId
           displayName
         }
+        coordinate { lat lng }
       }
       ticketingTerms
       refundPolicy
@@ -188,6 +193,7 @@ export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
         state
         pincode
         formattedAddress
+        coordinate { lat lng }
       }
       refundPolicy
       eventGuide {
@@ -379,6 +385,15 @@ export const MY_PROFILE_QUERY = `
       smsMarketingOptIn
       whatsappMarketingOptIn
       pushNotificationMarketingOptIn
+      address {
+        addressLine1
+        addressLine2
+        city
+        state
+        pincode
+        formattedAddress
+        coordinate { lat lng }
+      }
     }
   }
 `;
@@ -399,6 +414,15 @@ export const UPDATE_MY_PROFILE_MUTATION = `
       smsMarketingOptIn
       whatsappMarketingOptIn
       pushNotificationMarketingOptIn
+      address {
+        addressLine1
+        addressLine2
+        city
+        state
+        pincode
+        formattedAddress
+        coordinate { lat lng }
+      }
     }
   }
 `;

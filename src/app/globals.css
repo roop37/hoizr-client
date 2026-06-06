@@ -293,7 +293,12 @@ body,
   min-width: 0;
   padding: 0;
   position: relative;
-  z-index: 1;
+  /* No `z-index` here. The previous z:1 created a stacking context that
+     trapped page-level sheets/modals (z:100–120) — they could never
+     escape to clear the floating mobile tabs / cart bar (both z:80 at
+     <body> level). Position:relative is enough to host absolutely-
+     positioned background children; DOM order keeps content above the
+     Noise layer rendered earlier in <body>. */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -1343,6 +1348,7 @@ body,
   aspect-ratio: 3 / 4;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.35);
+  position: relative;
 }
 .h-tile-flyer img,
 .h-tile-flyer video {
@@ -1350,6 +1356,31 @@ body,
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+/* Proximity chip — only rendered when the viewer has a saved address
+   with a coordinate AND the event is in the same city. Sits in the
+   top-left of the flyer so it doesn't fight the trending/coming-soon
+   badge that lives top-right elsewhere. */
+.h-tile-distance {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 999px;
+  background: rgba(8, 8, 12, 0.62);
+  color: var(--h-accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  border: 1px solid rgba(197, 255, 61, 0.32);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 .h-tile-flyer-fallback {
   width: 100%;
@@ -1852,6 +1883,38 @@ body,
   align-items: center;
   margin: 18px 0 12px;
   flex-wrap: wrap;
+}
+
+/* Mobile: pin the search + filters + sort row at the top of the
+   viewport, just under the sticky `.h-mobile-topbar` (≈52px). The
+   page-head ("Find tonight, or any night.") scrolls behind it; the
+   grid scrolls beneath. Bleeds the toolbar to the viewport edges so
+   the glass strip reads as one continuous top chrome. */
+@media (max-width: 1100px) {
+  .h-evt-toolbar {
+    position: sticky;
+    top: calc(52px + env(safe-area-inset-top, 0px));
+    z-index: 55;
+    margin: 0 calc(-1 * var(--h-content-pad)) 12px;
+    padding: 10px var(--h-content-pad);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
+      rgba(10, 10, 14, 0.62);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  @supports not (backdrop-filter: blur(10px)) {
+    .h-evt-toolbar {
+      background: rgba(10, 10, 14, 0.9);
+    }
+  }
+  /* Active-filter pills row sits right under the sticky toolbar — keep
+     it normal flow but tighten the top margin so the pills don't feel
+     orphaned from the bar. */
+  .h-evt-pills {
+    margin-top: 4px;
+  }
 }
 .h-evt-search {
   flex: 1 1 280px;
@@ -2726,6 +2789,15 @@ body,
   background: rgba(255, 255, 255, 0.12);
   transform: translateX(-2px);
 }
+/* Mobile already has the bottom tab bar for navigation — the back chip
+   is desktop-only chrome. Hiding via CSS rather than removing in the
+   tree keeps the markup the same for SEO and lets the chip return on
+   tablet+ where there's no bottom nav. */
+@media (max-width: 1100px) {
+  .h-detail-back {
+    display: none !important;
+  }
+}
 .h-detail-back .h-back-icon {
   display: inline-flex;
   width: 16px;
@@ -3579,28 +3651,27 @@ body,
   margin-bottom: 36px;
 }
 
-/* Instagram attendee card — compact landscape composition sat inside
-   `.h-detail-section` so it inherits the vertical rhythm. Two-column
-   layout (copy + face row) on desktop, stacked on mobile. The card
-   surface mirrors `.h-detail-body-card` so it reads as part of the
-   event body, not as a floating ad.
+/* "Who's coming 👀" card — composes the shared `.h-glass-card` surface
+   with a two-column layout (copy + face row) on desktop, stacked on
+   mobile. No IG-branded gradient: the card has to read as part of the
+   event body, not a third-party promo.
    ──────────────────────────────────────────────────────────────── */
 .h-event-ig-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   padding: 16px 18px;
-  border-radius: 18px;
-  background:
-    linear-gradient(135deg, rgba(225, 48, 108, 0.10), rgba(88, 81, 219, 0.10)),
-    rgba(20, 20, 26, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 @media (min-width: 720px) {
   .h-event-ig-card {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
     align-items: center;
     padding: 18px 22px;
+  }
+  /* When there's no face row to render, collapse to a single column so
+     the copy doesn't sit off-centre next to an empty right cell. */
+  .h-event-ig-card--solo {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .h-event-ig-card__kicker {
@@ -3645,10 +3716,6 @@ body,
 }
 .h-event-ig-card__cta:hover {
   filter: brightness(1.08);
-}
-.h-event-ig-card__cta--soft {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--h-ink);
 }
 .h-event-ig-card__faces {
   display: grid;
@@ -3700,19 +3767,6 @@ body,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.h-event-ig-card__locked,
-.h-event-ig-card__empty {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  font-size: 12.5px;
-  color: var(--h-ink-2);
-}
-
 .h-detail-section h2 {
   font-family: var(--h-font-display);
   font-weight: 700;
@@ -4022,6 +4076,40 @@ body,
 .h-modal.wide {
   max-width: 540px;
 }
+
+/* Mobile: turn `.h-scrim` centred modals (About, People, Schedule, Map)
+   into bottom sheets. The scrim docks to the bottom edge and the inner
+   modal grows to viewport width with rounded top corners and a slide-
+   up animation. Keeps the same close button — only the framing changes
+   — so callsites don't need to swap classes. */
+@media (max-width: 720px) {
+  .h-scrim {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .h-scrim .h-modal,
+  .h-scrim .h-modal.wide {
+    max-width: none !important;
+    width: 100% !important;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 22px 22px 0 0;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-left: 0;
+    border-right: 0;
+    animation: hSheetIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .h-scrim .h-modal::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    margin: -4px auto 10px;
+  }
+}
 @keyframes hModalIn {
   from {
     transform: scale(0.96);
@@ -4126,6 +4214,27 @@ body,
   /* Drag handle on light-themed panels (refund-request cream card). */
   .h-tw-sheet-panel.is-light::before {
     background: rgba(15, 15, 18, 0.22);
+  }
+}
+
+/* `.h-content` creates a `z-index: 1` stacking context to layer the
+   page over the noise/blur backdrop. Sheets rendered inside the page
+   tree therefore stack INSIDE that context — their internal z:120 can
+   never escape z:1 to clear the body-level floating mobile tabs and
+   cart bar (both z:80, body-level). The result is the bottom nav pill
+   visually sitting on top of the open sheet. Rather than portal every
+   sheet to <body>, hide those two floating bars while any sheet is
+   open. `:has()` is universally supported in 2026 browsers. */
+@media (max-width: 1100px) {
+  body:has(.h-tw-sheet-overlay) .h-mobile-tabs,
+  body:has(.h-evt-sheet-overlay) .h-mobile-tabs,
+  body:has(.h-auth-sheet-overlay) .h-mobile-tabs,
+  body:has(.h-scrim) .h-mobile-tabs,
+  body:has(.h-tw-sheet-overlay) .h-cartbar-wrap,
+  body:has(.h-evt-sheet-overlay) .h-cartbar-wrap,
+  body:has(.h-auth-sheet-overlay) .h-cartbar-wrap,
+  body:has(.h-scrim) .h-cartbar-wrap {
+    display: none !important;
   }
 }
 
@@ -4439,6 +4548,12 @@ body,
   }
   .h-detail-heading {
     flex-direction: column;
+    /* Without `stretch`, the CTA wrapper inherits flex-start from the
+       desktop rule and shrinks to content width — the inner button's
+       `width: 100%` then resolves against that narrow box, not the
+       page column. Stretch makes the wrapper (and the button) span
+       the full content width on mobile. */
+    align-items: stretch;
     gap: 8px;
   }
   .h-detail-cta {

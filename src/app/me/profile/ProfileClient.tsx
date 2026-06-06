@@ -50,6 +50,40 @@ const formatDateForInput = (iso?: string | null): string => {
   return `${y}-${m}-${d}`;
 };
 
+type AddressFormFields = {
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  pincode: string;
+};
+
+/**
+ * Build the AddressInfoInput payload from the form fields. All-empty
+ * collapses to `null` so the server can wipe a previously-saved
+ * address when the user clears the form. Lat/lng aren't captured by
+ * the manual form yet — the distance badge falls back to a city
+ * match when coords are missing.
+ */
+const buildAddressInput = (fields: AddressFormFields) => {
+  const trimmed = {
+    addressLine1: fields.addressLine1.trim(),
+    addressLine2: fields.addressLine2.trim(),
+    city: fields.city.trim(),
+    state: fields.state.trim(),
+    pincode: fields.pincode.trim(),
+  };
+  const empty = Object.values(trimmed).every((v) => !v);
+  if (empty) return null;
+  return {
+    addressLine1: trimmed.addressLine1 || undefined,
+    addressLine2: trimmed.addressLine2 || undefined,
+    city: trimmed.city || undefined,
+    state: trimmed.state || undefined,
+    pincode: trimmed.pincode || undefined,
+  };
+};
+
 export const ProfileClient = () => {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
@@ -72,6 +106,17 @@ export const ProfileClient = () => {
   const [smsOpt, setSmsOpt] = useState(true);
   const [whatsappOpt, setWhatsappOpt] = useState(true);
   const [pushOpt, setPushOpt] = useState(true);
+
+  // Address — optional; powers the "N km away" badge and a nearby
+  // sort on /events when populated. Geocoding (lat/lng) is captured
+  // when the user pastes a Google Maps URL or fills it via a future
+  // place picker; manual entry skips lat/lng and only powers the
+  // same-city distance badge falls back to a city match.
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [addressCity, setAddressCity] = useState("");
+  const [addressState, setAddressState] = useState("");
+  const [addressPincode, setAddressPincode] = useState("");
 
   const [profilePic, setProfilePic] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
@@ -132,6 +177,12 @@ export const ProfileClient = () => {
     setSmsOpt(profile.smsMarketingOptIn !== false);
     setWhatsappOpt(profile.whatsappMarketingOptIn !== false);
     setPushOpt(profile.pushNotificationMarketingOptIn !== false);
+    const addr = profile.address ?? null;
+    setAddressLine1(addr?.addressLine1 ?? "");
+    setAddressLine2(addr?.addressLine2 ?? "");
+    setAddressCity(addr?.city ?? "");
+    setAddressState(addr?.state ?? "");
+    setAddressPincode(addr?.pincode ?? "");
   }, [profile]);
 
   const handlePickFile = () => {
@@ -201,6 +252,13 @@ export const ProfileClient = () => {
             smsMarketingOptIn: smsOpt,
             whatsappMarketingOptIn: whatsappOpt,
             pushNotificationMarketingOptIn: pushOpt,
+            address: buildAddressInput({
+              addressLine1,
+              addressLine2,
+              city: addressCity,
+              state: addressState,
+              pincode: addressPincode,
+            }),
           },
         }
       );
@@ -474,6 +532,70 @@ export const ProfileClient = () => {
               Apple connected
             </span>
           ) : null}
+        </div>
+      </section>
+
+      {/* Saved address — optional, drives the "N km away" distance
+          badge on event cards and personalised nearby sort on /events.
+          The whole block can be left blank; sending zero values clears
+          a previously-saved address. */}
+      <section className={`mt-4 ${cardClass}`}>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+          Saved address
+        </div>
+        <p className="mt-2 text-sm text-cream/65">
+          Tell us where you stay and we&apos;ll surface the closest
+          house parties, plus tag events with how far away they are.
+          Optional — skip if you&apos;d rather not.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <label className="block text-sm md:col-span-2">
+            <span className={labelClass}>Address line 1</span>
+            <input
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
+              className={inputClass}
+              placeholder="House / flat, building, street"
+            />
+          </label>
+          <label className="block text-sm md:col-span-2">
+            <span className={labelClass}>Address line 2</span>
+            <input
+              value={addressLine2}
+              onChange={(e) => setAddressLine2(e.target.value)}
+              className={inputClass}
+              placeholder="Area / landmark (optional)"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>City</span>
+            <input
+              value={addressCity}
+              onChange={(e) => setAddressCity(e.target.value)}
+              className={inputClass}
+              placeholder="e.g. Bengaluru"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>State</span>
+            <input
+              value={addressState}
+              onChange={(e) => setAddressState(e.target.value)}
+              className={inputClass}
+              placeholder="e.g. Karnataka"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>PIN code</span>
+            <input
+              value={addressPincode}
+              onChange={(e) => setAddressPincode(e.target.value)}
+              className={inputClass}
+              placeholder="6 digits"
+              inputMode="numeric"
+              maxLength={6}
+            />
+          </label>
         </div>
       </section>
 

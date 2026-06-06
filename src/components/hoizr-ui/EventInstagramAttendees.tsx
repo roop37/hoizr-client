@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Instagram, Lock, Users } from "lucide-react";
+import { Instagram } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { gqlRequest } from "@/lib/graphql";
@@ -21,26 +21,22 @@ type Props = {
 const FACE_ROW_LIMIT = 16;
 
 /**
- * Compact landscape card on the event detail page that surfaces the
- * Instagram-connected attendee row. Two states:
+ * "Who's coming 👀" card on the event detail page. Glass surface to
+ * match the rest of the event sections — no IG-branded gradient, no
+ * loud CTA. Visibility toggle lives only in /me/profile (tucked behind
+ * a disclosure), never on the event surface.
  *
- *  1. Viewer NOT connected (logged out OR logged in without IG) →
- *     "Connect your Instagram and find out who is visiting." CTA →
- *     /me/profile (or /login if logged out). The face row is hidden
- *     because seeing others requires being seeable yourself.
- *
- *  2. Viewer connected → render the face row. Each tile is an
- *     attendee who has BOTH connected IG AND opted-in for visibility
- *     (the resolver gates this server-side).
+ * States:
+ *   1. Viewer NOT connected → flirty nudge + Connect Instagram button.
+ *   2. Viewer connected, nobody else opted in → playful "early bird".
+ *   3. Viewer connected with attendees → face row + interesting-count.
  */
 export const EventInstagramAttendees = ({ eventId }: Props) => {
   const profile = useAuthStore((s) => s.profile);
   const hydrated = useAuthStore((s) => s.hydrated);
   const [viewerIg, setViewerIg] = useState<CustomerInstagram | null>(null);
   const [viewerLoading, setViewerLoading] = useState(true);
-  const [attendees, setAttendees] = useState<
-    EventAttendeeWithInstagram[]
-  >([]);
+  const [attendees, setAttendees] = useState<EventAttendeeWithInstagram[]>([]);
   const [attendeesLoading, setAttendeesLoading] = useState(true);
 
   useEffect(() => {
@@ -94,121 +90,94 @@ export const EventInstagramAttendees = ({ eventId }: Props) => {
   }, [eventId]);
 
   if (!hydrated || viewerLoading || attendeesLoading) {
-    // Quiet placeholder — this section is sweetener, not core to the
-    // event detail page, so we don't want spinner noise above the
-    // fold. The card slots into place once data lands.
     return null;
   }
 
   const viewerConnected = Boolean(viewerIg?.connected);
-  const viewerVisible = Boolean(
-    viewerIg?.connected && viewerIg?.attendeeVisibility
-  );
+  const count = attendees.length;
+
+  const heading = viewerConnected
+    ? count > 0
+      ? `${count} interesting ${count === 1 ? "person" : "people"} coming 👀`
+      : "You're early — eyes on this one 👀"
+    : "Who's eyeing this one? 👀";
+
+  const blurb = viewerConnected
+    ? count > 0
+      ? "These are the folks locking it in. Tap a face — you never know who you'll bump into at the door."
+      : "Be the first to opt in and you might just set the tone for the night."
+    : "Connect your Instagram and peek at who's coming. The off-stage lineup is half the fun.";
+
+  const showFaces = viewerConnected && count > 0;
 
   return (
     <div className="h-detail-section">
-      <section className="h-event-ig-card">
+      <section
+        className={`h-glass-card h-event-ig-card${
+          showFaces ? "" : " h-event-ig-card--solo"
+        }`}
+      >
         <div className="h-event-ig-card__copy">
           <div className="h-event-ig-card__kicker">
             <Instagram size={14} />
             Who&apos;s coming
           </div>
-          {viewerConnected ? (
-            <>
-              <h3>
-                {attendees.length
-                  ? `${attendees.length} attendee${
-                      attendees.length === 1 ? "" : "s"
-                    } you can see`
-                  : "No one&apos;s opted in yet"}
-              </h3>
-              <p>
-                {viewerVisible
-                  ? "You're visible too — your handle shows up on every event you book."
-                  : "Turn on attendee visibility in your profile to be seen by other Hoizr-goers."}
-              </p>
-              {!viewerVisible ? (
-                <Link
-                  href="/me/profile"
-                  className="h-event-ig-card__cta h-event-ig-card__cta--soft"
-                >
-                  <Eye size={14} />
-                  Manage visibility
-                </Link>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <h3>Connect your Instagram</h3>
-              <p>
-                Find out who else is coming. Connect your Instagram and
-                we&apos;ll show a face row of other ticket-holders who
-                opted in. Your handle and last 10 posts come along too.
-              </p>
-              <Link
-                href={profile ? "/me/profile" : `/login?next=${encodeURIComponent(
-                  `/events`
-                )}`}
-                className="h-event-ig-card__cta"
-              >
-                <Instagram size={14} />
-                {profile ? "Connect Instagram" : "Sign in to connect"}
-              </Link>
-            </>
-          )}
+          <h3>{heading}</h3>
+          <p>{blurb}</p>
+          {!viewerConnected ? (
+            <Link
+              href={
+                profile
+                  ? "/me/profile"
+                  : `/login?next=${encodeURIComponent("/events")}`
+              }
+              className="h-event-ig-card__cta"
+            >
+              <Instagram size={14} />
+              {profile ? "Connect Instagram" : "Sign in to connect"}
+            </Link>
+          ) : null}
         </div>
 
-        {viewerConnected ? (
-          attendees.length ? (
-            <ul className="h-event-ig-card__faces">
-              {attendees.map((a) => (
-                <li key={a.customerId} className="h-event-ig-face">
-                  <a
-                    href={
-                      a.handle
-                        ? `https://instagram.com/${a.handle.replace(/^@/, "")}`
+        {viewerConnected && count > 0 ? (
+          <ul className="h-event-ig-card__faces">
+            {attendees.map((a) => (
+              <li key={a.customerId} className="h-event-ig-face">
+                <a
+                  href={
+                    a.handle
+                      ? `https://instagram.com/${a.handle.replace(/^@/, "")}`
+                      : undefined
+                  }
+                  target={a.handle ? "_blank" : undefined}
+                  rel={a.handle ? "noreferrer" : undefined}
+                  aria-label={`${a.firstName ?? "Attendee"} on Instagram`}
+                >
+                  <span
+                    className="h-event-ig-face__avatar"
+                    style={
+                      a.avatar
+                        ? {
+                            backgroundImage: `url(${a.avatar})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }
                         : undefined
                     }
-                    target={a.handle ? "_blank" : undefined}
-                    rel={a.handle ? "noreferrer" : undefined}
-                    aria-label={`${a.firstName ?? "Attendee"} on Instagram`}
+                    aria-hidden
                   >
-                    <span
-                      className="h-event-ig-face__avatar"
-                      style={
-                        a.avatar
-                          ? {
-                              backgroundImage: `url(${a.avatar})`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                            }
-                          : undefined
-                      }
-                      aria-hidden
-                    >
-                      {!a.avatar ? (
-                        <span>{(a.firstName ?? "?").charAt(0)}</span>
-                      ) : null}
-                    </span>
-                    <span className="h-event-ig-face__name">
-                      {a.firstName ?? a.handle ?? "Hoizr-goer"}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="h-event-ig-card__empty">
-              <Users size={18} />
-              <span>Once attendees turn on visibility, they&apos;ll show up here.</span>
-            </div>
-          )
-        ) : (
-          <div className="h-event-ig-card__locked">
-            <Lock size={18} />
-            <span>Faces unlock once you connect your Instagram.</span>
-          </div>
-        )}
+                    {!a.avatar ? (
+                      <span>{(a.firstName ?? "?").charAt(0)}</span>
+                    ) : null}
+                  </span>
+                  <span className="h-event-ig-face__name">
+                    {a.firstName ?? a.handle ?? "Hoizr-goer"}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </section>
     </div>
   );

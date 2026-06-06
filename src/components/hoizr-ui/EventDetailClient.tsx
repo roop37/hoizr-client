@@ -480,8 +480,24 @@ export const EventDetailClient = ({
             <div className="h-detail-section">
               <h2>About</h2>
               <p
-                className={`h-detail-about${aboutIsLong ? " is-clamped" : ""}`}
-                style={{ whiteSpace: "pre-line" }}
+                className={`h-detail-about${aboutIsLong ? " is-clamped is-tappable" : ""}`}
+                style={{
+                  whiteSpace: "pre-line",
+                  cursor: aboutIsLong ? "pointer" : undefined,
+                }}
+                onClick={aboutIsLong ? () => setAboutOpen(true) : undefined}
+                role={aboutIsLong ? "button" : undefined}
+                tabIndex={aboutIsLong ? 0 : undefined}
+                onKeyDown={
+                  aboutIsLong
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setAboutOpen(true);
+                        }
+                      }
+                    : undefined
+                }
               >
                 {aboutPreview}
               </p>

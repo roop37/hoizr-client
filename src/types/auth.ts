@@ -1,3 +1,13 @@
+export type CustomerAddress = {
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  formattedAddress?: string | null;
+  coordinate?: { lat?: number | null; lng?: number | null } | null;
+};
+
 export type CustomerProfile = {
   _id: string;
   firstName: string;
@@ -20,6 +30,8 @@ export type CustomerProfile = {
   smsMarketingOptIn?: boolean;
   whatsappMarketingOptIn?: boolean;
   pushNotificationMarketingOptIn?: boolean;
+  /** Optional saved address powering distance badges + nearby sort. */
+  address?: CustomerAddress | null;
 };
 
 export type GoogleStartOutcome =

@@ -63,6 +63,7 @@ export type PublicEventLocation = {
   pincode?: string;
   formattedAddress?: string;
   place?: PublicPlaceInfo;
+  coordinate?: { lat?: number | null; lng?: number | null };
 };
 
 export type PublicEvent = {

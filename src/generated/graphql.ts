@@ -30,6 +30,17 @@ export type AddressInfo = {
   state?: Maybe<Scalars['String']['output']>;
 };
 
+export type AddressInfoInput = {
+  addressLine1?: InputMaybe<Scalars['String']['input']>;
+  addressLine2?: InputMaybe<Scalars['String']['input']>;
+  city?: InputMaybe<Scalars['String']['input']>;
+  coordinate?: InputMaybe<CoordinatePointInput>;
+  formattedAddress?: InputMaybe<Scalars['String']['input']>;
+  pincode?: InputMaybe<Scalars['String']['input']>;
+  place?: InputMaybe<PlaceInfoInput>;
+  state?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Admin = {
   __typename?: 'Admin';
   _id: Scalars['ID']['output'];
@@ -263,6 +274,11 @@ export type CoordinatePoint = {
   type: Scalars['String']['output'];
 };
 
+export type CoordinatePointInput = {
+  coordinates: Array<Scalars['Float']['input']>;
+  type: Scalars['String']['input'];
+};
+
 export enum CoverType {
   CoverWithoutDrink = 'COVER_WITHOUT_DRINK',
   CoverWithDrink = 'COVER_WITH_DRINK',
@@ -309,6 +325,7 @@ export type CreateOrderResponse = {
 export type Customer = {
   __typename?: 'Customer';
   _id: Scalars['ID']['output'];
+  address?: Maybe<AddressInfo>;
   appleConnected: Scalars['Boolean']['output'];
   appleData?: Maybe<AppleAuthData>;
   birthdate?: Maybe<Scalars['DateTimeISO']['output']>;
@@ -1170,6 +1187,11 @@ export type PlaceInfo = {
   placeId?: Maybe<Scalars['String']['output']>;
 };
 
+export type PlaceInfoInput = {
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  placeId?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type ProhibitedItemMaster = {
   __typename?: 'ProhibitedItemMaster';
   _id: Scalars['ID']['output'];
@@ -1483,6 +1505,7 @@ export type UtmInput = {
 };
 
 export type UpdateCustomerProfileInput = {
+  address?: InputMaybe<AddressInfoInput>;
   birthdate?: InputMaybe<Scalars['DateTimeISO']['input']>;
   city?: InputMaybe<Scalars['String']['input']>;
   email?: InputMaybe<Scalars['String']['input']>;
