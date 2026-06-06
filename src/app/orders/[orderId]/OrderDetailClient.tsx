@@ -570,6 +570,17 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   })();
 
   const eventDescription = eventSummary?.description?.trim() ?? "";
+  // Description on the public Event doc is rich-text HTML authored in
+  // the business-client editor. For the inline 3-line preview we strip
+  // tags + collapse whitespace so the clamp doesn't show raw markup;
+  // the modal renders the sanitised HTML so formatting (bullets,
+  // bold, line breaks) survives.
+  const eventDescriptionPreview = eventDescription
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
   const eventWhenLabel = eventSummary?.startDate
     ? formatEventWhen(eventSummary.startDate)
     : "";
@@ -896,8 +907,8 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                   <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
                     About the event
                   </div>
-                  <p className="mt-3 line-clamp-3 whitespace-pre-line text-cream/80">
-                    {eventDescription}
+                  <p className="mt-3 line-clamp-3 text-cream/80">
+                    {eventDescriptionPreview}
                   </p>
                   <button
                     type="button"
@@ -1028,9 +1039,16 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
               </button>
             </div>
             <div className="overflow-y-auto px-5 py-4 text-sm leading-relaxed text-cream/85">
-              <div className="whitespace-pre-line">
-                {eventDescription || "No description provided."}
-              </div>
+              {eventDescription ? (
+                <div
+                  className="h-richtext"
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeRichText(eventDescription),
+                  }}
+                />
+              ) : (
+                <p>No description provided.</p>
+              )}
             </div>
           </div>
         </div>
@@ -1075,7 +1093,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
             <div className="overflow-y-auto px-5 py-4 text-sm leading-relaxed text-cream/85">
               {refundPolicyText ? (
                 <div
-                  className="rich-text"
+                  className="h-richtext"
                   dangerouslySetInnerHTML={{
                     __html: sanitizeRichText(refundPolicyText),
                   }}
