@@ -10,6 +10,16 @@ export type CustomerProfile = {
   googleConnected?: boolean;
   appleConnected?: boolean;
   signupProvider?: "PHONE" | "GOOGLE" | "APPLE";
+  // Pulled fresh on /me/profile so the form can edit them. These are
+  // optional because the legacy auth-store hydration via the typed
+  // SDK (sdk.MyProfile) still uses the older selection set; the page
+  // re-fetches via gqlRequest with the extended query to populate.
+  birthdate?: string | null;
+  gender?: "Male" | "Female" | "Other" | "Prefer not to say" | null;
+  emailMarketingOptIn?: boolean;
+  smsMarketingOptIn?: boolean;
+  whatsappMarketingOptIn?: boolean;
+  pushNotificationMarketingOptIn?: boolean;
 };
 
 export type GoogleStartOutcome =

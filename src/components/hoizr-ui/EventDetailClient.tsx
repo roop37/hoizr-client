@@ -15,6 +15,7 @@ import {
   ORGANIZER_PAST_UPCOMING_EVENTS_QUERY,
 } from "@/lib/queries";
 import { sanitizeRichText } from "@/lib/sanitize";
+import { EventInstagramAttendees } from "./EventInstagramAttendees";
 import { HICONS, THING_ICONS } from "./icons";
 import Link from "next/link";
 // HFooter rendered once at the layout level.
@@ -635,6 +636,8 @@ export const EventDetailClient = ({
               </div>
             </div>
           ) : null}
+
+          <EventInstagramAttendees eventId={event._id} />
 
           {people && people.organizers.length > 0 ? (
             <div className="h-detail-section">

@@ -163,9 +163,12 @@ export const PUBLIC_EVENT_PEOPLE_QUERY = `
   }
 `;
 
-// Minimal event-summary fetch used by the order-detail page to show
-// "Valid for: <title> · <date> · <venue>" next to the QR (AUDIT-031)
-// and to surface the host name for the §27 disclosure (AUDIT-034).
+// Event-detail fetch used by the order-detail page. Originally a slim
+// summary for AUDIT-031 (title/date/venue beside QR) + AUDIT-034
+// disclosure, now expanded to power Lineup / When&Where / Things to
+// know cards alongside the ticket — the order page is the customer's
+// post-purchase reference, so it surfaces the same context they saw
+// when booking instead of just the title.
 export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
   query GetPublicEventSummaryById($id: String!) {
     getPublicEventById(id: $id) {
@@ -180,11 +183,27 @@ export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
       description
       location {
         addressLine1
+        addressLine2
         city
         state
+        pincode
         formattedAddress
       }
       refundPolicy
+      eventGuide {
+        languageIds
+        minimumEntryAge
+        paidEntryAge
+        venueLayout
+        seatingArrangement
+        kidFriendly
+        petFriendly
+        gatesOpenBeforeEvent
+        gatesOpenLeadHours
+        gatesOpenLeadMinutes
+      }
+      eventInstructions
+      prohibitedItems
     }
   }
 `;
@@ -354,6 +373,12 @@ export const MY_PROFILE_QUERY = `
       googleConnected
       appleConnected
       signupProvider
+      birthdate
+      gender
+      emailMarketingOptIn
+      smsMarketingOptIn
+      whatsappMarketingOptIn
+      pushNotificationMarketingOptIn
     }
   }
 `;
@@ -368,6 +393,12 @@ export const UPDATE_MY_PROFILE_MUTATION = `
       phone
       city
       profilePic
+      birthdate
+      gender
+      emailMarketingOptIn
+      smsMarketingOptIn
+      whatsappMarketingOptIn
+      pushNotificationMarketingOptIn
     }
   }
 `;
@@ -381,6 +412,85 @@ export const REGISTER_FCM_TOKEN_MUTATION = `
 export const UNREGISTER_FCM_TOKEN_MUTATION = `
   mutation UnregisterFcmToken($fcmToken: String!) {
     unregisterFcmToken(fcmToken: $fcmToken)
+  }
+`;
+
+// --- Instagram (customer connect + attendee row) ---
+// The schema lives in customer-server/src/modules/customerInstagram.
+// v1 ships against a stub fetcher; mutation/query shapes match the
+// real Meta-backed path so the swap is callsite-only.
+
+const INSTAGRAM_FIELDS = `
+  _id
+  customerId
+  connected
+  attendeeVisibility
+  handle
+  avatar
+  biography
+  followerCount
+  mediaCount
+  recentMedia {
+    id
+    caption
+    mediaUrl
+    thumbnailUrl
+    permalink
+    mediaType
+    takenAt
+  }
+  city
+  connectedAt
+  lastSyncedAt
+`;
+
+export const GET_MY_INSTAGRAM_QUERY = `
+  query GetMyInstagram {
+    getMyInstagram {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const CONNECT_INSTAGRAM_MUTATION = `
+  mutation ConnectInstagram($input: ConnectInstagramInput!) {
+    connectInstagram(input: $input) {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const DISCONNECT_INSTAGRAM_MUTATION = `
+  mutation DisconnectInstagram {
+    disconnectInstagram
+  }
+`;
+
+export const UPDATE_INSTAGRAM_VISIBILITY_MUTATION = `
+  mutation UpdateInstagramVisibility($input: UpdateInstagramVisibilityInput!) {
+    updateInstagramVisibility(input: $input) {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const SYNC_MY_INSTAGRAM_MUTATION = `
+  mutation SyncMyInstagram {
+    syncMyInstagram {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const GET_EVENT_ATTENDEES_WITH_INSTAGRAM_QUERY = `
+  query GetEventAttendeesWithInstagram($eventId: String!, $limit: Int) {
+    getEventAttendeesWithInstagram(eventId: $eventId, limit: $limit) {
+      customerId
+      firstName
+      handle
+      avatar
+      city
+    }
   }
 `;
 

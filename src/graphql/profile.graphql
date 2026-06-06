@@ -11,6 +11,12 @@ query MyProfile {
     googleConnected
     appleConnected
     signupProvider
+    birthdate
+    gender
+    emailMarketingOptIn
+    smsMarketingOptIn
+    whatsappMarketingOptIn
+    pushNotificationMarketingOptIn
   }
 }
 
@@ -23,6 +29,12 @@ mutation UpdateMyProfile($input: UpdateCustomerProfileInput!) {
     phone
     city
     profilePic
+    birthdate
+    gender
+    emailMarketingOptIn
+    smsMarketingOptIn
+    whatsappMarketingOptIn
+    pushNotificationMarketingOptIn
   }
 }
 
