@@ -847,58 +847,6 @@ body,
   cursor: pointer;
 }
 
-/* Rail section gets a `.h-bleed` wrapper class applied at render time
-   (set in templates that need scroll-under-sidebar). The rail itself
-   extends viewport edge-to-edge: negative margin on both sides cancels
-   .h-page's indent + .h-content's right pad, then we re-apply matching
-   padding to keep the first/last tile readable. The result: cards
-   scroll UNDER the sidebar on the left, off the screen on the right. */
-/* Bleed section: the heading should sit just after the sidebar's
-   right edge (not at the full --h-content-indent, which adds an
-   extra 18+8px gap on top of the sidebar — that gap looked dead +
-   weird in the screenshot the host shared). The rail inside still
-   uses --h-content-indent for its first card's resting position so
-   the heading + first card line up vertically. */
-.h-rail-sec.h-bleed {
-  /* Pull the whole bleed section's left edge to just past the
-     sidebar's right edge so the heading sits at sidebar-edge + 14.
-     We do this with margin-left, NOT by changing --h-content-indent,
-     because the rail child needs to keep using the page-wide token
-     to align its first card with the heading text. */
-  margin-left: calc(
-    var(--h-sidebar) + var(--h-sidebar-edge) + 14px - var(--h-content-indent)
-  );
-}
-.h-rail-sec.h-bleed .h-rail-head {
-  padding-left: 0;
-  padding-right: 0;
-}
-.h-rail-sec.h-bleed .h-rail {
-  /* The rail's negative margin already extends it under the sidebar.
-     Compensate for the section's shifted-left origin by adding back
-     the same offset so the first card's resting position is exactly
-     under the heading (i.e., right after sidebar + 14px). */
-  margin-left: calc(
-    -1 * var(--h-content-indent) +
-      (var(--h-content-indent) - var(--h-sidebar) - var(--h-sidebar-edge) - 14px)
-  );
-  padding-left: calc(var(--h-sidebar) + var(--h-sidebar-edge) + 14px);
-  scroll-padding-left: calc(
-    var(--h-sidebar) + var(--h-sidebar-edge) + 14px
-  );
-}
-/* Mobile (sidebar collapses to 0): bleed becomes irrelevant, drop
-   the desktop margin trick so the section sits at viewport edge. */
-@media (max-width: 1100px) {
-  .h-rail-sec.h-bleed {
-    margin-left: 0;
-  }
-  .h-rail-sec.h-bleed .h-rail {
-    margin-left: 0;
-    padding-left: 12px;
-    scroll-padding-left: 12px;
-  }
-}
 .h-rail {
   display: grid;
   grid-auto-flow: column;
@@ -3630,6 +3578,141 @@ body,
 .h-detail-section {
   margin-bottom: 36px;
 }
+
+/* Instagram attendee card — compact landscape composition sat inside
+   `.h-detail-section` so it inherits the vertical rhythm. Two-column
+   layout (copy + face row) on desktop, stacked on mobile. The card
+   surface mirrors `.h-detail-body-card` so it reads as part of the
+   event body, not as a floating ad.
+   ──────────────────────────────────────────────────────────────── */
+.h-event-ig-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(225, 48, 108, 0.10), rgba(88, 81, 219, 0.10)),
+    rgba(20, 20, 26, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+@media (min-width: 720px) {
+  .h-event-ig-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    padding: 18px 22px;
+  }
+}
+.h-event-ig-card__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--h-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+.h-event-ig-card__copy h3 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 20px;
+  margin: 8px 0 6px;
+  color: var(--h-ink);
+}
+.h-event-ig-card__copy p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--h-ink-2);
+  max-width: 44ch;
+}
+.h-event-ig-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: var(--h-ink);
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+  transition: filter 0.15s;
+}
+.h-event-ig-card__cta:hover {
+  filter: brightness(1.08);
+}
+.h-event-ig-card__cta--soft {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--h-ink);
+}
+.h-event-ig-card__faces {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+@media (min-width: 720px) {
+  .h-event-ig-card__faces {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .h-event-ig-card__faces {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+.h-event-ig-face a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+}
+.h-event-ig-face__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1.5px solid rgba(255, 255, 255, 0.20);
+  font-family: var(--h-font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--h-ink);
+}
+.h-event-ig-face__name {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--h-ink-2);
+  text-align: center;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h-event-ig-card__locked,
+.h-event-ig-card__empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  font-size: 12.5px;
+  color: var(--h-ink-2);
+}
+
 .h-detail-section h2 {
   font-family: var(--h-font-display);
   font-weight: 700;
@@ -5247,5 +5330,58 @@ body,
   .h-evt-sheet-overlay,
   .h-auth-sheet-overlay {
     background: rgba(0, 0, 0, 0.7);
+  }
+
+  /* City picker — desktop renders a centred glass card. On mobile the
+     site-wide backdrop-filter kill above stripped the blur, which left
+     the card with a 0.55-opacity bg over a busy home page — the host
+     called it "transparent and very much different from the actual."
+     Re-style it as a true bottom sheet: solid ink surface, full-width,
+     rounded top corners, slides up from the bottom edge. */
+  .h-city-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.72);
+  }
+  .h-city-modal {
+    width: 100%;
+    max-width: none;
+    max-height: 86dvh;
+    border-radius: 22px 22px 0 0;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom)) 16px;
+    background: rgba(14, 14, 18, 0.985);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: none;
+    box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.55);
+    animation: h-city-slide-up 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .h-city-modal::before {
+    content: "";
+    display: block;
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    margin: -4px auto 8px;
+  }
+  @keyframes h-city-slide-up {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  /* Locate button + search input + list items all read against the
+     solid bottom-sheet surface — re-tint slightly so they don't fade
+     into the new opaque background. */
+  .h-city-locate,
+  .h-city-search input {
+    background: rgba(255, 255, 255, 0.045);
+  }
+  .h-city-item:hover {
+    background: rgba(255, 255, 255, 0.055);
   }
 }

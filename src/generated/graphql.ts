@@ -252,6 +252,11 @@ export type ConfirmArtistMerchPaymentInput = {
   razorpaySignature: Scalars['String']['input'];
 };
 
+export type ConnectInstagramInput = {
+  handle?: InputMaybe<Scalars['String']['input']>;
+  oauthCode?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type CoordinatePoint = {
   __typename?: 'CoordinatePoint';
   coordinates: Array<Scalars['Float']['output']>;
@@ -357,6 +362,38 @@ export type CustomerGoogleStartResponse = {
   prefill?: Maybe<GoogleStartPrefill>;
   refreshToken?: Maybe<Scalars['String']['output']>;
   uniqueId?: Maybe<Scalars['String']['output']>;
+};
+
+export type CustomerInstagram = {
+  __typename?: 'CustomerInstagram';
+  _id: Scalars['ID']['output'];
+  attendeeVisibility: Scalars['Boolean']['output'];
+  avatar?: Maybe<Scalars['String']['output']>;
+  biography?: Maybe<Scalars['String']['output']>;
+  city?: Maybe<Scalars['String']['output']>;
+  connected: Scalars['Boolean']['output'];
+  connectedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  customerId: Scalars['String']['output'];
+  followerCount?: Maybe<Scalars['Int']['output']>;
+  handle?: Maybe<Scalars['String']['output']>;
+  instagramUserId?: Maybe<Scalars['String']['output']>;
+  lastSyncedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  mediaCount?: Maybe<Scalars['Int']['output']>;
+  recentMedia?: Maybe<Array<CustomerInstagramMedia>>;
+  tokenExpiresAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+};
+
+export type CustomerInstagramMedia = {
+  __typename?: 'CustomerInstagramMedia';
+  caption?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  mediaType?: Maybe<Scalars['String']['output']>;
+  mediaUrl: Scalars['String']['output'];
+  permalink?: Maybe<Scalars['String']['output']>;
+  takenAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  thumbnailUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type CustomerOrderInvoice = {
@@ -558,6 +595,15 @@ export type Event = {
   updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   verticalVideo?: Maybe<Scalars['String']['output']>;
   videoSneakPeek?: Maybe<Scalars['String']['output']>;
+};
+
+export type EventAttendeeWithInstagram = {
+  __typename?: 'EventAttendeeWithInstagram';
+  avatar?: Maybe<Scalars['String']['output']>;
+  city?: Maybe<Scalars['String']['output']>;
+  customerId: Scalars['String']['output'];
+  firstName?: Maybe<Scalars['String']['output']>;
+  handle?: Maybe<Scalars['String']['output']>;
 };
 
 export type EventBusinessPartner = {
@@ -924,6 +970,7 @@ export type Mutation = {
   clearCart: Scalars['Boolean']['output'];
   confirmArtistMerchPayment: ArtistMerchOrder;
   confirmOrderPayment: CustomerOrderView;
+  connectInstagram: CustomerInstagram;
   createArtistMerchOrder: CreateArtistMerchOrderResult;
   createOrder: CreateOrderResponse;
   customerAppleStart: CustomerGoogleStartResponse;
@@ -934,6 +981,7 @@ export type Mutation = {
   customerRequestOtp: CustomerOtpResponse;
   customerTokenRefresh: CustomerTokenRefreshResponse;
   customerVerifyOtp: CustomerAuthResponse;
+  disconnectInstagram: Scalars['Boolean']['output'];
   followArtist: ArtistFollow;
   registerFcmToken: Scalars['Boolean']['output'];
   requestOrderRefund: CustomerOrderView;
@@ -942,8 +990,10 @@ export type Mutation = {
   scannerLogin: ScannerLoginResponse;
   scannerTokenRefresh: ScannerRefreshResponse;
   setCart: CartResponse;
+  syncMyInstagram?: Maybe<CustomerInstagram>;
   unfollowArtist: Scalars['Boolean']['output'];
   unregisterFcmToken: Scalars['Boolean']['output'];
+  updateInstagramVisibility: CustomerInstagram;
   updateMyProfile: Customer;
 };
 
@@ -962,6 +1012,11 @@ export type MutationConfirmOrderPaymentArgs = {
   razorpayOrderId: Scalars['String']['input'];
   razorpayPaymentId: Scalars['String']['input'];
   razorpaySignature: Scalars['String']['input'];
+};
+
+
+export type MutationConnectInstagramArgs = {
+  input: ConnectInstagramInput;
 };
 
 
@@ -1053,6 +1108,11 @@ export type MutationUnfollowArtistArgs = {
 
 export type MutationUnregisterFcmTokenArgs = {
   fcmToken: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateInstagramVisibilityArgs = {
+  input: UpdateInstagramVisibilityInput;
 };
 
 
@@ -1202,6 +1262,8 @@ export type Query = {
   getActiveProhibitedItems: Array<ProhibitedItemMaster>;
   getArtistPastUpcomingEvents: PublicArtistOrOrganizerEvents;
   getCart?: Maybe<CartResponse>;
+  getEventAttendeesWithInstagram: Array<EventAttendeeWithInstagram>;
+  getMyInstagram?: Maybe<CustomerInstagram>;
   getMyOrderById?: Maybe<CustomerOrderView>;
   getMyOrderInvoice?: Maybe<CustomerOrderInvoice>;
   getMyOrders: Array<CustomerOrderView>;
@@ -1225,6 +1287,12 @@ export type QueryGetArtistPastUpcomingEventsArgs = {
 
 export type QueryGetCartArgs = {
   eventId: Scalars['String']['input'];
+};
+
+
+export type QueryGetEventAttendeesWithInstagramArgs = {
+  eventId: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1429,6 +1497,10 @@ export type UpdateCustomerProfileInput = {
   whatsappMarketingOptIn?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export type UpdateInstagramVisibilityInput = {
+  attendeeVisibility: Scalars['Boolean']['input'];
+};
+
 export enum VenueLayout {
   Indoor = 'INDOOR',
   Mixed = 'MIXED',
@@ -1621,14 +1693,14 @@ export type MyFollowedArtistsQuery = { __typename?: 'Query', myFollowedArtists: 
 export type MyProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyProfileQuery = { __typename?: 'Query', getMyProfile: { __typename?: 'Customer', _id: string, firstName: string, lastName: string, email: string, secondaryEmail?: string | null, phone: string, city?: string | null, profilePic?: string | null, googleConnected: boolean, appleConnected: boolean, signupProvider: SignupProvider } };
+export type MyProfileQuery = { __typename?: 'Query', getMyProfile: { __typename?: 'Customer', _id: string, firstName: string, lastName: string, email: string, secondaryEmail?: string | null, phone: string, city?: string | null, profilePic?: string | null, googleConnected: boolean, appleConnected: boolean, signupProvider: SignupProvider, birthdate?: any | null, gender?: Gender | null, emailMarketingOptIn: boolean, smsMarketingOptIn: boolean, whatsappMarketingOptIn: boolean, pushNotificationMarketingOptIn: boolean } };
 
 export type UpdateMyProfileMutationVariables = Exact<{
   input: UpdateCustomerProfileInput;
 }>;
 
 
-export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile: { __typename?: 'Customer', _id: string, firstName: string, lastName: string, email: string, phone: string, city?: string | null, profilePic?: string | null } };
+export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile: { __typename?: 'Customer', _id: string, firstName: string, lastName: string, email: string, phone: string, city?: string | null, profilePic?: string | null, birthdate?: any | null, gender?: Gender | null, emailMarketingOptIn: boolean, smsMarketingOptIn: boolean, whatsappMarketingOptIn: boolean, pushNotificationMarketingOptIn: boolean } };
 
 export type RegisterFcmTokenMutationVariables = Exact<{
   fcmToken: Scalars['String']['input'];
@@ -2150,6 +2222,12 @@ export const MyProfileDocument = gql`
     googleConnected
     appleConnected
     signupProvider
+    birthdate
+    gender
+    emailMarketingOptIn
+    smsMarketingOptIn
+    whatsappMarketingOptIn
+    pushNotificationMarketingOptIn
   }
 }
     `;
@@ -2163,6 +2241,12 @@ export const UpdateMyProfileDocument = gql`
     phone
     city
     profilePic
+    birthdate
+    gender
+    emailMarketingOptIn
+    smsMarketingOptIn
+    whatsappMarketingOptIn
+    pushNotificationMarketingOptIn
   }
 }
     `;

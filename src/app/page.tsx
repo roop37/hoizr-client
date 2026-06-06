@@ -62,7 +62,15 @@ export default async function HomePage() {
     fetchPublicArtists(32),
     fetchCustomerMasters(),
   ]);
-  const all: DisplayEvent[] = eventsRes.events.map(toDisplayEvent);
+  // Home feed shows ONLY events that ship with a landscape flyer.
+  // The new home design (Apple-Music-style hero + landscape tile rails)
+  // composes around the 16:9 asset; portrait-only events look broken in
+  // both the hero scrim and the rail cards, so we drop them at the
+  // source rather than render letterboxed fallbacks. Hosts opt in by
+  // uploading a landscape image on the event-journey "Additional" step.
+  const all: DisplayEvent[] = eventsRes.events
+    .map(toDisplayEvent)
+    .filter((e) => Boolean(e.horizontalImage));
 
   if (all.length === 0) {
     return (
@@ -134,17 +142,11 @@ export default async function HomePage() {
     );
   }
 
-  // Featured rail picks only events with a horizontalFlyer asset. The host
-  // explicitly opts in by uploading one on the Additional step — without
-  // it, the regular 4:5 grid below already covers the event.
-  const featuredHorizontal = all.filter((e) => Boolean(e.horizontalImage)).slice(0, 6);
-
-  // Compact top hero (HHero): single SELLING NOW header that scrolls
-  // through events with a landscape flyer. Falls back to the first
-  // high-demand event, then the first event overall, so the home
-  // always has something at the top.
-  const heroEvent =
-    featuredHorizontal[0] ?? all.find((e) => e.isHighDemand) ?? all[0];
+  // `all` is already filtered to landscape-only above, so any event in
+  // the pool is a valid hero candidate. Prefer the first high-demand
+  // one; fall back to the first overall so the home always opens with
+  // something on top.
+  const heroEvent = all.find((e) => e.isHighDemand) ?? all[0];
   const others = all.filter((e) => e.id !== heroEvent.id);
 
   // Genres collection rail — surface the full active genre catalogue
@@ -184,7 +186,7 @@ export default async function HomePage() {
       <HHero event={heroEvent} />
 
       {liveGenres.length > 0 ? (
-        <div className="h-rail-sec h-bleed">
+        <div className="h-rail-sec">
           <RailHead title="Browse by vibe" seeAllHref="/events" />
           <div className="h-rail h-rail-5">
             {liveGenres.map((g) => (

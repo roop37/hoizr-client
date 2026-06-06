@@ -27,8 +27,16 @@ export const HHero = ({ event }: Props) => {
       }}
       aria-label={`Open ${event.title}`}
     >
-      {event.image ? (
-        <img className="bg" src={event.image} alt={event.title} />
+      {/* Hero uses the landscape flyer directly. Home page filters the
+          feed to landscape-only events before reaching here, so the
+          portrait fallback is never hit on the live site; the gradient
+          stub remains as a defensive no-image branch. */}
+      {event.horizontalImage ? (
+        <img
+          className="bg"
+          src={event.horizontalImage}
+          alt={event.title}
+        />
       ) : (
         <div
           style={{

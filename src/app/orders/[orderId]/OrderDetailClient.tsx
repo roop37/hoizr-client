@@ -5,15 +5,17 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
+  Clock,
   CreditCard,
   Download,
+  Info,
+  LifeBuoy,
   Loader2,
   MapPin,
-  RefreshCcw,
-  Send,
   Share2,
   ShieldCheck,
   Ticket,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,14 +26,21 @@ import { rupee } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
 import { sanitizeRichText } from "@/lib/sanitize";
 import {
+  ACTIVE_LANGUAGES_QUERY,
+  ACTIVE_PROHIBITED_ITEMS_QUERY,
   MY_ORDER_BY_ID_QUERY,
   MY_ORDER_INVOICE_QUERY,
+  PUBLIC_EVENT_PEOPLE_QUERY,
   PUBLIC_EVENT_SUMMARY_BY_ID_QUERY,
-  REQUEST_ORDER_REFUND_MUTATION,
 } from "@/lib/queries";
 import { useAuthStore } from "@/store/auth";
 import type { CustomerOrderView } from "@/types/order";
-import type { PublicEvent } from "@/types/event";
+import type {
+  PublicEvent,
+  PublicEventPeopleResponse,
+  PublicLanguageMaster,
+  PublicProhibitedItemMaster,
+} from "@/types/event";
 import { CenteredLoader, ErrorState } from "@/components/ui/feedback";
 
 type OrderEventSummary = Pick<
@@ -46,9 +55,59 @@ type OrderEventSummary = Pick<
   | "eventFlyer"
   | "horizontalFlyer"
   | "description"
+  | "eventGuide"
+  | "eventInstructions"
+  | "prohibitedItems"
 >;
 
-const REFUND_WINDOW_DAYS = 2;
+const enumLabels: Record<string, string> = {
+  ALL_AGES: "All ages",
+  AGE_13_PLUS: "13+ entry",
+  AGE_16_PLUS: "16+ entry",
+  AGE_18_PLUS: "18+ entry",
+  AGE_21_PLUS: "21+ entry",
+  AGE_25_PLUS: "25+ entry",
+  INDOOR: "Indoor venue",
+  OUTDOOR: "Outdoor venue",
+  MIXED: "Indoor + outdoor",
+  SEATED: "Seated",
+  STANDING: "Standing",
+  SEATED_AND_STANDING: "Seated + standing",
+  KIDS_WELCOME: "Kids welcome",
+  KIDS_NOT_ALLOWED: "Kids not allowed",
+  KIDS_WITH_GUARDIAN: "Kids with guardian",
+  PETS_WELCOME: "Pets welcome",
+  PETS_NOT_ALLOWED: "Pets not allowed",
+  SERVICE_ANIMALS_ONLY: "Service animals only",
+};
+
+const labelForEnum = (value?: string) => {
+  if (!value) return "";
+  if (enumLabels[value]) return enumLabels[value];
+  return value
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const titleFromSlug = (value: string) =>
+  value
+    .replace(/[-_]+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const objectIdPattern = /^[a-f0-9]{24}$/i;
+
+const formatGatesLeadTime = (hours?: number, minutes?: number) => {
+  const h = Number(hours ?? 0);
+  const m = Number(minutes ?? 0);
+  const parts = [h > 0 ? `${h}h` : "", m > 0 ? `${m}m` : ""].filter(Boolean);
+  return parts.length
+    ? `Gates open ${parts.join(" ")} before event`
+    : "Gates open before event";
+};
+
 const PAYMENT_CONFIRMATION_POLL_INTERVAL_MS = 2000;
 // 30 × 2s = 60s. The user-facing contract is "we wait one minute for
 // the gateway, then call it failed and tell you any captured payment
@@ -206,15 +265,16 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   const [eventSummary, setEventSummary] = useState<OrderEventSummary | null>(
     null
   );
+  const [people, setPeople] = useState<PublicEventPeopleResponse | null>(null);
+  const [languages, setLanguages] = useState<PublicLanguageMaster[]>([]);
+  const [prohibitedItemsMaster, setProhibitedItemsMaster] = useState<
+    PublicProhibitedItemMaster[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [polls, setPolls] = useState(0);
-  const [refundModalOpen, setRefundModalOpen] = useState(false);
-  const [refundReason, setRefundReason] = useState("");
-  const [refundSubmitting, setRefundSubmitting] = useState(false);
-  const [refundError, setRefundError] = useState<string | null>(null);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
-  const [refundPolicyOpen, setRefundPolicyOpen] = useState(false);
+  const [thingsToKnowOpen, setThingsToKnowOpen] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [invoiceState, setInvoiceState] = useState<{
     busy: boolean;
@@ -285,16 +345,47 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   // can show "Valid for: <title> · <date> · <venue>" above the QR.
   // Customers with multiple orders cannot disambiguate a QR from order
   // line items alone — they need event context on the ticket itself.
+  // The fetch now also pulls lineup + things-to-know data so the order
+  // page surfaces the same context the customer had when booking, not
+  // just the title — they shouldn't have to bounce back to the event
+  // page to remember which artist or what door policy they bought into.
   useEffect(() => {
     if (!order?.eventId) return;
     let mounted = true;
-    gqlRequest<{ getPublicEventById: OrderEventSummary | null }>(
-      PUBLIC_EVENT_SUMMARY_BY_ID_QUERY,
-      { id: order.eventId }
-    )
-      .then((data) => {
+    Promise.all([
+      gqlRequest<{ getPublicEventById: OrderEventSummary | null }>(
+        PUBLIC_EVENT_SUMMARY_BY_ID_QUERY,
+        { id: order.eventId }
+      ),
+      gqlRequest<{ getPublicEventPeople: PublicEventPeopleResponse }>(
+        PUBLIC_EVENT_PEOPLE_QUERY,
+        { eventId: order.eventId }
+      ).catch(() => ({
+        getPublicEventPeople: { artists: [], organizers: [] },
+      })),
+      gqlRequest<{ getActiveLanguages: PublicLanguageMaster[] }>(
+        ACTIVE_LANGUAGES_QUERY
+      ).catch(() => ({ getActiveLanguages: [] })),
+      gqlRequest<{
+        getActiveProhibitedItems: PublicProhibitedItemMaster[];
+      }>(ACTIVE_PROHIBITED_ITEMS_QUERY).catch(() => ({
+        getActiveProhibitedItems: [],
+      })),
+    ])
+      .then(([summaryData, peopleData, langsData, prohibitedData]) => {
         if (!mounted) return;
-        if (data.getPublicEventById) setEventSummary(data.getPublicEventById);
+        if (summaryData.getPublicEventById)
+          setEventSummary(summaryData.getPublicEventById);
+        setPeople(
+          peopleData.getPublicEventPeople ?? {
+            artists: [],
+            organizers: [],
+          }
+        );
+        setLanguages(langsData.getActiveLanguages ?? []);
+        setProhibitedItemsMaster(
+          prohibitedData.getActiveProhibitedItems ?? []
+        );
       })
       .catch(() => {
         // Best-effort enrichment — the QR + order detail still render.
@@ -475,99 +566,175 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     !waitingForWebhook &&
     !webhookTimedOut &&
     !justPaid;
-  const refundDeadline = (() => {
-    if (!eventSummary?.endDate) return null;
-    const date = new Date(eventSummary.endDate);
-    if (Number.isNaN(date.getTime())) return null;
-    date.setDate(date.getDate() + REFUND_WINDOW_DAYS);
-    return date;
-  })();
-  const refundWindowOpen = refundDeadline
-    ? Date.now() <= refundDeadline.getTime()
-    : false;
-  const refundAlreadyRequested = Boolean(
-    order.refundRequestStatus || order.refundRequestedAt
-  );
-  const refundableOrder = order.orderStatus === "PAYMENT_SUCCESS" && !order.checkedIn;
-  const canRequestRefund =
-    refundableOrder && refundWindowOpen && !refundAlreadyRequested;
-  const refundPolicyText =
-    eventSummary?.refundPolicy?.trim() ||
-    `Refunds can be requested within ${REFUND_WINDOW_DAYS} days after the event ends, before the ticket is checked in.`;
-  const refundDeadlineLabel = refundDeadline
-    ? refundDeadline.toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
-
-  const submitRefundRequest = async () => {
-    const reason = refundReason.trim();
-    if (!reason) {
-      setRefundError("Select or enter a reason before sending the request.");
-      return;
-    }
-    setRefundSubmitting(true);
-    setRefundError(null);
-    try {
-      const data = await gqlRequest<{ requestOrderRefund: CustomerOrderView }>(
-        REQUEST_ORDER_REFUND_MUTATION,
-        { orderId: order._id, reason }
-      );
-      setOrder(data.requestOrderRefund);
-      setRefundReason("");
-      setRefundModalOpen(false);
-    } catch (err: any) {
-      setRefundError(
-        err?.response?.errors?.[0]?.message ?? "Unable to send refund request"
-      );
-    } finally {
-      setRefundSubmitting(false);
-    }
-  };
-
   const orderShortId = order._id.slice(-6).toUpperCase();
   const ticketCount = order.tickets.reduce(
     (sum, t) => sum + Number(t.quantity ?? 0),
     0
   );
 
+  // Two tones per status: `tone` reads on the dark ink background
+  // (hero meta column on desktop), `whiteTone` reads on the cream
+  // ticket card. The mobile-only meta block lives INSIDE the white
+  // card now — emerald-200 / amber-200 dissolved into the cream and
+  // looked unreadable, so we swap to the ink-on-light variant per
+  // the mobile redesign request.
   const statusBadge = (() => {
     switch (order.orderStatus) {
       case "PAYMENT_SUCCESS":
         return {
           label: "Booking confirmed",
           tone: "bg-emerald-400/15 text-emerald-200 ring-emerald-400/40",
+          whiteTone:
+            "bg-emerald-50 text-emerald-800 ring-emerald-200",
         };
       case "CHECKED_IN":
         return {
           label: "Checked in",
           tone: "bg-sky-400/15 text-sky-200 ring-sky-400/40",
+          whiteTone: "bg-sky-50 text-sky-800 ring-sky-200",
         };
       case "PAYMENT_PENDING":
         return {
           label: "Pending payment",
           tone: "bg-amber-400/15 text-amber-200 ring-amber-400/40",
+          whiteTone: "bg-amber-50 text-amber-800 ring-amber-200",
         };
       case "PAYMENT_FAILED":
         return {
           label: "Payment failed",
           tone: "bg-rose-400/15 text-rose-200 ring-rose-400/40",
+          whiteTone: "bg-rose-50 text-rose-800 ring-rose-200",
         };
       case "SUPERSEDED":
         return {
           label: "Replaced by newer order",
           tone: "bg-slate-400/15 text-slate-200 ring-slate-400/40",
+          whiteTone: "bg-slate-100 text-slate-800 ring-slate-200",
         };
       default:
         return {
           label: order.orderStatus,
           tone: "bg-cream/10 text-cream/80 ring-cream/30",
+          whiteTone: "bg-cream text-ink ring-border",
         };
     }
   })();
+
+  const languageById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const language of languages) {
+      map.set(language._id, language.value);
+    }
+    return map;
+  }, [languages]);
+
+  const prohibitedByKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of prohibitedItemsMaster) {
+      map.set(item._id, item.value);
+      map.set(item.slug, item.value);
+    }
+    return map;
+  }, [prohibitedItemsMaster]);
+
+  const languageLabels = useMemo(
+    () =>
+      (eventSummary?.eventGuide?.languageIds ?? [])
+        .map((id) => languageById.get(id))
+        .filter((value): value is string => Boolean(value)),
+    [eventSummary?.eventGuide?.languageIds, languageById]
+  );
+
+  const prohibitedLabels = useMemo(
+    () =>
+      (eventSummary?.prohibitedItems ?? [])
+        .map((item) => {
+          const known = prohibitedByKey.get(item);
+          if (known) return known;
+          if (objectIdPattern.test(item)) return "";
+          return titleFromSlug(item);
+        })
+        .filter(Boolean),
+    [eventSummary?.prohibitedItems, prohibitedByKey]
+  );
+
+  type ThingRow = { key: string; text: string };
+  const thingsToKnow = useMemo<ThingRow[]>(() => {
+    const guide = eventSummary?.eventGuide;
+    const rows: ThingRow[] = [];
+    if (languageLabels.length)
+      rows.push({
+        key: "languages",
+        text: `Languages: ${languageLabels.join(", ")}`,
+      });
+    if (guide?.minimumEntryAge)
+      rows.push({
+        key: "minimum-age",
+        text: labelForEnum(guide.minimumEntryAge),
+      });
+    if (guide?.paidEntryAge)
+      rows.push({
+        key: "paid-age",
+        text: `Paid entry from ${labelForEnum(guide.paidEntryAge).replace(" entry", "")}`,
+      });
+    if (guide?.venueLayout)
+      rows.push({ key: "layout", text: labelForEnum(guide.venueLayout) });
+    if (guide?.seatingArrangement)
+      rows.push({
+        key: "seating",
+        text: labelForEnum(guide.seatingArrangement),
+      });
+    if (guide?.kidFriendly)
+      rows.push({ key: "kids", text: labelForEnum(guide.kidFriendly) });
+    if (guide?.petFriendly)
+      rows.push({ key: "pets", text: labelForEnum(guide.petFriendly) });
+    if (guide?.gatesOpenBeforeEvent)
+      rows.push({
+        key: "gates",
+        text: formatGatesLeadTime(
+          guide.gatesOpenLeadHours,
+          guide.gatesOpenLeadMinutes
+        ),
+      });
+    return rows;
+  }, [eventSummary?.eventGuide, languageLabels]);
+
+  const eventInstructions = eventSummary?.eventInstructions ?? [];
+  const lineupArtists = people?.artists ?? [];
+  const hasThingsToKnowDetails =
+    eventInstructions.length > 0 || prohibitedLabels.length > 0;
+
+  const eventStartLong = eventSummary?.startDate
+    ? new Date(eventSummary.startDate).toLocaleString("en-IN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+  const eventEndLong = eventSummary?.endDate
+    ? new Date(eventSummary.endDate).toLocaleString("en-IN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+  const venueFullAddress =
+    eventSummary?.location?.formattedAddress ??
+    [
+      eventSummary?.location?.addressLine1,
+      eventSummary?.location?.addressLine2,
+      eventSummary?.location?.city ?? eventSummary?.city,
+      eventSummary?.location?.state,
+      eventSummary?.location?.pincode,
+    ]
+      .filter(Boolean)
+      .join(", ");
 
   const eventDescription = eventSummary?.description?.trim() ?? "";
   // Description on the public Event doc is rich-text HTML authored in
@@ -623,29 +790,26 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
             <ChevronLeft size={14} /> All tickets
           </Link>
 
-          {/* Hero — compact event header. Title/badge sit BELOW the
-              flyer (cleaner than the previous overlaid gradient at this
-              new shorter height). The mobile flyer is portrait so it
-              composes with the ambient glow; desktop swaps to a wide
-              banner to keep vertical real estate for the ticket card. */}
-          <section className="mt-4 md:mt-6">
+          {/* Desktop hero — compact event header with landscape flyer
+              on the left and title/badge column on the right. Hidden on
+              mobile (md:hidden block below) because the redesigned
+              mobile card composes the flyer + badge + meta INSIDE the
+              white ticket card so everything sits under one surface and
+              the badge reads on white. */}
+          <section className="mt-4 hidden md:mt-6 md:block">
             <div className="flex flex-col items-center gap-4 md:flex-row md:items-stretch md:gap-6">
               <div className="relative overflow-hidden rounded-3xl bg-ink/40 ring-1 ring-cream/10 shadow-[0_24px_60px_-25px_rgba(0,0,0,0.7)]">
                 {heroFlyer ? (
                   <img
                     src={heroFlyer}
                     alt={eventSummary?.title ?? "Event flyer"}
-                    className="block h-[220px] w-auto max-w-[240px] object-cover md:h-[220px] md:max-w-[300px]"
+                    className="block h-[220px] w-auto max-w-[300px] object-cover"
                   />
                 ) : (
                   <div className="h-[220px] w-[180px] bg-gradient-to-br from-emerald-700/40 via-ink to-ink" />
                 )}
               </div>
-              {/* Desktop-only meta column. On mobile the same fields are
-                  composed inside the white ticket card so the flyer can
-                  stay clean and the meta sits above the QR with a
-                  divider, per request. */}
-              <div className="hidden flex-1 flex-col items-start justify-center text-left md:flex">
+              <div className="flex flex-1 flex-col items-start justify-center text-left">
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${statusBadge.tone}`}
                 >
@@ -739,19 +903,32 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 first on mobile via order-first. */}
             <aside className="order-first md:order-last md:sticky md:top-6">
               <div className="overflow-hidden rounded-3xl bg-cream text-ink shadow-[0_30px_70px_-25px_rgba(0,0,0,0.7)]">
-                {/* Mobile-only event meta block inside the white card —
-                    badge + title + date + venue then a dashed divider
-                    before the QR. Hidden on desktop because the same
-                    fields already render in the hero meta column. */}
+                {/* Mobile-only event meta block inside the white card.
+                    Order per redesign request: status badge (ink text
+                    on cream) → flyer → title → date → venue, then a
+                    dashed divider before the QR. Hidden on desktop
+                    because the same fields render in the hero column.
+                    The badge uses `whiteTone` so "Booking confirmed"
+                    reads in ink, not the dark-bg emerald-200 that
+                    disappeared into the cream surface. */}
                 <div className="border-b border-dashed border-border px-5 pb-4 pt-5 text-ink md:hidden">
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${statusBadge.tone}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${statusBadge.whiteTone}`}
                   >
                     <Ticket size={12} />
                     {statusBadge.label}
                   </span>
+                  {heroFlyer ? (
+                    <div className="mt-3 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-border">
+                      <img
+                        src={heroFlyer}
+                        alt={eventSummary?.title ?? "Event flyer"}
+                        className="block h-[200px] w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
                   {eventSummary?.title ? (
-                    <h1 className="mt-2 text-lg font-semibold leading-snug text-ink">
+                    <h1 className="mt-3 text-lg font-semibold leading-snug text-ink">
                       {eventSummary.title}
                     </h1>
                   ) : null}
@@ -900,7 +1077,12 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
               </div>
             </aside>
 
-            {/* LEFT column: about + refund */}
+            {/* LEFT column: about + lineup + when & where + things to
+                know + refund. Sections render in the order a customer
+                scans them — what is it? → who's on? → when/where? →
+                door rules → refund — so a returning ticket-holder gets
+                everything they need without bouncing back to the event
+                page. */}
             <div className="space-y-6">
               {eventDescription ? (
                 <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
@@ -920,82 +1102,151 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 </section>
               ) : null}
 
-              {confirmed || refundAlreadyRequested ? (
+              {lineupArtists.length > 0 ? (
                 <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
-                        <RefreshCcw size={14} />
-                        Refund request
+                  <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                    <Users size={14} />
+                    Lineup
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-3">
+                    {lineupArtists.map((artist, idx) => (
+                      <div
+                        key={`${artist._id ?? artist.name}-${idx}`}
+                        className="flex items-center gap-2.5"
+                      >
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream/10 ring-1 ring-cream/15"
+                          style={
+                            artist.picture
+                              ? {
+                                  backgroundImage: `url(${artist.picture})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                }
+                              : undefined
+                          }
+                          aria-hidden
+                        >
+                          {!artist.picture ? (
+                            <span className="text-sm font-semibold text-cream/80">
+                              {artist.name.charAt(0).toUpperCase()}
+                            </span>
+                          ) : null}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-cream">
+                            {artist.name}
+                          </div>
+                          {artist.tagline ? (
+                            <div className="truncate text-[11px] text-cream/60">
+                              {artist.tagline}
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
-                      {/* The policy is rich text from the organiser. We
-                          deliberately don't render it inline (it ranges
-                          from a sentence to a multi-paragraph essay
-                          with bullet points and would clobber the card
-                          layout). Surface a single "View refund policy"
-                          chip that opens a dedicated modal — same one-
-                          concern-per-modal rule as the description. */}
-                      <p className="mt-2 text-cream/75">
-                        Refunds follow the organiser's policy and Hoizr's
-                        platform terms.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setRefundPolicyOpen(true)}
-                        className="mt-3 inline-flex h-8 items-center justify-center gap-1 rounded-full border border-cream/15 bg-cream/[0.04] px-3 text-xs font-semibold text-cream/80 transition hover:bg-cream/10"
-                      >
-                        View refund policy
-                      </button>
-                    </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
-                    {canRequestRefund ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRefundError(null);
-                          setRefundModalOpen(true);
-                        }}
-                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-cream transition hover:opacity-95"
-                      >
-                        <RefreshCcw size={16} />
-                        Request refund
-                      </button>
+              {eventStartLong || venueFullAddress ? (
+                <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
+                  <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                    <Clock size={14} />
+                    When &amp; where
+                  </div>
+                  <div className="mt-3 space-y-2 text-cream/85">
+                    {eventStartLong ? (
+                      <div className="flex items-start gap-2">
+                        <CalendarDays
+                          size={14}
+                          className="mt-0.5 shrink-0 text-cream/60"
+                        />
+                        <div>
+                          <div>{eventStartLong}</div>
+                          {eventEndLong && eventEndLong !== eventStartLong ? (
+                            <div className="text-xs text-cream/60">
+                              Ends {eventEndLong}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                    {venueFullAddress ? (
+                      <div className="flex items-start gap-2">
+                        <MapPin
+                          size={14}
+                          className="mt-0.5 shrink-0 text-cream/60"
+                        />
+                        <span>{venueFullAddress}</span>
+                      </div>
                     ) : null}
                   </div>
+                </section>
+              ) : null}
 
-                  {refundAlreadyRequested ? (
-                    <div className="mt-4 rounded-2xl border border-emerald-300/30 bg-emerald-400/10 p-3 text-emerald-100">
-                      <div className="font-semibold">
-                        Refund request sent
-                        {order.refundRequestStatus
-                          ? `: ${order.refundRequestStatus}`
-                          : ""}
-                      </div>
-                      {order.refundRequestedAt ? (
-                        <div className="mt-1 text-xs text-emerald-100/85">
-                          Requested on{" "}
-                          {new Date(order.refundRequestedAt).toLocaleString("en-IN")}
-                        </div>
-                      ) : null}
-                      {order.refundRequestReason ? (
-                        <div className="mt-1 text-xs text-emerald-100/85">
-                          Reason: {order.refundRequestReason}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : !canRequestRefund ? (
-                    <div className="mt-4 rounded-2xl border border-cream/10 bg-cream/[0.04] p-3 text-xs text-cream/70">
-                      {order.checkedIn
-                        ? "This ticket has already been checked in."
-                        : !refundWindowOpen
-                        ? "The refund request window is closed for this event."
-                        : order.orderStatus !== "PAYMENT_SUCCESS"
-                        ? "Refund requests are available after payment is confirmed."
-                        : "This order is not eligible for a self-service refund request."}
-                    </div>
+              {thingsToKnow.length > 0 || hasThingsToKnowDetails ? (
+                <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
+                  <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                    <Info size={14} />
+                    Things to know
+                  </div>
+                  {thingsToKnow.length > 0 ? (
+                    <ul className="mt-3 grid gap-1.5 text-cream/85">
+                      {thingsToKnow.map((row) => (
+                        <li
+                          key={row.key}
+                          className="flex items-start gap-2"
+                        >
+                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-cream/40" />
+                          <span>{row.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {hasThingsToKnowDetails ? (
+                    <button
+                      type="button"
+                      onClick={() => setThingsToKnowOpen(true)}
+                      className="mt-3 inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-cream/15 bg-cream/[0.04] px-3 text-xs font-semibold text-cream/85 transition hover:bg-cream/10"
+                    >
+                      More details
+                    </button>
                   ) : null}
                 </section>
               ) : null}
+
+              {/* Support card — replaces the previous self-service
+                  refund flow. Refunds aren't yet automated end-to-end,
+                  so a free-form support ticket is the right pressure
+                  valve: customer describes the issue (lost ticket,
+                  refund ask, wrong event, etc.) and the Hoizr team
+                  routes it. The /support page prefills the orderId
+                  so the ticket is already linked to this booking. */}
+              <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                      <LifeBuoy size={14} />
+                      Need help with this order?
+                    </div>
+                    <p className="mt-2 text-cream/75">
+                      Lost your QR, want a refund, or have an entry
+                      question? Open a support ticket — the Hoizr team
+                      usually replies within one business day.
+                    </p>
+                  </div>
+                  <Link
+                    href={`/support?orderId=${encodeURIComponent(
+                      order._id
+                    )}&category=ORDER_ISSUE`}
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-cream transition hover:opacity-95"
+                  >
+                    <LifeBuoy size={16} />
+                    Contact support
+                  </Link>
+                </div>
+              </section>
             </div>
           </div>
 
@@ -1056,14 +1307,14 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
         </div>
       ) : null}
 
-      {/* Refund policy modal — sanitised rich text + the deadline that
-          used to sit inline on the card. Hidden by default so the card
-          stays composed even when the organiser writes a multi-section
-          policy. */}
-      {refundPolicyOpen ? (
+      {/* Things-to-know modal — surfaces eventInstructions and the
+          prohibited-items list that don't fit in the inline card. Same
+          bottom-sheet-on-mobile pattern as the description modal so
+          the order page stays single-concern-per-overlay. */}
+      {thingsToKnowOpen ? (
         <div
           className="h-tw-sheet-overlay fixed inset-0 z-[120] flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
-          onClick={() => setRefundPolicyOpen(false)}
+          onClick={() => setThingsToKnowOpen(false)}
         >
           <div
             className="h-tw-sheet-panel flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-cream/10 bg-ink text-cream shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
@@ -1072,126 +1323,80 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
             <div className="flex items-start justify-between gap-3 border-b border-cream/10 px-5 py-4">
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
-                  Refund policy
+                  Things to know
                 </div>
                 <div className="mt-1 text-base font-semibold text-cream">
                   {eventSummary?.title ?? "Event"}
                 </div>
-                {refundDeadlineLabel ? (
-                  <div className="mt-1 text-xs text-cream/65">
-                    Request by {refundDeadlineLabel}
-                  </div>
-                ) : null}
               </div>
               <button
                 type="button"
-                onClick={() => setRefundPolicyOpen(false)}
+                onClick={() => setThingsToKnowOpen(false)}
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cream/15 text-cream/70 hover:text-cream"
-                aria-label="Close refund policy"
+                aria-label="Close things to know"
               >
                 <X size={16} />
               </button>
             </div>
-            <div className="overflow-y-auto px-5 py-4 text-sm leading-relaxed text-cream/85">
-              {refundPolicyText ? (
-                <div
-                  className="h-richtext"
-                  dangerouslySetInnerHTML={{
-                    __html: sanitizeRichText(refundPolicyText),
-                  }}
-                />
-              ) : (
-                <p>
-                  This organiser hasn't published a custom policy. The
-                  default Hoizr refund window of {REFUND_WINDOW_DAYS}{" "}
-                  days after the event still applies.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {refundModalOpen ? (
-        <div className="h-tw-sheet-overlay fixed inset-0 z-[120] flex items-end justify-center bg-ink/70 px-4 py-5 sm:items-center">
-          <div className="h-tw-sheet-panel is-light w-full max-w-md rounded-2xl bg-cream p-5 text-ink shadow-xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-lg font-semibold text-ink">
-                  Request a refund
+            <div className="space-y-5 overflow-y-auto px-5 py-4 text-sm leading-relaxed text-cream/85">
+              {thingsToKnow.length > 0 ? (
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                    Door policy
+                  </div>
+                  <ul className="mt-2 grid gap-1.5">
+                    {thingsToKnow.map((row) => (
+                      <li
+                        key={row.key}
+                        className="flex items-start gap-2"
+                      >
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-cream/40" />
+                        <span>{row.text}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="mt-1 text-sm text-muted">
-                  Send this to the organiser for review. The order remains
-                  active until the refund is approved and processed.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!refundSubmitting) setRefundModalOpen(false);
-                }}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted hover:text-ink"
-                aria-label="Close refund request dialog"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <label className="mt-5 block text-xs font-semibold uppercase tracking-wider text-muted">
-              Reason
-              <select
-                value={refundReason}
-                onChange={(event) => setRefundReason(event.target.value)}
-                className="mt-2 h-11 w-full rounded-xl border border-border bg-white px-3 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-accent"
-                disabled={refundSubmitting}
-              >
-                <option value="">Select a reason</option>
-                <option value="Event timing no longer works">
-                  Event timing no longer works
-                </option>
-                <option value="Booked the wrong ticket">
-                  Booked the wrong ticket
-                </option>
-                <option value="Duplicate booking">Duplicate booking</option>
-                <option value="Payment or pricing issue">
-                  Payment or pricing issue
-                </option>
-                <option value="Other">Other</option>
-              </select>
-            </label>
-
-            {refundError ? (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                {refundError}
-              </div>
-            ) : null}
-
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setRefundModalOpen(false)}
-                disabled={refundSubmitting}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submitRefundRequest}
-                disabled={refundSubmitting}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-cream transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {refundSubmitting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Send size={16} />
-                )}
-                Send request
-              </button>
+              ) : null}
+              {eventInstructions.length > 0 ? (
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                    Event instructions
+                  </div>
+                  <ul className="mt-2 grid gap-1.5">
+                    {eventInstructions.map((instruction, idx) => (
+                      <li
+                        key={`instruction-${idx}`}
+                        className="flex items-start gap-2"
+                      >
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-cream/40" />
+                        <span>{instruction}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {prohibitedLabels.length > 0 ? (
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                    Prohibited items
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {prohibitedLabels.map((label) => (
+                      <span
+                        key={label}
+                        className="inline-flex items-center rounded-full border border-cream/15 bg-cream/[0.04] px-2.5 py-1 text-xs"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
       ) : null}
+
     </div>
   );
 };

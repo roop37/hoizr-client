@@ -47,9 +47,14 @@ const resolveEndpoint = (
   return localFallback;
 };
 
+// customer-server lives at `orderapi.hoizr.com` / `dev-orderapi.hoizr.com`
+// per the runtime infra (docs/DEV_INFRA_RUNTIME.md §3). The historical
+// `customer-api.hoizr.com` hostname from HOIZR_INFRASTRUCTURE_PLAN.md
+// was never the deployed name — keep this in sync with the actual DO
+// droplet hostnames.
 const deployedCustomerEndpoint =
   process.env.NEXT_PUBLIC_HOIZR_ENV === "prod"
-    ? "https://customer-api.hoizr.com/graphql"
+    ? "https://orderapi.hoizr.com/graphql"
     : "https://dev-orderapi.hoizr.com/graphql";
 
 const endpoint = resolveEndpoint(
@@ -58,6 +63,16 @@ const endpoint = resolveEndpoint(
   "http://localhost:4001/graphql",
   deployedCustomerEndpoint
 );
+
+/**
+ * Origin of the customer-server (everything before `/graphql`). Used by
+ * non-GraphQL surfaces — currently the Instagram OAuth start route at
+ * `/auth/instagram/start` and its callback. Browser navigations to
+ * customer-server need the host to match the cookie domain (the JWT
+ * cookie is scoped to the API origin), so we always full-page-redirect
+ * to this base rather than proxying through hoizr-client.
+ */
+export const customerApiOrigin = endpoint.replace(/\/graphql\/?$/, "");
 
 const TOKEN_REFRESH = `mutation { customerTokenRefresh { success } }`;
 
