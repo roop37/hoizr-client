@@ -24,7 +24,7 @@ export const PUBLIC_EVENT_LIST_QUERY = `
         genreTagIds
         location {
           city
-          coordinate { lat lng }
+          coordinate { type coordinates }
         }
         ticketingEnabled
         isHighDemand
@@ -79,7 +79,7 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
           placeId
           displayName
         }
-        coordinate { lat lng }
+        coordinate { type coordinates }
       }
       ticketingTerms
       refundPolicy
@@ -193,7 +193,7 @@ export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
         state
         pincode
         formattedAddress
-        coordinate { lat lng }
+        coordinate { type coordinates }
       }
       refundPolicy
       eventGuide {
@@ -392,7 +392,7 @@ export const MY_PROFILE_QUERY = `
         state
         pincode
         formattedAddress
-        coordinate { lat lng }
+        coordinate { type coordinates }
       }
     }
   }
@@ -421,7 +421,7 @@ export const UPDATE_MY_PROFILE_MUTATION = `
         state
         pincode
         formattedAddress
-        coordinate { lat lng }
+        coordinate { type coordinates }
       }
     }
   }
@@ -436,6 +436,34 @@ export const REGISTER_FCM_TOKEN_MUTATION = `
 export const UNREGISTER_FCM_TOKEN_MUTATION = `
   mutation UnregisterFcmToken($fcmToken: String!) {
     unregisterFcmToken(fcmToken: $fcmToken)
+  }
+`;
+
+// --- Address autocomplete (place search on /me/profile) ---
+// Both queries are authenticated + per-customer rate-limited on the
+// server (60 autocomplete + 20 detail calls per minute). See
+// customer-server/src/modules/customerPlaces.
+export const CUSTOMER_PLACES_AUTOCOMPLETE_QUERY = `
+  query CustomerPlacesAutocomplete($input: String!) {
+    customerPlacesAutocomplete(input: $input) {
+      placeId
+      displayName
+    }
+  }
+`;
+
+export const CUSTOMER_PLACE_DETAILS_QUERY = `
+  query CustomerPlaceDetails($placeId: String!) {
+    customerPlaceDetails(placeId: $placeId) {
+      latitude
+      longitude
+      addressLine1
+      addressLine2
+      city
+      state
+      pincode
+      formattedAddress
+    }
   }
 `;
 

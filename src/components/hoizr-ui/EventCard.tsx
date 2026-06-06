@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { DisplayEvent } from "@/lib/event-display";
 import { formatPrice } from "@/lib/event-display";
-import { formatKmBadge, kmBetween, sameCity } from "@/lib/geo";
+import { coordToLatLng, formatKmBadge, kmBetween, sameCity } from "@/lib/geo";
 import { useAuthStore } from "@/store/auth";
 
 type Props = {
@@ -47,14 +47,8 @@ export const EventCard = ({ event }: Props) => {
   const distanceLabel = (() => {
     if (!userAddress) return null;
     if (!sameCity(userAddress.city, event.city)) return null;
-    const km = kmBetween(
-      {
-        lat: userAddress.coordinate?.lat ?? undefined,
-        lng: userAddress.coordinate?.lng ?? undefined,
-      },
-      event.coordinate
-    );
-    return formatKmBadge(km);
+    const userLatLng = coordToLatLng(userAddress.coordinate);
+    return formatKmBadge(kmBetween(userLatLng, event.coordinate));
   })();
 
   return (

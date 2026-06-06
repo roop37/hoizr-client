@@ -497,6 +497,24 @@ export type CustomerPendingSignupVerifyOtpResponse = {
   uniqueId: Scalars['String']['output'];
 };
 
+export type CustomerPlaceDetail = {
+  __typename?: 'CustomerPlaceDetail';
+  addressLine1?: Maybe<Scalars['String']['output']>;
+  addressLine2?: Maybe<Scalars['String']['output']>;
+  city?: Maybe<Scalars['String']['output']>;
+  formattedAddress?: Maybe<Scalars['String']['output']>;
+  latitude?: Maybe<Scalars['Float']['output']>;
+  longitude?: Maybe<Scalars['Float']['output']>;
+  pincode?: Maybe<Scalars['String']['output']>;
+  state?: Maybe<Scalars['String']['output']>;
+};
+
+export type CustomerPlacePrediction = {
+  __typename?: 'CustomerPlacePrediction';
+  displayName: Scalars['String']['output'];
+  placeId: Scalars['String']['output'];
+};
+
 export type CustomerTokenRefreshResponse = {
   __typename?: 'CustomerTokenRefreshResponse';
   accessToken?: Maybe<Scalars['String']['output']>;
@@ -1277,6 +1295,8 @@ export type PublicEventSummary = {
 
 export type Query = {
   __typename?: 'Query';
+  customerPlaceDetails?: Maybe<CustomerPlaceDetail>;
+  customerPlacesAutocomplete: Array<CustomerPlacePrediction>;
   getActiveEventCategories: Array<EventCategory>;
   getActiveGenreTags: Array<GenreTag>;
   getActiveIndianCities: Array<IndianCity>;
@@ -1299,6 +1319,16 @@ export type Query = {
   myArtistMerchOrders: Array<ArtistMerchOrder>;
   myFollowedArtists: Array<Artist>;
   scannerEventSummary: ScannerEventSummary;
+};
+
+
+export type QueryCustomerPlaceDetailsArgs = {
+  placeId: Scalars['String']['input'];
+};
+
+
+export type QueryCustomerPlacesAutocompleteArgs = {
+  input: Scalars['String']['input'];
 };
 
 

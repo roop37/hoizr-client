@@ -63,7 +63,11 @@ export type PublicEventLocation = {
   pincode?: string;
   formattedAddress?: string;
   place?: PublicPlaceInfo;
-  coordinate?: { lat?: number | null; lng?: number | null };
+  /**
+   * GeoJSON point. `coordinates` is `[lng, lat]` per the spec — beware
+   * of the order. Use `coordToLatLng()` from `lib/geo.ts` to unpack.
+   */
+  coordinate?: { type?: string | null; coordinates?: number[] | null };
 };
 
 export type PublicEvent = {

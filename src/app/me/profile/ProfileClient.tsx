@@ -19,6 +19,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CenteredLoader } from "@/components/ui/feedback";
+import {
+  AddressSearchCard,
+  type CapturedAddress,
+} from "@/components/hoizr-ui/AddressSearchCard";
 import { InstagramConnectCard } from "@/components/hoizr-ui/InstagramConnectCard";
 import { gqlRequest } from "@/lib/graphql";
 import {
@@ -50,38 +54,31 @@ const formatDateForInput = (iso?: string | null): string => {
   return `${y}-${m}-${d}`;
 };
 
-type AddressFormFields = {
-  addressLine1: string;
-  addressLine2: string;
-  city: string;
-  state: string;
-  pincode: string;
-};
-
 /**
- * Build the AddressInfoInput payload from the form fields. All-empty
- * collapses to `null` so the server can wipe a previously-saved
- * address when the user clears the form. Lat/lng aren't captured by
- * the manual form yet — the distance badge falls back to a city
- * match when coords are missing.
+ * Build the `AddressInfoInput` payload from a `CapturedAddress` (or
+ * `null` when the user cleared the saved address). Coords are sent
+ * as a GeoJSON `CoordinatePointInput` (`[lng, lat]`) matching the
+ * shape `hoizr-shared` defines.
  */
-const buildAddressInput = (fields: AddressFormFields) => {
-  const trimmed = {
-    addressLine1: fields.addressLine1.trim(),
-    addressLine2: fields.addressLine2.trim(),
-    city: fields.city.trim(),
-    state: fields.state.trim(),
-    pincode: fields.pincode.trim(),
-  };
-  const empty = Object.values(trimmed).every((v) => !v);
-  if (empty) return null;
-  return {
-    addressLine1: trimmed.addressLine1 || undefined,
-    addressLine2: trimmed.addressLine2 || undefined,
-    city: trimmed.city || undefined,
-    state: trimmed.state || undefined,
-    pincode: trimmed.pincode || undefined,
-  };
+const buildAddressInput = (
+  fields: CapturedAddress | null
+): Record<string, unknown> | null => {
+  if (!fields) return null;
+  const payload: Record<string, unknown> = {};
+  if (fields.addressLine1?.trim()) payload.addressLine1 = fields.addressLine1.trim();
+  if (fields.addressLine2?.trim()) payload.addressLine2 = fields.addressLine2.trim();
+  if (fields.city?.trim()) payload.city = fields.city.trim();
+  if (fields.state?.trim()) payload.state = fields.state.trim();
+  if (fields.pincode?.trim()) payload.pincode = fields.pincode.trim();
+  if (fields.formattedAddress?.trim())
+    payload.formattedAddress = fields.formattedAddress.trim();
+  if (fields.coord) {
+    payload.coordinate = {
+      type: "Point",
+      coordinates: [fields.coord.lng, fields.coord.lat],
+    };
+  }
+  return Object.keys(payload).length ? payload : null;
 };
 
 export const ProfileClient = () => {
@@ -107,16 +104,14 @@ export const ProfileClient = () => {
   const [whatsappOpt, setWhatsappOpt] = useState(true);
   const [pushOpt, setPushOpt] = useState(true);
 
-  // Address — optional; powers the "N km away" badge and a nearby
-  // sort on /events when populated. Geocoding (lat/lng) is captured
-  // when the user pastes a Google Maps URL or fills it via a future
-  // place picker; manual entry skips lat/lng and only powers the
-  // same-city distance badge falls back to a city match.
-  const [addressLine1, setAddressLine1] = useState("");
-  const [addressLine2, setAddressLine2] = useState("");
-  const [addressCity, setAddressCity] = useState("");
-  const [addressState, setAddressState] = useState("");
-  const [addressPincode, setAddressPincode] = useState("");
+  // Address — optional. Single source of truth: a `CapturedAddress`
+  // produced by the AddressSearchCard (Google Places, server-side
+  // rate-limited). Manual line-by-line editing is intentionally gone;
+  // the user picks a place and we persist the structured components
+  // plus lat/lng as a GeoJSON point.
+  const [savedAddress, setSavedAddress] = useState<CapturedAddress | null>(
+    null
+  );
 
   const [profilePic, setProfilePic] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
@@ -178,11 +173,28 @@ export const ProfileClient = () => {
     setWhatsappOpt(profile.whatsappMarketingOptIn !== false);
     setPushOpt(profile.pushNotificationMarketingOptIn !== false);
     const addr = profile.address ?? null;
-    setAddressLine1(addr?.addressLine1 ?? "");
-    setAddressLine2(addr?.addressLine2 ?? "");
-    setAddressCity(addr?.city ?? "");
-    setAddressState(addr?.state ?? "");
-    setAddressPincode(addr?.pincode ?? "");
+    if (addr) {
+      const coords = Array.isArray(addr.coordinate?.coordinates)
+        ? addr.coordinate!.coordinates
+        : null;
+      const coord =
+        coords && coords.length >= 2 &&
+        typeof coords[0] === "number" &&
+        typeof coords[1] === "number"
+          ? { lng: coords[0], lat: coords[1] }
+          : undefined;
+      setSavedAddress({
+        addressLine1: addr.addressLine1 ?? undefined,
+        addressLine2: addr.addressLine2 ?? undefined,
+        city: addr.city ?? undefined,
+        state: addr.state ?? undefined,
+        pincode: addr.pincode ?? undefined,
+        formattedAddress: addr.formattedAddress ?? undefined,
+        coord,
+      });
+    } else {
+      setSavedAddress(null);
+    }
   }, [profile]);
 
   const handlePickFile = () => {
@@ -252,13 +264,7 @@ export const ProfileClient = () => {
             smsMarketingOptIn: smsOpt,
             whatsappMarketingOptIn: whatsappOpt,
             pushNotificationMarketingOptIn: pushOpt,
-            address: buildAddressInput({
-              addressLine1,
-              addressLine2,
-              city: addressCity,
-              state: addressState,
-              pincode: addressPincode,
-            }),
+            address: buildAddressInput(savedAddress),
           },
         }
       );
@@ -535,69 +541,14 @@ export const ProfileClient = () => {
         </div>
       </section>
 
-      {/* Saved address — optional, drives the "N km away" distance
-          badge on event cards and personalised nearby sort on /events.
-          The whole block can be left blank; sending zero values clears
-          a previously-saved address. */}
-      <section className={`mt-4 ${cardClass}`}>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
-          Saved address
-        </div>
-        <p className="mt-2 text-sm text-cream/65">
-          Tell us where you stay and we&apos;ll surface the closest
-          house parties, plus tag events with how far away they are.
-          Optional — skip if you&apos;d rather not.
-        </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <label className="block text-sm md:col-span-2">
-            <span className={labelClass}>Address line 1</span>
-            <input
-              value={addressLine1}
-              onChange={(e) => setAddressLine1(e.target.value)}
-              className={inputClass}
-              placeholder="House / flat, building, street"
-            />
-          </label>
-          <label className="block text-sm md:col-span-2">
-            <span className={labelClass}>Address line 2</span>
-            <input
-              value={addressLine2}
-              onChange={(e) => setAddressLine2(e.target.value)}
-              className={inputClass}
-              placeholder="Area / landmark (optional)"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className={labelClass}>City</span>
-            <input
-              value={addressCity}
-              onChange={(e) => setAddressCity(e.target.value)}
-              className={inputClass}
-              placeholder="e.g. Bengaluru"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className={labelClass}>State</span>
-            <input
-              value={addressState}
-              onChange={(e) => setAddressState(e.target.value)}
-              className={inputClass}
-              placeholder="e.g. Karnataka"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className={labelClass}>PIN code</span>
-            <input
-              value={addressPincode}
-              onChange={(e) => setAddressPincode(e.target.value)}
-              className={inputClass}
-              placeholder="6 digits"
-              inputMode="numeric"
-              maxLength={6}
-            />
-          </label>
-        </div>
-      </section>
+      {/* Saved address — search-only. User types, picks a Google
+          place suggestion, we resolve to coords + structured fields.
+          The component owns the input/chip rendering; the parent only
+          owns the captured value. Auto-save fires when the user hits
+          Save profile below. */}
+      <div className="mt-4">
+        <AddressSearchCard value={savedAddress} onChange={setSavedAddress} />
+      </div>
 
       {/* Instagram connect — own card so the embedded media grid +
           visibility toggle has room and stays distinct from the

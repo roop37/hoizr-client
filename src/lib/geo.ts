@@ -26,6 +26,25 @@ export const isLatLng = (v: unknown): v is LatLng => {
   return isFiniteNumber(r.lat) && isFiniteNumber(r.lng);
 };
 
+/**
+ * Unpack the GeoJSON CoordinatePoint shape returned by hoizr-shared
+ * (`{type, coordinates: [lng, lat]}`) into `{lat, lng}` used by the
+ * rest of the client. Returns `null` if the input is missing, the
+ * order is wrong, or either value isn't finite — never throws.
+ */
+export const coordToLatLng = (
+  point:
+    | { type?: string | null; coordinates?: number[] | null }
+    | null
+    | undefined
+): LatLng | null => {
+  const coords = point?.coordinates;
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  const [lng, lat] = coords;
+  if (!isFiniteNumber(lat) || !isFiniteNumber(lng)) return null;
+  return { lat, lng };
+};
+
 export const kmBetween = (
   a: Partial<LatLng> | null | undefined,
   b: Partial<LatLng> | null | undefined
