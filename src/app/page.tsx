@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HHero } from "@/components/hoizr-ui/HHero";
 import { RailHead } from "@/components/hoizr-ui/RailHead";
 import { GenreCollectionCard } from "@/components/hoizr-ui/GenreCollectionCard";
 import { EventCard } from "@/components/hoizr-ui/EventCard";
@@ -140,11 +139,11 @@ export default async function HomePage() {
   // it, the regular 4:5 grid below already covers the event.
   const featuredHorizontal = all.filter((e) => Boolean(e.horizontalImage)).slice(0, 6);
 
-  // Hero picks the strongest signal we have. If a featured horizontal
-  // event exists, prefer that; else the first high-demand; else the first.
-  const heroEvent =
-    featuredHorizontal[0] ?? all.find((e) => e.isHighDemand) ?? all[0];
-  const others = all.filter((e) => e.id !== heroEvent.id);
+  // Each card in the page-level rails should be distinct from the
+  // landscape-flyer rail above, otherwise the top picks repeat in
+  // "Tonight" and "Recently Added".
+  const featuredIds = new Set(featuredHorizontal.map((e) => e.id));
+  const others = all.filter((e) => !featuredIds.has(e.id));
 
   // Genres collection rail — surface the full active genre catalogue
   // (same list the event-journey "Genre" picker uses on business-client)
@@ -175,11 +174,14 @@ export default async function HomePage() {
           name: e.title,
         }))}
       />
+      {/* Single landscape-flyer rail replaces the old HHero block. The
+          big featured card dominated the viewport without driving
+          extra clicks; a horizontally-scrollable rail of all events
+          with a landscape asset gives the same selling-now energy
+          while leaving room for genres + Tonight above the fold. */}
       {featuredHorizontal.length > 0 ? (
         <FeaturedHorizontalRail events={featuredHorizontal} />
       ) : null}
-
-      <HHero event={heroEvent} />
 
       {liveGenres.length > 0 ? (
         <div className="h-rail-sec h-bleed">

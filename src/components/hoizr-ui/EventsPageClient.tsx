@@ -282,9 +282,10 @@ export const EventsPageClient = ({
       clear: () => setVert("All"),
     });
   }
-  if (city !== "All cities") {
-    pills.push({ key: "city", label: city, clear: () => setCity("All cities") });
-  }
+  // City pill intentionally suppressed — the current city is already
+  // surfaced in the global header chip ("Hoizr Pune"), so showing it
+  // again here is redundant noise. The state still drives filtering;
+  // the user changes city via the header dropdown.
   if (when !== "all") {
     pills.push({
       key: "when",

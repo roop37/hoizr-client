@@ -1010,14 +1010,16 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
         </div>
       </div>
 
-      {/* Description modal — one concern per modal, per design. */}
+      {/* Description modal — one concern per modal, per design.
+          .h-tw-sheet-* utilities convert it to a bottom sheet on
+          mobile while leaving the centred desktop layout untouched. */}
       {descriptionOpen ? (
         <div
-          className="fixed inset-0 z-[120] flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
+          className="h-tw-sheet-overlay fixed inset-0 z-[120] flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
           onClick={() => setDescriptionOpen(false)}
         >
           <div
-            className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-cream/10 bg-ink text-cream shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
+            className="h-tw-sheet-panel flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-cream/10 bg-ink text-cream shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 border-b border-cream/10 px-5 py-4">
@@ -1060,11 +1062,11 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
           policy. */}
       {refundPolicyOpen ? (
         <div
-          className="fixed inset-0 z-[120] flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
+          className="h-tw-sheet-overlay fixed inset-0 z-[120] flex items-end justify-center bg-ink/80 px-3 py-4 sm:items-center"
           onClick={() => setRefundPolicyOpen(false)}
         >
           <div
-            className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-cream/10 bg-ink text-cream shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
+            className="h-tw-sheet-panel flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-cream/10 bg-ink text-cream shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 border-b border-cream/10 px-5 py-4">
@@ -1111,8 +1113,8 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
       ) : null}
 
       {refundModalOpen ? (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-ink/70 px-4 py-5 sm:items-center">
-          <div className="w-full max-w-md rounded-2xl bg-cream p-5 text-ink shadow-xl">
+        <div className="h-tw-sheet-overlay fixed inset-0 z-[120] flex items-end justify-center bg-ink/70 px-4 py-5 sm:items-center">
+          <div className="h-tw-sheet-panel is-light w-full max-w-md rounded-2xl bg-cream p-5 text-ink shadow-xl">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-lg font-semibold text-ink">
