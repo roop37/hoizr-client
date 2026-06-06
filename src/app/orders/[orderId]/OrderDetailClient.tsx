@@ -430,6 +430,85 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
       .filter(Boolean)
       .join(", ");
 
+  const languageById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const language of languages) {
+      map.set(language._id, language.value);
+    }
+    return map;
+  }, [languages]);
+
+  const prohibitedByKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of prohibitedItemsMaster) {
+      map.set(item._id, item.value);
+      map.set(item.slug, item.value);
+    }
+    return map;
+  }, [prohibitedItemsMaster]);
+
+  const languageLabels = useMemo(
+    () =>
+      (eventSummary?.eventGuide?.languageIds ?? [])
+        .map((id) => languageById.get(id))
+        .filter((value): value is string => Boolean(value)),
+    [eventSummary?.eventGuide?.languageIds, languageById]
+  );
+
+  const prohibitedLabels = useMemo(
+    () =>
+      (eventSummary?.prohibitedItems ?? [])
+        .map((item) => {
+          const known = prohibitedByKey.get(item);
+          if (known) return known;
+          if (objectIdPattern.test(item)) return "";
+          return titleFromSlug(item);
+        })
+        .filter(Boolean),
+    [eventSummary?.prohibitedItems, prohibitedByKey]
+  );
+
+  type ThingRow = { key: string; text: string };
+  const thingsToKnow = useMemo<ThingRow[]>(() => {
+    const guide = eventSummary?.eventGuide;
+    const rows: ThingRow[] = [];
+    if (languageLabels.length)
+      rows.push({
+        key: "languages",
+        text: `Languages: ${languageLabels.join(", ")}`,
+      });
+    if (guide?.minimumEntryAge)
+      rows.push({
+        key: "minimum-age",
+        text: labelForEnum(guide.minimumEntryAge),
+      });
+    if (guide?.paidEntryAge)
+      rows.push({
+        key: "paid-age",
+        text: `Paid entry from ${labelForEnum(guide.paidEntryAge).replace(" entry", "")}`,
+      });
+    if (guide?.venueLayout)
+      rows.push({ key: "layout", text: labelForEnum(guide.venueLayout) });
+    if (guide?.seatingArrangement)
+      rows.push({
+        key: "seating",
+        text: labelForEnum(guide.seatingArrangement),
+      });
+    if (guide?.kidFriendly)
+      rows.push({ key: "kids", text: labelForEnum(guide.kidFriendly) });
+    if (guide?.petFriendly)
+      rows.push({ key: "pets", text: labelForEnum(guide.petFriendly) });
+    if (guide?.gatesOpenBeforeEvent)
+      rows.push({
+        key: "gates",
+        text: formatGatesLeadTime(
+          guide.gatesOpenLeadHours,
+          guide.gatesOpenLeadMinutes
+        ),
+      });
+    return rows;
+  }, [eventSummary?.eventGuide, languageLabels]);
+
   const handleShareTicket = async () => {
     if (!order) return;
     const orderShortId = order._id.slice(-6).toUpperCase();
@@ -619,85 +698,6 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
         };
     }
   })();
-
-  const languageById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const language of languages) {
-      map.set(language._id, language.value);
-    }
-    return map;
-  }, [languages]);
-
-  const prohibitedByKey = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const item of prohibitedItemsMaster) {
-      map.set(item._id, item.value);
-      map.set(item.slug, item.value);
-    }
-    return map;
-  }, [prohibitedItemsMaster]);
-
-  const languageLabels = useMemo(
-    () =>
-      (eventSummary?.eventGuide?.languageIds ?? [])
-        .map((id) => languageById.get(id))
-        .filter((value): value is string => Boolean(value)),
-    [eventSummary?.eventGuide?.languageIds, languageById]
-  );
-
-  const prohibitedLabels = useMemo(
-    () =>
-      (eventSummary?.prohibitedItems ?? [])
-        .map((item) => {
-          const known = prohibitedByKey.get(item);
-          if (known) return known;
-          if (objectIdPattern.test(item)) return "";
-          return titleFromSlug(item);
-        })
-        .filter(Boolean),
-    [eventSummary?.prohibitedItems, prohibitedByKey]
-  );
-
-  type ThingRow = { key: string; text: string };
-  const thingsToKnow = useMemo<ThingRow[]>(() => {
-    const guide = eventSummary?.eventGuide;
-    const rows: ThingRow[] = [];
-    if (languageLabels.length)
-      rows.push({
-        key: "languages",
-        text: `Languages: ${languageLabels.join(", ")}`,
-      });
-    if (guide?.minimumEntryAge)
-      rows.push({
-        key: "minimum-age",
-        text: labelForEnum(guide.minimumEntryAge),
-      });
-    if (guide?.paidEntryAge)
-      rows.push({
-        key: "paid-age",
-        text: `Paid entry from ${labelForEnum(guide.paidEntryAge).replace(" entry", "")}`,
-      });
-    if (guide?.venueLayout)
-      rows.push({ key: "layout", text: labelForEnum(guide.venueLayout) });
-    if (guide?.seatingArrangement)
-      rows.push({
-        key: "seating",
-        text: labelForEnum(guide.seatingArrangement),
-      });
-    if (guide?.kidFriendly)
-      rows.push({ key: "kids", text: labelForEnum(guide.kidFriendly) });
-    if (guide?.petFriendly)
-      rows.push({ key: "pets", text: labelForEnum(guide.petFriendly) });
-    if (guide?.gatesOpenBeforeEvent)
-      rows.push({
-        key: "gates",
-        text: formatGatesLeadTime(
-          guide.gatesOpenLeadHours,
-          guide.gatesOpenLeadMinutes
-        ),
-      });
-    return rows;
-  }, [eventSummary?.eventGuide, languageLabels]);
 
   const eventInstructions = eventSummary?.eventInstructions ?? [];
   const lineupArtists = people?.artists ?? [];
