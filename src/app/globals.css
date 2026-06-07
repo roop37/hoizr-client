@@ -2894,11 +2894,19 @@ body,
   z-index: 1;
   left: 50%;
   top: 50%;
-  width: min(34vw, 330px);
-  min-width: 230px;
+  /* Show the WHOLE flyer — width drives off the image's natural
+     aspect, height fills the hero minus a 36px breathing band. No
+     forced aspect-ratio, no `object-fit: cover` crop: portrait
+     flyers that aren't exactly 3:4 (4:5 Instagram-ish, anything
+     off-spec a host uploaded) used to lose their top/bottom edges
+     under `cover`. `contain` is a safety net for the edge case
+     where width: auto resolves wider than the hero (e.g. landscape
+     portraits) — it'll letterbox instead of overflow. */
+  width: auto;
+  height: 100%;
+  max-width: calc(100% - 32px);
   max-height: calc(100% - 36px);
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
   transform: translate(-50%, -50%);
   box-shadow:
@@ -4592,9 +4600,13 @@ body,
   .h-event-hero--landscape {
     aspect-ratio: 16 / 10;
   }
+  /* Mobile inherits the height-driven sizing from the base rule —
+     overriding width here would re-introduce the crop the desktop
+     rule just removed. We just relax the side-padding so phones use
+     more of the available width before letterboxing kicks in. */
   .h-event-hero-poster {
-    width: min(64vw, 270px);
-    min-width: 200px;
+    max-width: calc(100% - 16px);
+    max-height: calc(100% - 24px);
   }
   .h-event-sneak-card {
     right: 10px;

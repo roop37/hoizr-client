@@ -346,6 +346,7 @@ export type Customer = {
   isDeleted: Scalars['Boolean']['output'];
   lastName: Scalars['String']['output'];
   phone: Scalars['String']['output'];
+  phoneE164?: Maybe<Scalars['String']['output']>;
   profilePic?: Maybe<Scalars['String']['output']>;
   pushNotificationMarketingOptIn: Scalars['Boolean']['output'];
   secondaryEmail?: Maybe<Scalars['String']['output']>;
