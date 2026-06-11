@@ -16,8 +16,10 @@ import { track } from "@/lib/tracker";
 import { useAuthStore } from "@/store/auth";
 import type { PublicEvent, PublicExtra, PublicTicket } from "@/types/event";
 import type { CartResponse } from "@/types/order";
+import { GuestCheckoutModal } from "@/components/hoizr-ui/GuestCheckoutModal";
 
 type Selection = Record<string, number>;
+type LineSel = { tickets: { ticketId: string; quantity: number }[]; extras: { extraId: string; quantity: number }[] };
 
 const resolveTicketGstRate = (ticket: PublicTicket) => {
   if (
@@ -85,6 +87,8 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
   const [extraSel, setExtraSel] = useState<Selection>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Guest checkout (not-logged-in) modal — opened from "Continue to checkout".
+  const [guestSel, setGuestSel] = useState<LineSel | null>(null);
 
   useEffect(() => {
     if (!hydrated) {
@@ -163,18 +167,10 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
     });
 
     if (!profile) {
-      writeActiveCart({
-        eventId: event._id,
-        eventSlug: event.slug,
-        eventTitle: event.title,
-        eventImage: event.horizontalFlyer ?? event.eventFlyer,
-        totalAmount: preview.totalAmount,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-        tickets: selectedTickets,
-        extras: selectedExtras,
-        pending: true,
-      });
-      router.push(`/checkout?eventId=${event._id}`);
+      // Not logged in → open the guest-checkout modal (bottom sheet on
+      // mobile) right here. The buyer can fill details + pay as a guest, or
+      // choose "Log in" which falls back to the existing checkout-page flow.
+      setGuestSel({ tickets: selectedTickets, extras: selectedExtras });
       return;
     }
 
@@ -217,6 +213,28 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
       <div className="rounded-2xl border border-border bg-cream p-6 text-sm text-muted">
         Online ticketing isn't enabled for this event. Check the event's social
         channels for entry details.
+      </div>
+    );
+  }
+
+  // AUDIT-065: once an event ends it flips to COMPLETED and its detail page
+  // still renders (so the URL doesn't 404), but it can no longer be booked —
+  // the server's cart/order gates reject it too. Show a clear "ended" state
+  // instead of a dead book button. Keyed on endDate (COMPLETED events always
+  // have endDate < now); falls back to startDate when no endDate is set.
+  const endsAt = event.endDate
+    ? new Date(event.endDate)
+    : event.startDate
+    ? new Date(event.startDate)
+    : null;
+  const hasEnded = !!endsAt && !Number.isNaN(endsAt.getTime()) && endsAt < new Date();
+  if (hasEnded) {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center text-white backdrop-blur-md">
+        <div className="text-sm font-semibold">This event has ended</div>
+        <div className="mt-1 text-xs text-white/60">
+          Booking is closed. Browse upcoming events to find your next night out.
+        </div>
       </div>
     );
   }
@@ -400,6 +418,32 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
           )}
         </button>
       </div>
+
+      <GuestCheckoutModal
+        open={!!guestSel}
+        onClose={() => setGuestSel(null)}
+        eventId={event._id}
+        eventTitle={event.title ?? "this event"}
+        tickets={guestSel?.tickets ?? []}
+        extras={guestSel?.extras ?? []}
+        onLoginInstead={() => {
+          // Fall back to the existing login → checkout-page flow: persist the
+          // selection locally and let the checkout page prompt sign-in.
+          writeActiveCart({
+            eventId: event._id,
+            eventSlug: event.slug,
+            eventTitle: event.title,
+            eventImage: event.horizontalFlyer ?? event.eventFlyer,
+            totalAmount: preview.totalAmount,
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+            tickets: guestSel?.tickets ?? [],
+            extras: guestSel?.extras ?? [],
+            pending: true,
+          });
+          setGuestSel(null);
+          router.push(`/checkout?eventId=${event._id}`);
+        }}
+      />
     </div>
   );
 };

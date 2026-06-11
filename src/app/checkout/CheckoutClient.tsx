@@ -159,6 +159,13 @@ export const CheckoutClient = () => {
       if (!data.getCart) {
         setFatalError("Your cart has expired. Please reselect your tickets.");
         clearActiveCart();
+      } else if (new Date(data.getCart.expiresAt).getTime() <= Date.now()) {
+        // AUDIT-036: the server can still return a cart whose TTL lapsed
+        // moments ago (clock skew, or the customer re-opened a left-open
+        // checkout tab). Surface the expired state up front instead of
+        // rendering a form that will only fail at the payment step.
+        setFatalError("Your cart has expired. Please reselect your tickets.");
+        clearActiveCart();
       } else {
         setCart(data.getCart);
         persistCart(data.getCart);
