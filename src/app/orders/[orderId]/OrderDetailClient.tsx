@@ -42,6 +42,7 @@ import type {
   PublicProhibitedItemMaster,
 } from "@/types/event";
 import { CenteredLoader, ErrorState } from "@/components/ui/feedback";
+import { OrderFeedbackCard } from "@/components/hoizr-ui/OrderFeedbackCard";
 
 type OrderEventSummary = Pick<
   PublicEvent,
@@ -798,6 +799,20 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
           >
             <ChevronLeft size={14} /> All tickets
           </Link>
+
+          {/* Feedback prompt — only on confirmed orders. Asks about the event
+              once it has ended, otherwise about the Hoizr experience. */}
+          {confirmed && order ? (
+            <div className="mt-4 md:max-w-md">
+              <OrderFeedbackCard
+                orderId={order._id}
+                eventEnded={
+                  !!eventSummary?.endDate &&
+                  new Date(eventSummary.endDate).getTime() < Date.now()
+                }
+              />
+            </div>
+          ) : null}
 
           {/* Desktop hero — compact event header with landscape flyer
               on the left and title/badge column on the right. Hidden on

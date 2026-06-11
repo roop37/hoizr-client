@@ -925,6 +925,24 @@ export type GoogleStartPrefill = {
   picture?: Maybe<Scalars['String']['output']>;
 };
 
+export type GuestCartExtraInput = {
+  extraId: Scalars['String']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+export type GuestCartTicketInput = {
+  quantity: Scalars['Int']['input'];
+  ticketId: Scalars['String']['input'];
+};
+
+export type GuestCheckoutResponse = {
+  __typename?: 'GuestCheckoutResponse';
+  accountEmail?: Maybe<Scalars['String']['output']>;
+  accountFound: Scalars['Boolean']['output'];
+  checkout?: Maybe<RazorpayCheckoutPayload>;
+  order: CustomerOrderView;
+};
+
 export type GuestInfo = {
   __typename?: 'GuestInfo';
   email?: Maybe<Scalars['String']['output']>;
@@ -938,6 +956,22 @@ export type GuestInfoInput = {
   firstName?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
   phone: Scalars['String']['input'];
+};
+
+export type GuestOrderInput = {
+  email: Scalars['String']['input'];
+  eventId: Scalars['String']['input'];
+  extras?: InputMaybe<Array<GuestCartExtraInput>>;
+  firstName: Scalars['String']['input'];
+  lastName: Scalars['String']['input'];
+  notifyMe?: InputMaybe<Scalars['Boolean']['input']>;
+  offlineOrderId?: InputMaybe<Scalars['String']['input']>;
+  pageQuery?: InputMaybe<Scalars['String']['input']>;
+  phone: Scalars['String']['input'];
+  promoterId?: InputMaybe<Scalars['String']['input']>;
+  referralCode?: InputMaybe<Scalars['String']['input']>;
+  tickets: Array<GuestCartTicketInput>;
+  utm?: InputMaybe<UtmInput>;
 };
 
 export type HoizrExtra = {
@@ -1008,6 +1042,7 @@ export type Mutation = {
   confirmOrderPayment: CustomerOrderView;
   connectInstagram: CustomerInstagram;
   createArtistMerchOrder: CreateArtistMerchOrderResult;
+  createGuestOrder: GuestCheckoutResponse;
   createOrder: CreateOrderResponse;
   customerAppleStart: CustomerGoogleStartResponse;
   customerGoogleStart: CustomerGoogleStartResponse;
@@ -1026,7 +1061,9 @@ export type Mutation = {
   scannerLogin: ScannerLoginResponse;
   scannerTokenRefresh: ScannerRefreshResponse;
   setCart: CartResponse;
+  submitCustomerFeedback: Scalars['Boolean']['output'];
   syncMyInstagram?: Maybe<CustomerInstagram>;
+  syncOfflineScans: Array<OfflineScanResult>;
   unfollowArtist: Scalars['Boolean']['output'];
   unregisterFcmToken: Scalars['Boolean']['output'];
   updateInstagramVisibility: CustomerInstagram;
@@ -1058,6 +1095,11 @@ export type MutationConnectInstagramArgs = {
 
 export type MutationCreateArtistMerchOrderArgs = {
   input: CreateArtistMerchOrderInput;
+};
+
+
+export type MutationCreateGuestOrderArgs = {
+  input: GuestOrderInput;
 };
 
 
@@ -1137,6 +1179,20 @@ export type MutationSetCartArgs = {
 };
 
 
+export type MutationSubmitCustomerFeedbackArgs = {
+  comment?: InputMaybe<Scalars['String']['input']>;
+  context: Scalars['String']['input'];
+  kind: Scalars['String']['input'];
+  orderId: Scalars['String']['input'];
+  rating?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type MutationSyncOfflineScansArgs = {
+  scans: Array<OfflineScanInput>;
+};
+
+
 export type MutationUnfollowArtistArgs = {
   artistId: Scalars['String']['input'];
 };
@@ -1159,6 +1215,44 @@ export type MutationUpdateMyProfileArgs = {
 export type MyOrdersFilterInput = {
   page?: InputMaybe<Scalars['Int']['input']>;
   pageSize?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type OfflineLinkLine = {
+  __typename?: 'OfflineLinkLine';
+  isExtra: Scalars['Boolean']['output'];
+  itemId: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  quantity: Scalars['Float']['output'];
+  unitPrice: Scalars['Float']['output'];
+};
+
+export type OfflinePaymentLinkView = {
+  __typename?: 'OfflinePaymentLinkView';
+  alreadyPaid: Scalars['Boolean']['output'];
+  amountTotal: Scalars['Float']['output'];
+  customerEmail?: Maybe<Scalars['String']['output']>;
+  customerFirstName?: Maybe<Scalars['String']['output']>;
+  customerLastName?: Maybe<Scalars['String']['output']>;
+  customerPhone: Scalars['String']['output'];
+  eventFlyer?: Maybe<Scalars['String']['output']>;
+  eventId: Scalars['String']['output'];
+  eventSlug?: Maybe<Scalars['String']['output']>;
+  eventTitle?: Maybe<Scalars['String']['output']>;
+  expired: Scalars['Boolean']['output'];
+  lines: Array<OfflineLinkLine>;
+  offlineOrderId: Scalars['String']['output'];
+};
+
+export type OfflineScanInput = {
+  qrCodeData: Scalars['String']['input'];
+  scannedAt: Scalars['DateTimeISO']['input'];
+};
+
+export type OfflineScanResult = {
+  __typename?: 'OfflineScanResult';
+  message: Scalars['String']['output'];
+  qrCodeData: Scalars['String']['output'];
+  status: ScanResultStatus;
 };
 
 export type OrderExtraItem = {
@@ -1319,6 +1413,8 @@ export type Query = {
   isFollowingArtist: Scalars['Boolean']['output'];
   myArtistMerchOrders: Array<ArtistMerchOrder>;
   myFollowedArtists: Array<Artist>;
+  offlinePaymentLink: OfflinePaymentLinkView;
+  scannerEventManifest: ScannerManifest;
   scannerEventSummary: ScannerEventSummary;
 };
 
@@ -1391,6 +1487,11 @@ export type QueryGetPublishedEventsArgs = {
 
 export type QueryIsFollowingArtistArgs = {
   artistId: Scalars['String']['input'];
+};
+
+
+export type QueryOfflinePaymentLinkArgs = {
+  shortCode: Scalars['String']['input'];
 };
 
 export type RazorpayCheckoutPayload = {
@@ -1475,6 +1576,29 @@ export type ScannerLoginResponse = {
   scannerId: Scalars['String']['output'];
   scannerName: Scalars['String']['output'];
   scannerType: Scalars['String']['output'];
+};
+
+export type ScannerManifest = {
+  __typename?: 'ScannerManifest';
+  endDate?: Maybe<Scalars['DateTimeISO']['output']>;
+  entries: Array<ScannerManifestEntry>;
+  eventId: Scalars['ID']['output'];
+  generatedAt: Scalars['DateTimeISO']['output'];
+  startDate?: Maybe<Scalars['DateTimeISO']['output']>;
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type ScannerManifestEntry = {
+  __typename?: 'ScannerManifestEntry';
+  checkedIn: Scalars['Boolean']['output'];
+  checkedInAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  customerName?: Maybe<Scalars['String']['output']>;
+  customerPhone?: Maybe<Scalars['String']['output']>;
+  orderId: Scalars['ID']['output'];
+  qrCodeData: Scalars['String']['output'];
+  refunded: Scalars['Boolean']['output'];
+  tickets: Array<ScannedTicketLine>;
+  totalTickets: Scalars['Int']['output'];
 };
 
 export type ScannerRefreshResponse = {

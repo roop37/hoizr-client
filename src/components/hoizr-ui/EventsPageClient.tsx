@@ -7,6 +7,9 @@ import type { DisplayEvent } from "@/lib/event-display";
 import { useUIStore } from "@/store/uiStore";
 import type { GenreTagMaster, IndianCityMaster } from "@/types/master";
 
+// AUDIT-037: number of event cards revealed per "Load more" page.
+const EVENTS_PAGE_SIZE = 24;
+
 type VibeMatch = (event: DisplayEvent) => boolean;
 const VERTICALS: { id: string; label: string; match: VibeMatch }[] = [
   { id: "All", label: "All vibes", match: () => true },
@@ -183,6 +186,10 @@ export const EventsPageClient = ({
   const [city, setCity] = useState(initialCity ?? "All cities");
   const [genreId, setGenreId] = useState(initialGenreId ?? "All genres");
   const [sheetOpen, setSheetOpen] = useState(false);
+  // AUDIT-037: reveal the grid a page at a time instead of dumping all
+  // (up to 96) cards at once. Purely client-side over the already-fetched
+  // set; resets to the first page whenever the filter result changes.
+  const [visibleCount, setVisibleCount] = useState(EVENTS_PAGE_SIZE);
 
   useEffect(() => {
     if (!initialCity && selectedGlobalCity !== "All cities") {
@@ -268,6 +275,12 @@ export const EventsPageClient = ({
     }
     return sortEvents(xs, sort);
   }, [events, vert, city, genreId, when, price, sort, search]);
+
+  // Reset to the first page when the filtered result set changes, so a
+  // newly-applied filter never starts scrolled past its own results.
+  useEffect(() => {
+    setVisibleCount(EVENTS_PAGE_SIZE);
+  }, [filtered]);
 
   const activeGenre = eventGenres.find((genre) => genre._id === genreId);
 
@@ -466,11 +479,26 @@ export const EventsPageClient = ({
           </button>
         </div>
       ) : (
-        <div className="h-evt-grid">
-          {filtered.map((e) => (
-            <EventCard key={e.id} event={e} />
-          ))}
-        </div>
+        <>
+          <div className="h-evt-grid">
+            {filtered.slice(0, visibleCount).map((e) => (
+              <EventCard key={e.id} event={e} />
+            ))}
+          </div>
+          {filtered.length > visibleCount ? (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                className="h-btn-text rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold"
+                onClick={() =>
+                  setVisibleCount((c) => c + EVENTS_PAGE_SIZE)
+                }
+              >
+                Load more ({filtered.length - visibleCount} more)
+              </button>
+            </div>
+          ) : null}
+        </>
       )}
 
       {sheetOpen ? (
