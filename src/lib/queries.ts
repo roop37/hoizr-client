@@ -585,6 +585,45 @@ export const GET_CART_QUERY = `
   }
 `;
 
+// Public, copyable promo codes the host chose to show on an event page.
+export const VISIBLE_COUPONS_QUERY = `
+  query VisibleCouponsForEvent($eventId: String!) {
+    visibleCouponsForEvent(eventId: $eventId) {
+      code
+      description
+      discountLabel
+      minCartValue
+      endDate
+    }
+  }
+`;
+
+// Validate a promo code at checkout and preview the discount + the full
+// DISCOUNTED price breakdown so the summary renders exact GST/fee lines.
+export const PREVIEW_COUPON_QUERY = `
+  query PreviewCoupon($input: PreviewCouponInput!) {
+    previewCoupon(input: $input) {
+      ok
+      code
+      reason
+      discountAmount
+      ticketsSubtotal
+      totalBefore
+      totalAfter
+      pricing {
+        grossAmount
+        discountAmount
+        applicationFee
+        applicationFeePercent
+        platformFeeGst
+        taxes
+        taxesPercent
+        totalAmount
+      }
+    }
+  }
+`;
+
 export const SET_CART_MUTATION = `
   mutation SetCart($input: SetCartInput!) {
     setCart(input: $input) {

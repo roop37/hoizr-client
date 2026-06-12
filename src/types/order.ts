@@ -16,12 +16,26 @@ export type CartExtraLine = {
 
 export type CartPricing = {
   grossAmount: number;
+  /** Coupon discount on the ticket subtotal (₹; 0/absent when none). */
+  discountAmount?: number;
   applicationFee: number;
   applicationFeePercent: number;
   platformFeeGst: number;
   taxes: number;
   taxesPercent: number;
   totalAmount: number;
+};
+
+/** Result of validating a promo code at checkout (previewCoupon query). */
+export type CouponPreview = {
+  ok: boolean;
+  code: string;
+  reason?: string | null;
+  discountAmount: number;
+  ticketsSubtotal: number;
+  totalBefore: number;
+  totalAfter: number;
+  pricing?: CartPricing | null;
 };
 
 export type CartResponse = {
