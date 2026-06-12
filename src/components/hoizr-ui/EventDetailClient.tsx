@@ -16,6 +16,7 @@ import {
 } from "@/lib/queries";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { EventInstagramAttendees } from "./EventInstagramAttendees";
+import { EventPromoCodes } from "./EventPromoCodes";
 import { HICONS, THING_ICONS } from "./icons";
 import Link from "next/link";
 // HFooter rendered once at the layout level.
@@ -448,6 +449,8 @@ export const EventDetailClient = ({
           </div>
         ) : null}
       </div>
+
+      <EventPromoCodes eventId={event._id} />
 
       <div className="h-detail-heading">
         <div>

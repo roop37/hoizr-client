@@ -27,6 +27,7 @@ import {
   CONFIRM_PAYMENT_MUTATION,
   CREATE_ORDER_MUTATION,
   GET_CART_QUERY,
+  PREVIEW_COUPON_QUERY,
   REUSE_PENDING_ORDER_MUTATION,
   SET_CART_MUTATION,
 } from "@/lib/queries";
@@ -34,6 +35,7 @@ import { getStoredAttribution, track } from "@/lib/tracker";
 import { useAuthStore } from "@/store/auth";
 import type {
   CartResponse,
+  CouponPreview,
   CreateOrderResponse,
   CustomerOrderView,
 } from "@/types/order";
@@ -85,6 +87,14 @@ export const CheckoutClient = () => {
   });
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // Promo code state. `appliedCoupon` holds the server-validated preview
+  // (the SAME evaluator + pricing engine the order path uses), so the
+  // summary it drives is exactly what the buyer is charged.
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponPreview | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hydrated) hydrate();
@@ -254,6 +264,12 @@ export const CheckoutClient = () => {
       );
       setCart(data.setCart);
       persistCart(data.setCart);
+      // A changed cart invalidates any applied promo (quantities/eligibility
+      // shifted). Drop it so the buyer re-applies against the new total.
+      if (appliedCoupon) {
+        setAppliedCoupon(null);
+        setCouponError(null);
+      }
       track("cartUpdated", {
         eventId,
         itemIds: [lineId],
@@ -267,6 +283,48 @@ export const CheckoutClient = () => {
     } finally {
       setUpdatingLine(null);
     }
+  };
+
+  const applyPromo = async () => {
+    if (!eventId || !cart) return;
+    const code = promoInput.trim();
+    if (!code) return;
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      const tickets = cart.tickets
+        .filter((t) => t.quantity > 0)
+        .map((t) => ({ ticketId: t.ticketId, quantity: t.quantity }));
+      const data = await gqlRequest<{ previewCoupon: CouponPreview }>(
+        PREVIEW_COUPON_QUERY,
+        { input: { eventId, couponCode: code, tickets } }
+      );
+      const preview = data.previewCoupon;
+      if (!preview.ok) {
+        setAppliedCoupon(null);
+        setCouponError(preview.reason ?? "That promo code can't be applied.");
+        return;
+      }
+      setAppliedCoupon(preview);
+      setPromoInput(preview.code);
+      track("couponApplied", {
+        eventId,
+        metadata: { code: preview.code, discount: preview.discountAmount },
+      });
+    } catch (err: any) {
+      setAppliedCoupon(null);
+      setCouponError(
+        err?.response?.errors?.[0]?.message ?? "Unable to check this code."
+      );
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+    setPromoInput("");
   };
 
   const startPayment = async () => {
@@ -313,6 +371,7 @@ export const CheckoutClient = () => {
                   email: guestInfo.email?.trim(),
                   phone: guestInfo.phone?.trim() || profile.phone,
                 },
+                couponCode: appliedCoupon?.code,
                 utm: {
                   utmSource: attribution.utmSource,
                   utmMedium: attribution.utmMedium,
@@ -746,46 +805,119 @@ export const CheckoutClient = () => {
           </div>
         </div>
 
+        {/* Promo code. Drives the summary below from a server-validated
+            preview, so the discount shown is the discount charged. */}
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
-          <div className="flex justify-between py-1">
-            <span className="text-white/55">Subtotal</span>
-            <span className="font-medium text-white">
-              {rupee(cart.pricing.grossAmount)}
-            </span>
-          </div>
-          {cart.pricing.taxes > 0 ? (
-            <div className="flex justify-between py-1">
-              <span className="text-white/55">
-                Ticket GST ({cart.pricing.taxesPercent}%)
-              </span>
-              <span className="font-medium text-white">
-                {rupee(cart.pricing.taxes)}
-              </span>
+          {appliedCoupon?.ok ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-semibold text-[#9CCB3B]">
+                  {appliedCoupon.code} applied
+                </div>
+                <div className="text-xs text-white/55">
+                  You save {rupee(appliedCoupon.discountAmount)}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={removePromo}
+                disabled={paying}
+                className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/[0.06]"
+              >
+                Remove
+              </button>
             </div>
-          ) : null}
-          <div className="flex justify-between py-1">
-            <span className="text-white/55">
-              Platform fee ({cart.pricing.applicationFeePercent}%)
-            </span>
-            <span className="font-medium text-white">
-              {rupee(cart.pricing.applicationFee)}
-            </span>
-          </div>
-          {cart.pricing.platformFeeGst > 0 ? (
-            <div className="flex justify-between py-1">
-              <span className="text-white/55">GST on platform fee (18%)</span>
-              <span className="font-medium text-white">
-                {rupee(cart.pricing.platformFeeGst)}
-              </span>
-            </div>
-          ) : null}
-          <div className="mt-2 flex justify-between border-t border-white/[0.08] pt-2 text-base">
-            <span className="font-semibold text-white">Total payable</span>
-            <span className="font-semibold text-white">
-              {rupee(cart.pricing.totalAmount)}
-            </span>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyPromo();
+                    }
+                  }}
+                  placeholder="Promo code"
+                  disabled={couponBusy || paying}
+                  className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm uppercase tracking-wide text-white placeholder:normal-case placeholder:tracking-normal placeholder:text-white/40 focus:border-[#9CCB3B]/60 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={applyPromo}
+                  disabled={couponBusy || paying || !promoInput.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0F8842] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0d7639] disabled:opacity-50"
+                >
+                  {couponBusy ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </button>
+              </div>
+              {couponError ? (
+                <p className="mt-2 text-xs text-red-300">{couponError}</p>
+              ) : null}
+            </>
+          )}
         </div>
+
+        {(() => {
+          const applied = appliedCoupon?.ok ? appliedCoupon : null;
+          const pr = applied?.pricing ?? cart.pricing;
+          const subtotal = applied ? applied.ticketsSubtotal : cart.pricing.grossAmount;
+          return (
+            <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
+              <div className="flex justify-between py-1">
+                <span className="text-white/55">Subtotal</span>
+                <span className="font-medium text-white">{rupee(subtotal)}</span>
+              </div>
+              {applied ? (
+                <div className="flex justify-between py-1">
+                  <span className="text-[#9CCB3B]">
+                    Discount ({applied.code})
+                  </span>
+                  <span className="font-medium text-[#9CCB3B]">
+                    −{rupee(applied.discountAmount)}
+                  </span>
+                </div>
+              ) : null}
+              {pr.taxes > 0 ? (
+                <div className="flex justify-between py-1">
+                  <span className="text-white/55">
+                    Ticket GST ({pr.taxesPercent}%)
+                  </span>
+                  <span className="font-medium text-white">
+                    {rupee(pr.taxes)}
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex justify-between py-1">
+                <span className="text-white/55">
+                  Platform fee ({pr.applicationFeePercent}%)
+                </span>
+                <span className="font-medium text-white">
+                  {rupee(pr.applicationFee)}
+                </span>
+              </div>
+              {pr.platformFeeGst > 0 ? (
+                <div className="flex justify-between py-1">
+                  <span className="text-white/55">GST on platform fee (18%)</span>
+                  <span className="font-medium text-white">
+                    {rupee(pr.platformFeeGst)}
+                  </span>
+                </div>
+              ) : null}
+              <div className="mt-2 flex justify-between border-t border-white/[0.08] pt-2 text-base">
+                <span className="font-semibold text-white">Total payable</span>
+                <span className="font-semibold text-white">
+                  {rupee(pr.totalAmount)}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* AUDIT-034: SoT §27 disclosure on point of sale. */}
         <p className="text-center text-xs text-white/50">

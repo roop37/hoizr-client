@@ -6,7 +6,11 @@ import {
   type GuestCheckoutInput,
 } from "@/lib/guestCheckout";
 import { clearActiveCart } from "@/lib/active-cart";
+import { gqlRequest } from "@/lib/graphql";
+import { PREVIEW_COUPON_QUERY } from "@/lib/queries";
 import { track } from "@/lib/tracker";
+import type { CouponPreview } from "@/types/order";
+import { rupee } from "@/lib/format";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
 import { CheckCircle2, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -43,6 +47,10 @@ export const GuestCheckoutModal = ({
   const [error, setError] = useState<string | null>(null);
   const [accountNote, setAccountNote] = useState<string | null>(null);
   const [paidEmail, setPaidEmail] = useState<string>("");
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponPreview | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [resultMeta, setResultMeta] = useState<{
@@ -73,6 +81,34 @@ export const GuestCheckoutModal = ({
     setPhase("paid");
   };
 
+  const applyPromo = async () => {
+    const code = promoInput.trim();
+    if (!code) return;
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      const data = await gqlRequest<{ previewCoupon: CouponPreview }>(
+        PREVIEW_COUPON_QUERY,
+        { input: { eventId, couponCode: code, tickets } }
+      );
+      const preview = data.previewCoupon;
+      if (!preview.ok) {
+        setAppliedCoupon(null);
+        setCouponError(preview.reason ?? "That promo code can't be applied.");
+        return;
+      }
+      setAppliedCoupon(preview);
+      setPromoInput(preview.code);
+    } catch (err: any) {
+      setAppliedCoupon(null);
+      setCouponError(
+        err?.response?.errors?.[0]?.message ?? "Unable to check this code."
+      );
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
   const submit = async () => {
     if (!valid || phase === "submitting") return;
     setError(null);
@@ -88,6 +124,7 @@ export const GuestCheckoutModal = ({
         email: email.trim(),
         phone: phone.trim(),
         notifyMe,
+        couponCode: appliedCoupon?.ok ? appliedCoupon.code : undefined,
       };
       const res = await createGuestOrder(input);
       setResultMeta({
@@ -283,6 +320,69 @@ export const GuestCheckoutModal = ({
                 </a>{" "}
                 — we&apos;ll create your account so your tickets are saved.
               </p>
+
+              {/* Promo code (optional) — validated server-side; the
+                  discount is applied to the order at payment time. */}
+              {appliedCoupon?.ok ? (
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-[#9CCB3B]/30 bg-[#9CCB3B]/10 px-3 py-2 text-xs">
+                  <span className="text-white/85">
+                    <span className="font-semibold text-[#9CCB3B]">
+                      {appliedCoupon.code}
+                    </span>{" "}
+                    applied — you save {rupee(appliedCoupon.discountAmount)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedCoupon(null);
+                      setPromoInput("");
+                      setCouponError(null);
+                    }}
+                    className="font-medium text-white/60 underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={promoInput}
+                      onChange={(e) =>
+                        setPromoInput(e.target.value.toUpperCase())
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          applyPromo();
+                        }
+                      }}
+                      placeholder="Promo code"
+                      disabled={couponBusy || phase === "submitting"}
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm uppercase tracking-wide text-white outline-none transition focus:border-[var(--h-accent)]/60 placeholder:normal-case placeholder:tracking-normal placeholder:text-white/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyPromo}
+                      disabled={
+                        couponBusy ||
+                        phase === "submitting" ||
+                        !promoInput.trim()
+                      }
+                      className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white disabled:opacity-50"
+                    >
+                      {couponBusy ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
+                    </button>
+                  </div>
+                  {couponError ? (
+                    <p className="mt-1.5 text-xs text-red-300">{couponError}</p>
+                  ) : null}
+                </div>
+              )}
 
               {accountNote ? (
                 <p className="mt-3 rounded-lg border border-[var(--h-accent)]/30 bg-[var(--h-accent)]/10 px-3 py-2 text-xs text-white/80">

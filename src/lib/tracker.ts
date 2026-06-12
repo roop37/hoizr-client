@@ -34,6 +34,7 @@ export type AnalyticsEventName =
   | "checkoutPaymentInit"
   | "checkoutPaymentFailed"
   | "checkoutCompleted"
+  | "couponApplied"
   // Artist
   | "artistListView"
   | "artistDetailView"

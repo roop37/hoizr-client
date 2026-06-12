@@ -19,6 +19,8 @@ export type GuestCheckoutInput = {
   notifyMe: boolean;
   /** Set when the order came from a host's offline payment link. */
   offlineOrderId?: string;
+  /** Promo code the guest applied (validated server-side at order time). */
+  couponCode?: string;
 };
 
 export type OfflinePaymentLinkView = {

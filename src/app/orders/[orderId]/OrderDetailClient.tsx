@@ -1297,7 +1297,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
               orders. Asks about the event once it has ended, otherwise about
               the Hoizr experience. */}
           {confirmed && order ? (
-            <div className="mx-auto mt-10 max-w-md">
+            <div className="mt-10 max-w-md">
               <OrderFeedbackCard
                 orderId={order._id}
                 eventEnded={

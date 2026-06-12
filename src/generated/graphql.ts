@@ -226,6 +226,7 @@ export type CartPricing = {
   __typename?: 'CartPricing';
   applicationFee: Scalars['Float']['output'];
   applicationFeePercent: Scalars['Float']['output'];
+  discountAmount: Scalars['Float']['output'];
   grossAmount: Scalars['Float']['output'];
   platformFeeGst: Scalars['Float']['output'];
   taxes: Scalars['Float']['output'];
@@ -279,6 +280,18 @@ export type CoordinatePointInput = {
   type: Scalars['String']['input'];
 };
 
+export type CouponPreviewView = {
+  __typename?: 'CouponPreviewView';
+  code: Scalars['String']['output'];
+  discountAmount: Scalars['Float']['output'];
+  ok: Scalars['Boolean']['output'];
+  pricing?: Maybe<CartPricing>;
+  reason?: Maybe<Scalars['String']['output']>;
+  ticketsSubtotal: Scalars['Float']['output'];
+  totalAfter: Scalars['Float']['output'];
+  totalBefore: Scalars['Float']['output'];
+};
+
 export enum CoverType {
   CoverWithoutDrink = 'COVER_WITHOUT_DRINK',
   CoverWithDrink = 'COVER_WITH_DRINK',
@@ -308,6 +321,7 @@ export type CreateArtistMerchOrderResult = {
 };
 
 export type CreateOrderInput = {
+  couponCode?: InputMaybe<Scalars['String']['input']>;
   eventId: Scalars['String']['input'];
   guestInfo?: InputMaybe<GuestInfoInput>;
   pageQuery?: InputMaybe<Scalars['String']['input']>;
@@ -960,6 +974,7 @@ export type GuestInfoInput = {
 };
 
 export type GuestOrderInput = {
+  couponCode?: InputMaybe<Scalars['String']['input']>;
   email: Scalars['String']['input'];
   eventId: Scalars['String']['input'];
   extras?: InputMaybe<Array<GuestCartExtraInput>>;
@@ -1306,6 +1321,12 @@ export type PlaceInfoInput = {
   placeId?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type PreviewCouponInput = {
+  couponCode: Scalars['String']['input'];
+  eventId: Scalars['String']['input'];
+  tickets: Array<GuestCartTicketInput>;
+};
+
 export type ProhibitedItemMaster = {
   __typename?: 'ProhibitedItemMaster';
   _id: Scalars['ID']['output'];
@@ -1324,6 +1345,15 @@ export type PublicArtistOrOrganizerEvents = {
   __typename?: 'PublicArtistOrOrganizerEvents';
   past: Array<PublicEventSummary>;
   upcoming: Array<PublicEventSummary>;
+};
+
+export type PublicCoupon = {
+  __typename?: 'PublicCoupon';
+  code: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  discountLabel: Scalars['String']['output'];
+  endDate: Scalars['DateTimeISO']['output'];
+  minCartValue?: Maybe<Scalars['Float']['output']>;
 };
 
 export type PublicEventArtistEntry = {
@@ -1415,8 +1445,10 @@ export type Query = {
   myArtistMerchOrders: Array<ArtistMerchOrder>;
   myFollowedArtists: Array<Artist>;
   offlinePaymentLink: OfflinePaymentLinkView;
+  previewCoupon: CouponPreviewView;
   scannerEventManifest: ScannerManifest;
   scannerEventSummary: ScannerEventSummary;
+  visibleCouponsForEvent: Array<PublicCoupon>;
 };
 
 
@@ -1493,6 +1525,16 @@ export type QueryIsFollowingArtistArgs = {
 
 export type QueryOfflinePaymentLinkArgs = {
   shortCode: Scalars['String']['input'];
+};
+
+
+export type QueryPreviewCouponArgs = {
+  input: PreviewCouponInput;
+};
+
+
+export type QueryVisibleCouponsForEventArgs = {
+  eventId: Scalars['String']['input'];
 };
 
 export type RazorpayCheckoutPayload = {
