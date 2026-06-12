@@ -370,7 +370,7 @@ const AuthPanelInner = ({
               placeholder="+91 9876543210"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
-              className="mt-2 h-12 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-base text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
+              className="mt-2 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-sm text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
             />
           </label>
           <p className="text-xs text-white/50">
@@ -407,7 +407,7 @@ const AuthPanelInner = ({
               maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className="mt-2 h-14 w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 text-center text-xl tracking-[0.55em] text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
+              className="mt-2 h-12 w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 text-center text-lg tracking-[0.4em] text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
             />
           </label>
           <button
@@ -584,10 +584,10 @@ const AuthPanelInner = ({
   };
 
   return (
-    <div className="h-auth-panel space-y-5">
+    <div className="h-auth-panel space-y-4">
       {headline ? (
         <div className="pr-10">
-          <h2 className="text-[22px] font-bold leading-tight tracking-[-0.01em] text-white">
+          <h2 className="text-[19px] font-bold leading-tight tracking-[-0.01em] text-white">
             {headline}
           </h2>
           {subheadline ? (

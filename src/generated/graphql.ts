@@ -940,6 +940,7 @@ export type GuestCheckoutResponse = {
   accountEmail?: Maybe<Scalars['String']['output']>;
   accountFound: Scalars['Boolean']['output'];
   checkout?: Maybe<RazorpayCheckoutPayload>;
+  loggedIn: Scalars['Boolean']['output'];
   order: CustomerOrderView;
 };
 

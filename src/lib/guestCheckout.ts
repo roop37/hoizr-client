@@ -75,6 +75,9 @@ export type GuestCheckoutResult = {
   } | null;
   accountFound: boolean;
   accountEmail?: string | null;
+  /** True when a new account was created and the buyer is now logged in
+   *  (auth cookies set on the response). Existing accounts → OTP login. */
+  loggedIn: boolean;
 };
 
 const CREATE_GUEST_ORDER = `
@@ -84,6 +87,7 @@ const CREATE_GUEST_ORDER = `
       checkout { razorpayOrderId razorpayKeyId amount currency orderId }
       accountFound
       accountEmail
+      loggedIn
     }
   }
 `;

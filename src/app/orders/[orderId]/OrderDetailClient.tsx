@@ -43,6 +43,7 @@ import type {
 } from "@/types/event";
 import { CenteredLoader, ErrorState } from "@/components/ui/feedback";
 import { OrderFeedbackCard } from "@/components/hoizr-ui/OrderFeedbackCard";
+import { EventInstagramAttendees } from "@/components/hoizr-ui/EventInstagramAttendees";
 
 type OrderEventSummary = Pick<
   PublicEvent,
@@ -122,7 +123,13 @@ const PAYMENT_CONFIRMATION_MAX_POLLS = 30;
 // credential and would lock customers out at the door. Show an explicit
 // retry button and steer the customer toward the email PDF (the safe
 // fallback) when the canvas renderer can't draw the code.
-const OrderQrCode = ({ payload }: { payload: string }) => {
+const OrderQrCode = ({
+  payload,
+  size = 232,
+}: {
+  payload: string;
+  size?: number;
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [renderToken, setRenderToken] = useState(0);
@@ -134,7 +141,7 @@ const OrderQrCode = ({ payload }: { payload: string }) => {
     QRCode.toCanvas(canvasRef.current, payload, {
       errorCorrectionLevel: "M",
       margin: 1,
-      width: 232,
+      width: size,
       color: { dark: "#0A0A0A", light: "#FFFFFF" },
     }).catch((err) => {
       if (cancelled) return;
@@ -172,7 +179,8 @@ const OrderQrCode = ({ payload }: { payload: string }) => {
     <div className="rounded-2xl bg-white p-3 shadow-[0_18px_45px_-18px_rgba(0,0,0,0.55)]">
       <canvas
         ref={canvasRef}
-        className="block h-[232px] w-[232px] rounded-lg"
+        className="block rounded-lg"
+        style={{ width: size, height: size }}
       />
     </div>
   );
@@ -276,6 +284,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   const [polls, setPolls] = useState(0);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [thingsToKnowOpen, setThingsToKnowOpen] = useState(false);
+  const [qrFull, setQrFull] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [invoiceState, setInvoiceState] = useState<{
     busy: boolean;
@@ -800,20 +809,6 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
             <ChevronLeft size={14} /> All tickets
           </Link>
 
-          {/* Feedback prompt — only on confirmed orders. Asks about the event
-              once it has ended, otherwise about the Hoizr experience. */}
-          {confirmed && order ? (
-            <div className="mt-4 md:max-w-md">
-              <OrderFeedbackCard
-                orderId={order._id}
-                eventEnded={
-                  !!eventSummary?.endDate &&
-                  new Date(eventSummary.endDate).getTime() < Date.now()
-                }
-              />
-            </div>
-          ) : null}
-
           {/* Desktop hero — compact event header with landscape flyer
               on the left and title/badge column on the right. Hidden on
               mobile (md:hidden block below) because the redesigned
@@ -973,9 +968,16 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 <div className="flex flex-col items-center gap-4 px-5 pb-5 pt-6">
                   {confirmed && order.qrCodeData ? (
                     <>
-                      <OrderQrCode payload={order.qrCodeData} />
+                      <button
+                        type="button"
+                        onClick={() => setQrFull(true)}
+                        aria-label="Show ticket QR full screen"
+                        className="rounded-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        <OrderQrCode payload={order.qrCodeData} />
+                      </button>
                       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-                        <ShieldCheck size={12} /> Show this at the door
+                        <ShieldCheck size={12} /> Tap to enlarge · show at the door
                       </span>
                     </>
                   ) : (
@@ -1182,6 +1184,14 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 </section>
               ) : null}
 
+              {/* Who's coming — same Instagram attendees card as the event
+                  page: signed-in-but-not-connected → "Connect Instagram"
+                  (returns here after connect); connected → other attendees'
+                  faces for this event. */}
+              {order.eventId ? (
+                <EventInstagramAttendees eventId={order.eventId} />
+              ) : null}
+
               {eventStartLong || venueFullAddress ? (
                 <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
                   <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
@@ -1282,6 +1292,21 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
               </section>
             </div>
           </div>
+
+          {/* Feedback prompt — at the bottom of the order, only on confirmed
+              orders. Asks about the event once it has ended, otherwise about
+              the Hoizr experience. */}
+          {confirmed && order ? (
+            <div className="mx-auto mt-10 max-w-md">
+              <OrderFeedbackCard
+                orderId={order._id}
+                eventEnded={
+                  !!eventSummary?.endDate &&
+                  new Date(eventSummary.endDate).getTime() < Date.now()
+                }
+              />
+            </div>
+          ) : null}
 
           {/* AUDIT-034: SoT §27 disclosure — Hoizr is the ticketing
               platform, the event organiser is responsible for the event
@@ -1425,6 +1450,79 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Full-screen QR — tap the ticket QR to open a big, door-scannable
+          view. The white QR card carries the event name + venue at its top
+          and stays sticky so it keeps floating while the recap below
+          scrolls. */}
+      {qrFull && confirmed && order.qrCodeData ? (
+        <div className="fixed inset-0 z-[130] overflow-y-auto bg-cream text-ink">
+          <button
+            type="button"
+            onClick={() => setQrFull(false)}
+            aria-label="Close full-screen ticket"
+            className="fixed right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white text-ink shadow-sm"
+          >
+            <X size={18} />
+          </button>
+          <div className="mx-auto flex w-full max-w-md flex-col px-5 py-6">
+            <div className="sticky top-4 z-[1] rounded-3xl bg-white p-5 text-center shadow-[0_24px_60px_-25px_rgba(0,0,0,0.5)] ring-1 ring-border">
+              {eventSummary?.title ? (
+                <div className="text-lg font-semibold leading-snug text-ink">
+                  {eventSummary.title}
+                </div>
+              ) : null}
+              {venueLine ? (
+                <div className="mt-1 inline-flex items-center gap-1 text-xs text-muted">
+                  <MapPin size={12} className="shrink-0" />
+                  <span className="line-clamp-2">{venueLine}</span>
+                </div>
+              ) : null}
+              <div className="mt-4 flex justify-center">
+                <OrderQrCode payload={order.qrCodeData} size={288} />
+              </div>
+              <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                <ShieldCheck size={12} /> Show at the door · #{orderShortId}
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-1.5 rounded-3xl bg-white/70 p-5 text-sm text-ink ring-1 ring-border">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
+                Your tickets
+              </div>
+              {order.tickets.map((t) => (
+                <div
+                  key={t.ticketTypeId}
+                  className="flex items-baseline justify-between gap-2"
+                >
+                  <span className="truncate">
+                    <span className="font-semibold">{t.quantity}×</span>{" "}
+                    {t.ticketName}
+                  </span>
+                  <span className="font-semibold">{rupee(t.totalPrice)}</span>
+                </div>
+              ))}
+              {order.extras?.map((e) => (
+                <div
+                  key={e.extraId}
+                  className="flex items-baseline justify-between gap-2 text-muted"
+                >
+                  <span className="truncate">
+                    {e.quantity}× {e.extraName}
+                  </span>
+                  <span>{rupee(e.totalPrice)}</span>
+                </div>
+              ))}
+              <div className="mt-2 flex items-baseline justify-between border-t border-dashed border-border pt-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                  Total paid
+                </span>
+                <span className="font-semibold">{rupee(order.totalAmount)}</span>
+              </div>
             </div>
           </div>
         </div>

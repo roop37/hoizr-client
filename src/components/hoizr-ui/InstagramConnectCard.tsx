@@ -19,6 +19,12 @@ import {
 } from "@/lib/queries";
 import type { CustomerInstagram } from "@/types/instagram";
 
+// Only allow same-origin relative paths as a post-connect return target —
+// guards against open-redirect via a crafted ?next= (e.g. //evil.com or
+// https://evil.com). The legit value is always an in-app path like /events/x.
+const isSafeNext = (v: string | null): v is string =>
+  !!v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\");
+
 export const InstagramConnectCard = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,6 +79,18 @@ export const InstagramConnectCard = () => {
     if (!igParam) return;
     const reason = searchParams.get("reason") ?? undefined;
     if (igParam === "connected") {
+      // If connect was kicked off from elsewhere (e.g. an event's
+      // "who's coming" card), send the user back there now that they're
+      // connected — that's where the payoff (attendee faces) renders.
+      let back: string | null = null;
+      try {
+        back = window.sessionStorage.getItem("ig_return_to");
+        if (back) window.sessionStorage.removeItem("ig_return_to");
+      } catch {}
+      if (isSafeNext(back)) {
+        router.replace(back);
+        return;
+      }
       setReturnBanner({
         tone: "ok",
         message: "Instagram connected. Synced your handle + last 10 posts.",
@@ -115,6 +133,15 @@ export const InstagramConnectCard = () => {
     // instagram.com. After the user authorises, the callback route
     // redirects back to /me/profile with ?ig=connected.
     if (typeof window !== "undefined") {
+      // Preserve where the connect was initiated from (e.g. an event's
+      // "who's coming" card) across the OAuth round-trip via sessionStorage
+      // — it survives the cross-origin redirect within the same tab.
+      const next = searchParams.get("next");
+      if (isSafeNext(next)) {
+        try {
+          window.sessionStorage.setItem("ig_return_to", next);
+        } catch {}
+      }
       window.location.assign(`${customerApiOrigin}/auth/instagram/start`);
     }
   };
