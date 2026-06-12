@@ -10,6 +10,7 @@ import { track } from "@/lib/tracker";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
 import { CheckCircle2, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -37,11 +38,18 @@ export const GuestCheckoutModal = ({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [notifyMe, setNotifyMe] = useState(true);
+  const notifyMe = true;
   const [phase, setPhase] = useState<Phase>("form");
   const [error, setError] = useState<string | null>(null);
   const [accountNote, setAccountNote] = useState<string | null>(null);
   const [paidEmail, setPaidEmail] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const [resultMeta, setResultMeta] = useState<{
+    loggedIn: boolean;
+    accountFound: boolean;
+    orderId: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -52,13 +60,13 @@ export const GuestCheckoutModal = ({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, phase, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const valid =
     firstName.trim() &&
     lastName.trim() &&
     /\S+@\S+\.\S+/.test(email.trim()) &&
-    phone.trim().length >= 8;
+    /^\d{10}$/.test(phone.trim());
 
   const finishPaid = (emailTo: string) => {
     setPaidEmail(emailTo);
@@ -82,6 +90,11 @@ export const GuestCheckoutModal = ({
         notifyMe,
       };
       const res = await createGuestOrder(input);
+      setResultMeta({
+        loggedIn: res.loggedIn,
+        accountFound: res.accountFound,
+        orderId: res.order._id,
+      });
 
       if (res.accountFound && res.accountEmail) {
         setAccountNote(
@@ -152,7 +165,7 @@ export const GuestCheckoutModal = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="h-auth-sheet-overlay" role="dialog" aria-modal="true" onClick={phase === "submitting" ? undefined : onClose}>
       <div className="h-auth-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="h-auth-sheet-handle" aria-hidden />
@@ -176,15 +189,43 @@ export const GuestCheckoutModal = ({
               <p className="mt-1 text-sm text-white/60">
                 Your ticket for <span className="text-white/80">{eventTitle}</span>{" "}
                 is on its way to <span className="text-white/80">{paidEmail}</span>.
-                Log in with this number anytime to see it in the app.
+                {resultMeta?.loggedIn
+                  ? " You're signed in — find it anytime under My tickets."
+                  : resultMeta?.accountFound
+                  ? " This number already has a Hoizr account — log in to see it."
+                  : " Log in with this number anytime to see it in the app."}
               </p>
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
-              >
-                Done
-              </button>
+              {resultMeta?.loggedIn && resultMeta.orderId ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.location.assign(`/orders/${resultMeta.orderId}`)
+                  }
+                  className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
+                >
+                  View my ticket
+                </button>
+              ) : resultMeta?.accountFound && resultMeta.orderId ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.location.assign(
+                      `/login?next=/orders/${resultMeta.orderId}`
+                    )
+                  }
+                  className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
+                >
+                  Log in to see ticket
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
+                >
+                  Done
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -192,7 +233,7 @@ export const GuestCheckoutModal = ({
                 Your details
               </h2>
               <p className="mt-0.5 text-sm text-white/55">
-                Buy as a guest — no password needed. Already have an account?{" "}
+                Already have an account?{" "}
                 <button
                   type="button"
                   onClick={onLoginInstead}
@@ -211,18 +252,37 @@ export const GuestCheckoutModal = ({
                 <Input type="email" placeholder="Email" value={email} onChange={setEmail} />
               </div>
               <div className="mt-2.5">
-                <Input type="tel" placeholder="Phone (e.g. 98765 43210)" value={phone} onChange={setPhone} />
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="Phone (10-digit mobile)"
+                  value={phone}
+                  onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
+                />
               </div>
 
-              <label className="mt-3 flex items-center gap-2.5 text-sm text-white/70">
-                <input
-                  type="checkbox"
-                  checked={notifyMe}
-                  onChange={(e) => setNotifyMe(e.target.checked)}
-                  className="h-4 w-4 accent-[var(--h-accent)]"
-                />
-                Notify me about new events
-              </label>
+              <p className="mt-3 text-xs leading-relaxed text-white/50">
+                By continuing, you agree to Hoizr&apos;s{" "}
+                <a
+                  href="https://business.hoizr.com/legal/terms"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-white/75 underline"
+                >
+                  Terms
+                </a>{" "}
+                &amp;{" "}
+                <a
+                  href="https://business.hoizr.com/legal/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-white/75 underline"
+                >
+                  Privacy Policy
+                </a>{" "}
+                — we&apos;ll create your account so your tickets are saved.
+              </p>
 
               {accountNote ? (
                 <p className="mt-3 rounded-lg border border-[var(--h-accent)]/30 bg-[var(--h-accent)]/10 px-3 py-2 text-xs text-white/80">
@@ -247,14 +307,14 @@ export const GuestCheckoutModal = ({
                 Continue to payment
               </button>
               <p className="mt-2 text-center text-[11px] text-white/40">
-                Secured by Razorpay. We'll create an account with this number so
-                your tickets are saved.
+                Secured by Razorpay.
               </p>
             </>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -263,14 +323,20 @@ const Input = ({
   onChange,
   placeholder,
   type = "text",
+  inputMode,
+  maxLength,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   type?: string;
+  inputMode?: "numeric" | "tel" | "email" | "text";
+  maxLength?: number;
 }) => (
   <input
     type={type}
+    inputMode={inputMode}
+    maxLength={maxLength}
     value={value}
     placeholder={placeholder}
     onChange={(e) => onChange(e.target.value)}

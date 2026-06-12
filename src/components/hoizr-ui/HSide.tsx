@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/store/auth";
@@ -101,6 +102,7 @@ export const HSide = ({ cities }: Props) => {
   const profile = useAuthStore((s) => s.profile);
   const authHydrated = useAuthStore((s) => s.hydrated);
   const hydrateAuth = useAuthStore((s) => s.hydrate);
+  const logout = useAuthStore((s) => s.logout);
   const city = useUIStore((s) => s.city);
   const setCity = useUIStore((s) => s.setCity);
   const openSignIn = useUIStore((s) => s.openSignIn);
@@ -108,6 +110,8 @@ export const HSide = ({ cities }: Props) => {
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
   const cityMenuRef = useRef<HTMLDivElement | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const signedIn = Boolean(profile);
   const displayName =
@@ -137,6 +141,16 @@ export const HSide = ({ cities }: Props) => {
     const onPointerDown = (event: PointerEvent) => {
       if (!cityMenuRef.current?.contains(event.target as Node)) {
         setCityMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -344,11 +358,22 @@ export const HSide = ({ cities }: Props) => {
                     <span>{n.label}</span>
                   </Link>
                 ))}
-                <button type="button" className="h-side-item" disabled style={{ opacity: 0.55 }}>
-                  <span className="ic">{HICONS.globe}</span>
-                  <span>Hoizr Local</span>
-                  <span className="right-meta">SOON</span>
-                </button>
+                <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#c5ff3d]/15 text-[#c5ff3d]">
+                    {HICONS.globe}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-[13px] font-semibold text-white">
+                      Hoizr Local
+                      <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/55">
+                        Soon
+                      </span>
+                    </div>
+                    <div className="truncate text-[11px] text-white/55">
+                      What&apos;s on near you, daily.
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : null}
 
@@ -418,9 +443,68 @@ export const HSide = ({ cities }: Props) => {
               </button>
             </div>
           ) : (
-            <div className="h-side-foot">
-              <div className="avatar">{initials}</div>
-              <div className="who">{displayName}</div>
+            <div
+              className="h-side-foot"
+              style={{ position: "relative" }}
+              ref={userMenuRef}
+            >
+              {userMenuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute inset-x-2 bottom-[calc(100%+8px)] overflow-hidden rounded-2xl border border-white/12 bg-[#15151b]/95 p-1 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+                >
+                  <Link
+                    href="/me"
+                    role="menuitem"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      closeMobileSidebar();
+                    }}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/85 transition hover:bg-white/10"
+                  >
+                    <span className="ic">{HICONS.user}</span>
+                    View profile
+                  </Link>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      closeMobileSidebar();
+                      void logout();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-500/10"
+                  >
+                    <LogOut size={16} />
+                    Log out
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "100%",
+                  textAlign: "left",
+                }}
+              >
+                <div className="avatar">{initials}</div>
+                <div className="who">{displayName}</div>
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    display: "inline-flex",
+                    opacity: 0.6,
+                  }}
+                >
+                  {HICONS.chevDown}
+                </span>
+              </button>
             </div>
           )}
         </div>

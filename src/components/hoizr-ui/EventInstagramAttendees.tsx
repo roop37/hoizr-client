@@ -2,6 +2,7 @@
 
 import { Instagram } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { gqlRequest } from "@/lib/graphql";
 import {
@@ -34,6 +35,7 @@ const FACE_ROW_LIMIT = 16;
 export const EventInstagramAttendees = ({ eventId }: Props) => {
   const profile = useAuthStore((s) => s.profile);
   const hydrated = useAuthStore((s) => s.hydrated);
+  const pathname = usePathname();
   const [viewerIg, setViewerIg] = useState<CustomerInstagram | null>(null);
   const [viewerLoading, setViewerLoading] = useState(true);
   const [attendees, setAttendees] = useState<EventAttendeeWithInstagram[]>([]);
@@ -128,8 +130,8 @@ export const EventInstagramAttendees = ({ eventId }: Props) => {
             <Link
               href={
                 profile
-                  ? "/me/profile"
-                  : `/login?next=${encodeURIComponent("/events")}`
+                  ? `/me/profile?next=${encodeURIComponent(pathname ?? "/events")}`
+                  : `/login?next=${encodeURIComponent(pathname ?? "/events")}`
               }
               className="h-event-ig-card__cta"
             >

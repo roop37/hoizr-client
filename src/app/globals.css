@@ -3715,7 +3715,7 @@ body,
   padding: 8px 14px;
   border-radius: 999px;
   background: var(--h-accent);
-  color: var(--h-ink);
+  color: var(--h-accent-ink);
   font-family: var(--h-font-display);
   font-weight: 600;
   font-size: 13px;

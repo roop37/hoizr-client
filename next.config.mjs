@@ -28,6 +28,39 @@ const nextConfig = {
   reactStrictMode: true,
   async redirects() {
     return [
+      // Legal pages live canonically on the business module. Anyone hitting
+      // a legal path on hoizr.com (old email links, bookmarks, typed URLs)
+      // is sent to business.hoizr.com/legal/* — the single source of truth.
+      {
+        source: "/privacy",
+        destination: "https://business.hoizr.com/legal/privacy",
+        permanent: true,
+      },
+      {
+        source: "/terms",
+        destination: "https://business.hoizr.com/legal/terms",
+        permanent: true,
+      },
+      {
+        source: "/privacy-policy",
+        destination: "https://business.hoizr.com/legal/privacy",
+        permanent: true,
+      },
+      {
+        source: "/terms-conditions",
+        destination: "https://business.hoizr.com/legal/terms",
+        permanent: true,
+      },
+      {
+        source: "/cookies",
+        destination: "https://business.hoizr.com/legal/cookies",
+        permanent: true,
+      },
+      {
+        source: "/legal/:path*",
+        destination: "https://business.hoizr.com/legal/:path*",
+        permanent: true,
+      },
       {
         source: "/about-us",
         destination: "https://business.hoizr.com/about",
