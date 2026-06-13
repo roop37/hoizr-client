@@ -401,11 +401,10 @@ export const HSide = ({ cities }: Props) => {
               rel="noreferrer"
               className="h-side-biz__card"
             >
-              <span className="h-side-biz__kicker">For venues &amp; organizers</span>
+              <span className="h-side-biz__kicker">For organizers</span>
               <span className="h-side-biz__hed">
                 Own the room. <span className="h-side-biz__hed-accent">Own the repeat.</span>
               </span>
-              <span className="h-side-biz__sub">Tickets, door, fans, payouts. Built for serious nights.</span>
               <span className="h-side-biz__cta">
                 List on Hoizr
                 <span className="h-side-biz__arrow" aria-hidden>
@@ -451,7 +450,7 @@ export const HSide = ({ cities }: Props) => {
               {userMenuOpen ? (
                 <div
                   role="menu"
-                  className="absolute inset-x-2 bottom-[calc(100%+8px)] overflow-hidden rounded-2xl border border-white/12 bg-[#15151b]/95 p-1 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+                  className="absolute inset-x-2 bottom-[calc(100%+8px)] overflow-hidden rounded-2xl border border-white/12 bg-[#15151b] p-1 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.85)]"
                 >
                   <Link
                     href="/me"

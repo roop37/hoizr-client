@@ -1,14 +1,18 @@
 "use client";
 
 import { submitCustomerFeedback } from "@/lib/feedback";
-import { CheckCircle2, Star } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 import { useState } from "react";
 
 /**
- * Small inline feedback card on the order page. Before the event it asks how
- * the Hoizr experience was (platform sentiment); after the event it asks how
- * the event was (→ the host's Feedbacks tab). One card, intent picked by
- * whether the event has ended.
+ * Full-width horizontal feedback card on the order page. Before the event it
+ * asks how the Hoizr experience was (platform sentiment); after the event it
+ * asks how the event was (→ the host's Feedbacks tab). One card, intent picked
+ * by whether the event has ended.
+ *
+ * Layout: prompt/copy on the LEFT, star rating on the RIGHT (stacks on
+ * mobile). Picking a rating reveals an optional remarks field + Submit. After
+ * a successful submit the card unmounts entirely.
  */
 export const OrderFeedbackCard = ({
   orderId,
@@ -53,60 +57,68 @@ export const OrderFeedbackCard = ({
     }
   };
 
-  if (done) {
-    return (
-      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/70">
-        <CheckCircle2 size={18} className="text-[#34d399]" />
-        Thanks for the feedback!
-      </div>
-    );
-  }
+  // Once submitted, hide the card entirely.
+  if (done) return null;
+
+  const showRemarks = rating > 0;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-sm font-semibold text-white">{title}</p>
-      <p className="mt-0.5 text-xs text-white/55">{sub}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
+        {/* LEFT — prompt */}
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="mt-0.5 text-xs text-white/55">{sub}</p>
+        </div>
 
-      <div className="mt-3 flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setRating(i)}
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(0)}
-            aria-label={`${i} star`}
-          >
-            <Star
-              size={26}
-              className={
-                i <= (hover || rating)
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-white/25"
-              }
-            />
-          </button>
-        ))}
+        {/* RIGHT — star rating */}
+        <div className="flex shrink-0 items-center gap-1">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setRating(i)}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(0)}
+              aria-label={`${i} star`}
+            >
+              <Star
+                size={26}
+                className={
+                  i <= (hover || rating)
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-white/25"
+                }
+              />
+            </button>
+          ))}
+        </div>
       </div>
 
-      <textarea
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="Add a note (optional)"
-        rows={2}
-        className="mt-3 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none transition focus:border-[var(--h-accent)]/60 placeholder:text-white/40"
-      />
+      {/* Revealed once a rating is picked — optional remarks + submit, inline
+          on desktop, stacked on mobile. */}
+      {showRemarks ? (
+        <div className="mt-4 flex flex-col gap-2.5 border-t border-white/8 pt-4 md:flex-row md:items-end">
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Add a note (optional)"
+            rows={2}
+            className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none transition focus:border-[var(--h-accent)]/60 placeholder:text-white/40 md:flex-1"
+          />
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={submit}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--h-accent)] px-5 text-sm font-semibold text-[#0a0a0e] disabled:opacity-50 md:w-auto"
+          >
+            {submitting ? <Loader2 size={15} className="animate-spin" /> : null}
+            {submitting ? "Submitting…" : "Submit"}
+          </button>
+        </div>
+      ) : null}
 
       {error ? <p className="mt-2 text-xs text-red-300">{error}</p> : null}
-
-      <button
-        type="button"
-        disabled={submitting || (!rating && !comment.trim())}
-        onClick={submit}
-        className="mt-3 h-10 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e] disabled:opacity-50"
-      >
-        {submitting ? "Submitting…" : "Submit feedback"}
-      </button>
     </div>
   );
 };

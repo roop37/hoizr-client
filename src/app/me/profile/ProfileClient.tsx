@@ -484,12 +484,41 @@ export const ProfileClient = () => {
           ) : null}
           <label className="block text-sm">
             <span className={labelClass}>City</span>
-            <input
+            <select
               value={city}
               onChange={(e) => setCity(e.target.value)}
               className={inputClass}
-              placeholder="e.g. Mumbai"
-            />
+            >
+              <option value="">Select your city</option>
+              {[
+                "Mumbai",
+                "Delhi NCR",
+                "Bengaluru",
+                "Pune",
+                "Hyderabad",
+                "Chennai",
+                "Kolkata",
+                "Goa",
+              ].map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              {/* Preserve a previously-saved city that isn't in the list. */}
+              {city &&
+              ![
+                "Mumbai",
+                "Delhi NCR",
+                "Bengaluru",
+                "Pune",
+                "Hyderabad",
+                "Chennai",
+                "Kolkata",
+                "Goa",
+              ].includes(city) ? (
+                <option value={city}>{city}</option>
+              ) : null}
+            </select>
           </label>
           <label className="block text-sm">
             <span className={labelClass}>Birthdate</span>

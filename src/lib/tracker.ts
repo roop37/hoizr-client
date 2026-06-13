@@ -23,6 +23,7 @@ export type AnalyticsEventName =
   | "eventListView"
   | "eventListFilter"
   | "eventDetailView"
+  | "eventViewList"
   | "eventShare"
   | "eventFavorite"
   // Ticketing
@@ -31,6 +32,7 @@ export type AnalyticsEventName =
   | "cartUpdated"
   | "cartExpired"
   | "checkoutStarted"
+  | "checkoutTriggered"
   | "checkoutPaymentInit"
   | "checkoutPaymentFailed"
   | "checkoutCompleted"
@@ -76,7 +78,9 @@ const BATCH_URL = ENDPOINT ? `${ENDPOINT.replace(/\/$/, "")}/track/batch` : "";
 
 const SESSION_KEY = "hoizr:trk:session";
 const ATTRIBUTION_KEY = "hoizr:trk:firstTouch";
+const VISITOR_KEY = "hoizr:trk:visitor";
 let fallbackSessionId = "";
+let fallbackVisitorId = "";
 
 const createSessionId = (): string =>
   typeof crypto !== "undefined" && crypto.randomUUID
@@ -101,6 +105,29 @@ const getSessionId = (): string => {
       fallbackSessionId = createSessionId();
     }
     return fallbackSessionId;
+  }
+};
+
+/**
+ * Stable per-browser visitor id, persisted in localStorage (survives tab
+ * close + reloads, unlike the per-tab sessionId). Lets us stitch a single
+ * person's events across visits even before they identify themselves.
+ * Same persistence pattern as the first-touch attribution below.
+ */
+const getVisitorId = (): string => {
+  if (typeof window === "undefined") return "";
+  try {
+    let id = window.localStorage.getItem(VISITOR_KEY);
+    if (!id) {
+      id = createSessionId();
+      window.localStorage.setItem(VISITOR_KEY, id);
+    }
+    return id;
+  } catch {
+    if (!fallbackVisitorId) {
+      fallbackVisitorId = createSessionId();
+    }
+    return fallbackVisitorId;
   }
 };
 
@@ -190,6 +217,7 @@ const baseContext = (): Record<string, any> => {
   const attribution = getAttribution();
   return {
     sessionId: getSessionId(),
+    clientVisitorId: getVisitorId(),
     pageUrl: window.location.href,
     route: window.location.pathname,
     pageTitle: document.title || undefined,

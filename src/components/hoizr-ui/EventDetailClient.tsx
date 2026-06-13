@@ -546,7 +546,21 @@ export const EventDetailClient = ({
               {display.startTime ? ` · ${display.startTime}` : ""}
               {display.endTime ? ` - ${display.endTime}` : ""}
             </p>
-            <p>{display.venueShort}</p>
+            <p>
+              {mapOpenInGoogleHref ? (
+                <a
+                  href={mapOpenInGoogleHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-cream/30 underline-offset-2 transition hover:text-[#c5ff3d] hover:decoration-[#c5ff3d]"
+                  title="Open in Google Maps"
+                >
+                  {display.venueShort}
+                </a>
+              ) : (
+                display.venueShort
+              )}
+            </p>
           </div>
 
           {thingsToKnow.length > 0 ? (
@@ -656,7 +670,10 @@ export const EventDetailClient = ({
             </div>
           ) : null}
 
-          <EventInstagramAttendees eventId={event._id} />
+          <EventInstagramAttendees
+            eventId={event._id}
+            flyerUrl={event.eventFlyer || event.horizontalFlyer}
+          />
 
           {people && people.organizers.length > 0 ? (
             <div className="h-detail-section">

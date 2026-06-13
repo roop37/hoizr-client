@@ -191,11 +191,14 @@ export const EventsPageClient = ({
   // set; resets to the first page whenever the filter result changes.
   const [visibleCount, setVisibleCount] = useState(EVENTS_PAGE_SIZE);
 
+  // Mirror the global city picker → local filter whenever it changes, so
+  // switching city refreshes the list. Previously gated on `!initialCity`,
+  // which froze the mirror the moment the URL-sync effect wrote `?city=`.
   useEffect(() => {
-    if (!initialCity && selectedGlobalCity !== "All cities") {
+    if (selectedGlobalCity && selectedGlobalCity !== "All cities") {
       setCity(selectedGlobalCity);
     }
-  }, [initialCity, selectedGlobalCity]);
+  }, [selectedGlobalCity]);
 
   useEffect(() => {
     if (!sheetOpen) return;
@@ -481,8 +484,8 @@ export const EventsPageClient = ({
       ) : (
         <>
           <div className="h-evt-grid">
-            {filtered.slice(0, visibleCount).map((e) => (
-              <EventCard key={e.id} event={e} />
+            {filtered.slice(0, visibleCount).map((e, i) => (
+              <EventCard key={e.id} event={e} position={i} />
             ))}
           </div>
           {filtered.length > visibleCount ? (

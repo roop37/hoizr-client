@@ -114,6 +114,15 @@ export const GuestCheckoutModal = ({
     setError(null);
     setAccountNote(null);
     setPhase("submitting");
+    // Funnel parity with the authed checkout (CheckoutClient) — fire the
+    // same trigger event before the guest payment leg begins.
+    track("checkoutTriggered", {
+      eventId,
+      metadata: {
+        guest: true,
+        ticketCount: tickets.reduce((s, t) => s + t.quantity, 0),
+      },
+    });
     try {
       const input: GuestCheckoutInput = {
         eventId,
@@ -236,7 +245,12 @@ export const GuestCheckoutModal = ({
                 <button
                   type="button"
                   onClick={() =>
-                    window.location.assign(`/orders/${resultMeta.orderId}`)
+                    // `just_paid=1` makes the order page poll for the
+                    // webhook-driven QR; without it a guest lands on the
+                    // PAYMENT_PENDING snapshot and the QR never appears.
+                    window.location.assign(
+                      `/orders/${resultMeta.orderId}?just_paid=1`
+                    )
                   }
                   className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
                 >
@@ -247,7 +261,9 @@ export const GuestCheckoutModal = ({
                   type="button"
                   onClick={() =>
                     window.location.assign(
-                      `/login?next=/orders/${resultMeta.orderId}`
+                      `/login?next=${encodeURIComponent(
+                        `/orders/${resultMeta.orderId}?just_paid=1`
+                      )}`
                     )
                   }
                   className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"

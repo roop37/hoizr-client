@@ -312,32 +312,65 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
           <div className="border-y border-white/10 bg-white/5 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white/60">
             Add-ons
           </div>
-          <div className="divide-y divide-white/8">
+          <div className="space-y-2.5 px-5 py-4">
             {extras.map((extra) => {
               const available = Math.max(
                 0,
                 Number(extra.quantity ?? 0) - Number(extra.sold ?? 0)
               );
               const qty = extraSel[extra._id] ?? 0;
+              const soldOut = available <= 0;
               return (
-                <div key={extra._id} className="flex items-center gap-3 px-5 py-4">
+                <div
+                  key={extra._id}
+                  className={`flex items-center gap-3.5 rounded-2xl border p-2.5 transition ${
+                    qty > 0
+                      ? "border-[var(--h-accent)]/45 bg-[var(--h-accent)]/[0.06]"
+                      : "border-white/10 bg-white/[0.03]"
+                  } ${soldOut ? "opacity-60" : ""}`}
+                >
+                  {/* Thumbnail — shown only when the add-on carries an image,
+                      otherwise a neutral initial tile keeps the row aligned. */}
+                  {extra.image ? (
+                    <img
+                      src={extra.image}
+                      alt={extra.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-white/10"
+                    />
+                  ) : (
+                    <div
+                      className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-base font-bold text-white/45 ring-1 ring-white/10"
+                      aria-hidden
+                    >
+                      {(extra.name ?? "?").charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{extra.name}</div>
+                    <div className="truncate text-[15px] font-semibold leading-tight text-white">
+                      {extra.name}
+                    </div>
                     {extra.description ? (
-                      <div className="mt-0.5 line-clamp-2 text-xs text-white/60">
+                      <div className="mt-0.5 line-clamp-2 text-xs leading-snug text-white/55">
                         {extra.description}
                       </div>
                     ) : null}
-                    <div className="mt-1 text-sm font-semibold">
+                    <div className="mt-1 text-sm font-semibold text-white/90">
                       {rupee(Number(extra.price ?? 0))}
                     </div>
                   </div>
-                  {available > 0 ? (
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-1 backdrop-blur">
+                  {soldOut ? (
+                    <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-white/50">
+                      Sold out
+                    </span>
+                  ) : (
+                    <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-1 backdrop-blur">
                       <button
                         type="button"
                         disabled={qty <= 0}
                         onClick={() => stepExtra(extra._id, -1, available)}
+                        aria-label={`Remove one ${extra.name}`}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30"
                       >
                         <Minus size={14} />
@@ -349,15 +382,12 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                         type="button"
                         disabled={qty >= available}
                         onClick={() => stepExtra(extra._id, 1, available)}
+                        aria-label={`Add one ${extra.name}`}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30"
                       >
                         <Plus size={14} />
                       </button>
                     </div>
-                  ) : (
-                    <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                      Sold out
-                    </span>
                   )}
                 </div>
               );
