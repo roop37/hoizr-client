@@ -235,19 +235,14 @@ export const GuestCheckoutModal = ({
               <p className="mt-1 text-sm text-white/60">
                 Your ticket for <span className="text-white/80">{eventTitle}</span>{" "}
                 is on its way to <span className="text-white/80">{paidEmail}</span>.
-                {resultMeta?.loggedIn
-                  ? " You're signed in — find it anytime under My tickets."
-                  : resultMeta?.accountFound
-                  ? " This number already has a Hoizr account — log in to see it."
-                  : " Log in with this number anytime to see it in the app."}
+                {resultMeta?.accountFound
+                  ? " We found your account and signed you in."
+                  : " You're signed in — find it anytime under My tickets."}
               </p>
-              {resultMeta?.loggedIn && resultMeta.orderId ? (
+              {resultMeta?.orderId ? (
                 <button
                   type="button"
                   onClick={() =>
-                    // `just_paid=1` makes the order page poll for the
-                    // webhook-driven QR; without it a guest lands on the
-                    // PAYMENT_PENDING snapshot and the QR never appears.
                     window.location.assign(
                       `/orders/${resultMeta.orderId}?just_paid=1`
                     )
@@ -255,20 +250,6 @@ export const GuestCheckoutModal = ({
                   className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
                 >
                   View my ticket
-                </button>
-              ) : resultMeta?.accountFound && resultMeta.orderId ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.location.assign(
-                      `/login?next=${encodeURIComponent(
-                        `/orders/${resultMeta.orderId}?just_paid=1`
-                      )}`
-                    )
-                  }
-                  className="mt-5 h-11 w-full rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
-                >
-                  Log in to see ticket
                 </button>
               ) : (
                 <button
