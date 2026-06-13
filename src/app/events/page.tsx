@@ -71,7 +71,9 @@ export default async function EventsPage({ searchParams }: { searchParams: Searc
   const [list, masters] = await Promise.all([
     fetchPublishedEvents({
       pageSize: 96,
-      city: searchParams.city,
+      // City is filtered CLIENT-side (EventsPageClient) so switching city
+      // updates the grid instantly. Fetching all cities here is what lets the
+      // city picker actually refresh the list (the server pre-filter froze it).
       genreTagIds: searchParams.genre ? [searchParams.genre] : undefined,
     }),
     fetchCustomerMasters(),

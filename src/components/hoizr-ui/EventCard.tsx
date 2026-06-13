@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import type { DisplayEvent } from "@/lib/event-display";
 import { formatPrice } from "@/lib/event-display";
 import { coordToLatLng, formatKmBadge, kmBetween, sameCity } from "@/lib/geo";
+import { track } from "@/lib/tracker";
 import { useAuthStore } from "@/store/auth";
 
 type Props = {
   event: DisplayEvent;
+  /** Zero-based index within the rendered list — attached to the
+   *  impression event so we can analyse position-in-list CTR. */
+  position?: number;
 };
 
 const formatDateTimeLabel = (event: DisplayEvent): string => {
@@ -33,11 +38,42 @@ const formatDateTimeLabel = (event: DisplayEvent): string => {
  * The landscape asset is reserved for the featured hero rail and the
  * event detail page.
  */
-export const EventCard = ({ event }: Props) => {
+export const EventCard = ({ event, position }: Props) => {
   const dateTime = formatDateTimeLabel(event);
   const price = formatPrice(event.fromPrice);
   const priceSuffix = price === "Guestlist" || price === "Free" ? "" : " onwards";
   const cardImage = event.portraitImage ?? event.image;
+
+  // Per-card list impression — fires `eventViewList` ONCE the first time the
+  // card crosses ~50% into the viewport. The `seen` ref guards against the
+  // observer firing again on re-entry (scroll up/down) or re-render.
+  const cardRef = useRef<HTMLAnchorElement | null>(null);
+  const seen = useRef(false);
+  useEffect(() => {
+    const node = cardRef.current;
+    if (!node || seen.current) return;
+    if (typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !seen.current) {
+            seen.current = true;
+            track("eventViewList", {
+              eventId: event.id,
+              metadata: {
+                slug: event.slug,
+                ...(position != null ? { position } : {}),
+              },
+            });
+            observer.disconnect();
+          }
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [event.id, event.slug, position]);
 
   // Distance badge: shown only when the user has a saved address with
   // a coordinate, the event has its own venue coord, AND they're in
@@ -52,7 +88,7 @@ export const EventCard = ({ event }: Props) => {
   })();
 
   return (
-    <Link href={`/events/${event.slug}`} className="h-tile">
+    <Link ref={cardRef} href={`/events/${event.slug}`} className="h-tile">
       <div className="h-tile-flyer">
         {distanceLabel ? (
           <span className="h-tile-distance" aria-label={`${distanceLabel} from you`}>

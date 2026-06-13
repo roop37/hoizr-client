@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Instagram,
   Loader2,
-  RefreshCcw,
   Unplug,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,7 +13,6 @@ import { customerApiOrigin, gqlRequest } from "@/lib/graphql";
 import {
   DISCONNECT_INSTAGRAM_MUTATION,
   GET_MY_INSTAGRAM_QUERY,
-  SYNC_MY_INSTAGRAM_MUTATION,
   UPDATE_INSTAGRAM_VISIBILITY_MUTATION,
 } from "@/lib/queries";
 import type { CustomerInstagram } from "@/types/instagram";
@@ -34,7 +32,6 @@ export const InstagramConnectCard = () => {
     | null
     | "connect"
     | "disconnect"
-    | "sync"
     | "visibility"
   >(null);
   const [error, setError] = useState<string | null>(null);
@@ -156,21 +153,6 @@ export const InstagramConnectCard = () => {
       );
     } catch (err: any) {
       setError(err?.message ?? "Couldn't disconnect");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const sync = async () => {
-    setError(null);
-    setBusy("sync");
-    try {
-      const d = await gqlRequest<{
-        syncMyInstagram: CustomerInstagram | null;
-      }>(SYNC_MY_INSTAGRAM_MUTATION);
-      if (d.syncMyInstagram) setData(d.syncMyInstagram);
-    } catch (err: any) {
-      setError(err?.message ?? "Couldn't refresh");
     } finally {
       setBusy(null);
     }
@@ -351,19 +333,8 @@ export const InstagramConnectCard = () => {
           </details>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={busy === "sync"}
-              onClick={sync}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-cream/15 px-3 text-xs font-semibold text-cream/85 transition hover:bg-cream/10 disabled:opacity-60"
-            >
-              {busy === "sync" ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <RefreshCcw size={14} />
-              )}
-              Refresh
-            </button>
+            {/* Refresh hidden once connected — posts re-sync automatically; a
+                manual refresh just adds clutter to the connected state. */}
             <button
               type="button"
               disabled={busy === "disconnect"}

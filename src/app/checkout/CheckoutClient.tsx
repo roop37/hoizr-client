@@ -347,6 +347,13 @@ export const CheckoutClient = () => {
         ticketCount: cart.tickets?.length ?? 0,
       },
     });
+    track("checkoutTriggered", {
+      eventId,
+      metadata: {
+        totalAmount: cart.pricing?.totalAmount,
+        ticketCount: cart.tickets?.length ?? 0,
+      },
+    });
 
     try {
       // AUDIT-030: resume the existing PaymentPending order if the

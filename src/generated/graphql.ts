@@ -1419,6 +1419,34 @@ export type PublicEventSummary = {
   title?: Maybe<Scalars['String']['output']>;
 };
 
+export type PublicVenue = {
+  __typename?: 'PublicVenue';
+  _id: Scalars['String']['output'];
+  address?: Maybe<AddressInfo>;
+  description?: Maybe<Scalars['String']['output']>;
+  gallery?: Maybe<Array<Scalars['String']['output']>>;
+  logo?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  venueType?: Maybe<Scalars['String']['output']>;
+  websiteUrl?: Maybe<Scalars['String']['output']>;
+};
+
+export type PublicVenueFilterInput = {
+  city?: InputMaybe<Scalars['String']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  pageSize?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  venueType?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type PublicVenuePaginatedResponse = {
+  __typename?: 'PublicVenuePaginatedResponse';
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  venues: Array<PublicVenue>;
+};
+
 export type Query = {
   __typename?: 'Query';
   customerPlaceDetails?: Maybe<CustomerPlaceDetail>;
@@ -1440,6 +1468,8 @@ export type Query = {
   getPublicEventById?: Maybe<Event>;
   getPublicEventBySlug?: Maybe<Event>;
   getPublicEventPeople: PublicEventPeopleResponse;
+  getPublicVenueById?: Maybe<PublicVenue>;
+  getPublicVenues: PublicVenuePaginatedResponse;
   getPublishedEvents: PublicEventPaginatedResponse;
   isFollowingArtist: Scalars['Boolean']['output'];
   myArtistMerchOrders: Array<ArtistMerchOrder>;
@@ -1510,6 +1540,16 @@ export type QueryGetPublicEventBySlugArgs = {
 
 export type QueryGetPublicEventPeopleArgs = {
   eventId: Scalars['String']['input'];
+};
+
+
+export type QueryGetPublicVenueByIdArgs = {
+  id: Scalars['String']['input'];
+};
+
+
+export type QueryGetPublicVenuesArgs = {
+  input?: InputMaybe<PublicVenueFilterInput>;
 };
 
 

@@ -1189,7 +1189,12 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                   (returns here after connect); connected → other attendees'
                   faces for this event. */}
               {order.eventId ? (
-                <EventInstagramAttendees eventId={order.eventId} />
+                <EventInstagramAttendees
+                  eventId={order.eventId}
+                  flyerUrl={
+                    eventSummary?.eventFlyer || eventSummary?.horizontalFlyer
+                  }
+                />
               ) : null}
 
               {eventStartLong || venueFullAddress ? (
@@ -1297,7 +1302,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
               orders. Asks about the event once it has ended, otherwise about
               the Hoizr experience. */}
           {confirmed && order ? (
-            <div className="mt-10 max-w-md">
+            <div className="mt-10">
               <OrderFeedbackCard
                 orderId={order._id}
                 eventEnded={
