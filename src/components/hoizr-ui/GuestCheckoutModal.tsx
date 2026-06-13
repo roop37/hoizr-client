@@ -7,13 +7,17 @@ import {
 } from "@/lib/guestCheckout";
 import { clearActiveCart } from "@/lib/active-cart";
 import { gqlRequest } from "@/lib/graphql";
-import { PREVIEW_COUPON_QUERY } from "@/lib/queries";
+import {
+  PREVIEW_COUPON_QUERY,
+  REQUEST_OTP_MUTATION,
+  VERIFY_OTP_MUTATION,
+} from "@/lib/queries";
 import { track } from "@/lib/tracker";
 import type { CouponPreview } from "@/types/order";
 import { rupee } from "@/lib/format";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
-import { CheckCircle2, Loader2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CheckCircle2, Loader2, ShieldCheck, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type Props = {
@@ -27,7 +31,7 @@ type Props = {
   onLoginInstead: () => void;
 };
 
-type Phase = "form" | "submitting" | "paid";
+type Phase = "form" | "otp-pending" | "verified" | "submitting" | "paid";
 
 export const GuestCheckoutModal = ({
   open,
@@ -52,12 +56,20 @@ export const GuestCheckoutModal = ({
   const [couponBusy, setCouponBusy] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
   const [resultMeta, setResultMeta] = useState<{
     loggedIn: boolean;
     accountFound: boolean;
     orderId: string;
   } | null>(null);
+
+  // OTP state
+  const [otpId, setOtpId] = useState("");
+  const [otpDigits, setOtpDigits] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -68,9 +80,16 @@ export const GuestCheckoutModal = ({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, phase, onClose]);
 
+  // Auto-focus OTP input when entering OTP phase
+  useEffect(() => {
+    if (phase === "otp-pending") {
+      setTimeout(() => otpInputRef.current?.focus(), 100);
+    }
+  }, [phase]);
+
   if (!open || !mounted) return null;
 
-  const valid =
+  const formValid =
     firstName.trim() &&
     lastName.trim() &&
     /\S+@\S+\.\S+/.test(email.trim()) &&
@@ -109,13 +128,63 @@ export const GuestCheckoutModal = ({
     }
   };
 
+  const sendOtp = async () => {
+    if (!formValid || otpBusy) return;
+    setOtpError(null);
+    setOtpBusy(true);
+    try {
+      const data = await gqlRequest<{
+        customerRequestOtp: { otpId: string; profileRequired: boolean };
+      }>(REQUEST_OTP_MUTATION, { input: { phone: `+91${phone.trim()}` } });
+      setOtpId(data.customerRequestOtp.otpId);
+      setOtpDigits("");
+      setPhase("otp-pending");
+    } catch (err: any) {
+      setOtpError(
+        err?.response?.errors?.[0]?.message ?? "Unable to send OTP. Please try again."
+      );
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const verifyOtp = async (digits: string) => {
+    if (otpBusy || digits.length < 6) return;
+    setOtpError(null);
+    setOtpBusy(true);
+    try {
+      await gqlRequest(VERIFY_OTP_MUTATION, {
+        input: {
+          phone: `+91${phone.trim()}`,
+          otpId,
+          otp: digits,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+        },
+      });
+      setPhase("verified");
+    } catch (err: any) {
+      setOtpError(
+        err?.response?.errors?.[0]?.message ?? "Invalid OTP. Please try again."
+      );
+      setOtpDigits("");
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const handleOtpChange = (v: string) => {
+    const digits = v.replace(/\D/g, "").slice(0, 6);
+    setOtpDigits(digits);
+    if (digits.length === 6) verifyOtp(digits);
+  };
+
   const submit = async () => {
-    if (!valid || phase === "submitting") return;
+    if (phase === "submitting") return;
     setError(null);
     setAccountNote(null);
     setPhase("submitting");
-    // Funnel parity with the authed checkout (CheckoutClient) — fire the
-    // same trigger event before the guest payment leg begins.
     track("checkoutTriggered", {
       eventId,
       metadata: {
@@ -148,7 +217,6 @@ export const GuestCheckoutModal = ({
         );
       }
 
-      // Free event → no Razorpay leg; order is already confirmed.
       if (!res.checkout) {
         track("checkoutCompleted", {
           eventId,
@@ -180,9 +248,6 @@ export const GuestCheckoutModal = ({
             contact: phone.trim(),
           },
           theme: { color: "#0F8842" },
-          // Handler firing = payment in flight; the webhook finalises the
-          // order + emails the ticket. We never call an authed confirm here
-          // (guest has no session) and never block on it — just show success.
           handler: (_response: RazorpayPaymentResponse) => {
             track("checkoutCompleted", {
               eventId,
@@ -203,16 +268,21 @@ export const GuestCheckoutModal = ({
         err?.message ??
         "Something went wrong. Please try again.";
       if (message === "Payment cancelled") {
-        setPhase("form");
+        setPhase("verified");
         return;
       }
       setError(message);
-      setPhase("form");
+      setPhase("verified");
     }
   };
 
   return createPortal(
-    <div className="h-auth-sheet-overlay" role="dialog" aria-modal="true" onClick={phase === "submitting" ? undefined : onClose}>
+    <div
+      className="h-auth-sheet-overlay"
+      role="dialog"
+      aria-modal="true"
+      onClick={phase === "submitting" ? undefined : onClose}
+    >
       <div className="h-auth-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="h-auth-sheet-handle" aria-hidden />
         {phase !== "submitting" ? (
@@ -226,6 +296,7 @@ export const GuestCheckoutModal = ({
           </button>
         ) : null}
         <div className="h-auth-sheet-body">
+          {/* ── Success ── */}
           {phase === "paid" ? (
             <div className="flex flex-col items-center py-4 text-center">
               <CheckCircle2 size={44} className="text-[#34d399]" />
@@ -261,65 +332,154 @@ export const GuestCheckoutModal = ({
                 </button>
               )}
             </div>
-          ) : (
+          ) : phase === "otp-pending" ? (
+            /* ── OTP entry ── */
             <>
-              <h2 className="text-lg font-semibold text-white">
-                Your details
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Verify your number</h2>
               <p className="mt-0.5 text-sm text-white/55">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={onLoginInstead}
-                  className="font-semibold text-[var(--h-accent)] underline"
-                >
-                  Log in
-                </button>
-                .
+                6-digit OTP sent to +91 {phone.trim()}
               </p>
 
-              <div className="mt-4 grid grid-cols-2 gap-2.5">
-                <Input placeholder="First name" value={firstName} onChange={setFirstName} />
-                <Input placeholder="Last name" value={lastName} onChange={setLastName} />
-              </div>
-              <div className="mt-2.5">
-                <Input type="email" placeholder="Email" value={email} onChange={setEmail} />
-              </div>
-              <div className="mt-2.5">
-                <Input
-                  type="tel"
+              <div className="mt-4">
+                <input
+                  ref={otpInputRef}
                   inputMode="numeric"
-                  maxLength={10}
-                  placeholder="Phone (10-digit mobile)"
-                  value={phone}
-                  onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
+                  maxLength={6}
+                  value={otpDigits}
+                  onChange={(e) => handleOtpChange(e.target.value)}
+                  disabled={otpBusy}
+                  placeholder="_ _ _ _ _ _"
+                  className="h-14 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-center text-2xl tracking-[0.5em] text-white outline-none transition focus:border-[var(--h-accent)]/60 disabled:opacity-50 placeholder:text-white/20"
                 />
               </div>
 
-              <p className="mt-3 text-xs leading-relaxed text-white/50">
-                By continuing, you agree to Hoizr&apos;s{" "}
-                <a
-                  href="https://business.hoizr.com/legal/terms"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-white/75 underline"
-                >
-                  Terms
-                </a>{" "}
-                &amp;{" "}
-                <a
-                  href="https://business.hoizr.com/legal/privacy"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-white/75 underline"
-                >
-                  Privacy Policy
-                </a>{" "}
-                — we&apos;ll create your account so your tickets are saved.
-              </p>
+              {otpBusy ? (
+                <div className="mt-3 flex items-center justify-center gap-2 text-sm text-white/50">
+                  <Loader2 size={14} className="animate-spin" />
+                  Verifying…
+                </div>
+              ) : null}
 
-              {/* Promo code (optional) — validated server-side; the
-                  discount is applied to the order at payment time. */}
+              {otpError ? (
+                <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                  {otpError}
+                </p>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpDigits("");
+                  setOtpError(null);
+                  setPhase("form");
+                }}
+                className="mt-3 text-xs font-semibold text-[var(--h-accent)] underline"
+              >
+                Change number
+              </button>
+            </>
+          ) : (
+            /* ── Form / Verified ── */
+            <>
+              {phase === "verified" ? (
+                /* Verified identity strip */
+                <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-[var(--h-accent)]/30 bg-[var(--h-accent)]/[0.08] px-3.5 py-3">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldCheck
+                      size={18}
+                      className="mt-0.5 shrink-0 text-[var(--h-accent)]"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {firstName.trim()} {lastName.trim()}
+                      </p>
+                      <p className="mt-0.5 text-xs text-white/55">
+                        +91 {phone.trim()} · {email.trim()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhase("form");
+                      setOtpDigits("");
+                      setOtpError(null);
+                    }}
+                    className="shrink-0 text-xs font-semibold text-white/55 underline"
+                  >
+                    Edit
+                  </button>
+                </div>
+              ) : (
+                /* Contact details form */
+                <>
+                  <h2 className="text-lg font-semibold text-white">Your details</h2>
+                  <p className="mt-0.5 text-sm text-white/55">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={onLoginInstead}
+                      className="font-semibold text-[var(--h-accent)] underline"
+                    >
+                      Log in
+                    </button>
+                    .
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2.5">
+                    <Input placeholder="First name" value={firstName} onChange={setFirstName} />
+                    <Input placeholder="Last name" value={lastName} onChange={setLastName} />
+                  </div>
+                  <div className="mt-2.5">
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={email}
+                      onChange={setEmail}
+                    />
+                  </div>
+                  <div className="mt-2.5">
+                    <Input
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="Phone (10-digit mobile)"
+                      value={phone}
+                      onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
+                    />
+                  </div>
+
+                  <p className="mt-3 text-xs leading-relaxed text-white/50">
+                    By continuing, you agree to Hoizr&apos;s{" "}
+                    <a
+                      href="https://business.hoizr.com/legal/terms"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-white/75 underline"
+                    >
+                      Terms
+                    </a>{" "}
+                    &amp;{" "}
+                    <a
+                      href="https://business.hoizr.com/legal/privacy"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-white/75 underline"
+                    >
+                      Privacy Policy
+                    </a>{" "}
+                    — we&apos;ll create your account so your tickets are saved.
+                  </p>
+
+                  {otpError ? (
+                    <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                      {otpError}
+                    </p>
+                  ) : null}
+                </>
+              )}
+
+              {/* Promo code — shown in both form and verified phases */}
               {appliedCoupon?.ok ? (
                 <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-[#9CCB3B]/30 bg-[#9CCB3B]/10 px-3 py-2 text-xs">
                   <span className="text-white/85">
@@ -345,9 +505,7 @@ export const GuestCheckoutModal = ({
                   <div className="flex items-center gap-2">
                     <input
                       value={promoInput}
-                      onChange={(e) =>
-                        setPromoInput(e.target.value.toUpperCase())
-                      }
+                      onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -361,11 +519,7 @@ export const GuestCheckoutModal = ({
                     <button
                       type="button"
                       onClick={applyPromo}
-                      disabled={
-                        couponBusy ||
-                        phase === "submitting" ||
-                        !promoInput.trim()
-                      }
+                      disabled={couponBusy || phase === "submitting" || !promoInput.trim()}
                       className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white disabled:opacity-50"
                     >
                       {couponBusy ? (
@@ -392,17 +546,27 @@ export const GuestCheckoutModal = ({
                 </p>
               ) : null}
 
-              <button
-                type="button"
-                disabled={!valid || phase === "submitting"}
-                onClick={submit}
-                className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e] disabled:opacity-50"
-              >
-                {phase === "submitting" ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : null}
-                Continue to payment
-              </button>
+              {phase === "verified" ? (
+                <button
+                  type="button"
+                  onClick={submit}
+                  className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
+                >
+                  Continue to payment
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!formValid || otpBusy}
+                  onClick={sendOtp}
+                  className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e] disabled:opacity-50"
+                >
+                  {otpBusy ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : null}
+                  Verify phone number
+                </button>
+              )}
               <p className="mt-2 text-center text-[11px] text-white/40">
                 Secured by Razorpay.
               </p>

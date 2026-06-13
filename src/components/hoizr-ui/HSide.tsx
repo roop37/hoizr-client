@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/uiStore";
 import type { IndianCityMaster } from "@/types/master";
@@ -112,6 +113,7 @@ export const HSide = ({ cities }: Props) => {
   const cityMenuRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const [userMenuRect, setUserMenuRect] = useState<DOMRect | null>(null);
 
   const signedIn = Boolean(profile);
   const displayName =
@@ -370,7 +372,7 @@ export const HSide = ({ cities }: Props) => {
                       </span>
                     </div>
                     <div className="truncate text-[11px] text-white/55">
-                      What&apos;s on near you, daily.
+                      Crazy houseparties &amp; foodspots near you.
                     </div>
                   </div>
                 </div>
@@ -444,44 +446,59 @@ export const HSide = ({ cities }: Props) => {
           ) : (
             <div
               className="h-side-foot"
-              style={{ position: "relative" }}
               ref={userMenuRef}
             >
-              {userMenuOpen ? (
-                <div
-                  role="menu"
-                  className="absolute inset-x-2 bottom-[calc(100%+8px)] overflow-hidden rounded-2xl border border-white/12 bg-[#15151b] p-1 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.85)]"
-                >
-                  <Link
-                    href="/me"
-                    role="menuitem"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      closeMobileSidebar();
-                    }}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/85 transition hover:bg-white/10"
-                  >
-                    <span className="ic">{HICONS.user}</span>
-                    View profile
-                  </Link>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      closeMobileSidebar();
-                      void logout();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-500/10"
-                  >
-                    <LogOut size={16} />
-                    Log out
-                  </button>
-                </div>
-              ) : null}
+              {/* Render outside the glass-surface (which has overflow:hidden + SVG filter)
+                  so the popup background and border are fully visible. */}
+              {userMenuOpen && userMenuRect
+                ? createPortal(
+                    <div
+                      role="menu"
+                      style={{
+                        position: "fixed",
+                        left: userMenuRect.left,
+                        bottom: window.innerHeight - userMenuRect.top + 8,
+                        width: userMenuRect.width,
+                        zIndex: 9999,
+                      }}
+                      className="rounded-2xl border border-white/15 bg-[#1a1a25] p-1 shadow-2xl"
+                    >
+                      <Link
+                        href="/me"
+                        role="menuitem"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          closeMobileSidebar();
+                        }}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/85 transition hover:bg-white/10"
+                      >
+                        <span className="ic">{HICONS.user}</span>
+                        View profile
+                      </Link>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          closeMobileSidebar();
+                          void logout();
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-500/10"
+                      >
+                        <LogOut size={16} />
+                        Log out
+                      </button>
+                    </div>,
+                    document.body
+                  )
+                : null}
               <button
                 type="button"
-                onClick={() => setUserMenuOpen((open) => !open)}
+                onClick={() => {
+                  const rect = userMenuRef.current?.getBoundingClientRect() ?? null;
+                  setUserMenuRect(rect);
+                  setUserMenuOpen((open) => !open);
+                }}
                 aria-haspopup="menu"
                 aria-expanded={userMenuOpen}
                 style={{

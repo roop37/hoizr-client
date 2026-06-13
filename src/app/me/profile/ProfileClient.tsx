@@ -94,8 +94,8 @@ export const ProfileClient = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [city, setCity] = useState("");
   const [birthdate, setBirthdate] = useState("");
+  const [addressEditMode, setAddressEditMode] = useState(false);
   const [gender, setGender] = useState<
     NonNullable<CustomerProfile["gender"]> | ""
   >("");
@@ -164,7 +164,6 @@ export const ProfileClient = () => {
     setFirstName(profile.firstName ?? "");
     setLastName(profile.lastName ?? "");
     setEmail(profile.email ?? "");
-    setCity(profile.city ?? "");
     setProfilePic(profile.profilePic);
     setBirthdate(formatDateForInput(profile.birthdate));
     setGender(profile.gender ?? "");
@@ -195,6 +194,8 @@ export const ProfileClient = () => {
     } else {
       setSavedAddress(null);
     }
+    // If they already have a saved address, start collapsed.
+    setAddressEditMode(!profile.address);
   }, [profile]);
 
   const handlePickFile = () => {
@@ -257,7 +258,6 @@ export const ProfileClient = () => {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim(),
-            city: city.trim() || undefined,
             birthdate: birthdate ? new Date(birthdate).toISOString() : null,
             gender: gender || null,
             emailMarketingOptIn: emailOpt,
@@ -273,6 +273,8 @@ export const ProfileClient = () => {
       if (data.updateMyProfile) setProfile(data.updateMyProfile);
       setSavedTick(true);
       window.setTimeout(() => setSavedTick(false), 2500);
+      // Collapse the address card once the profile is saved.
+      if (savedAddress) setAddressEditMode(false);
     } catch (err: any) {
       setError(
         err?.response?.errors?.[0]?.message ??
@@ -483,44 +485,6 @@ export const ProfileClient = () => {
             </div>
           ) : null}
           <label className="block text-sm">
-            <span className={labelClass}>City</span>
-            <select
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Select your city</option>
-              {[
-                "Mumbai",
-                "Delhi NCR",
-                "Bengaluru",
-                "Pune",
-                "Hyderabad",
-                "Chennai",
-                "Kolkata",
-                "Goa",
-              ].map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-              {/* Preserve a previously-saved city that isn't in the list. */}
-              {city &&
-              ![
-                "Mumbai",
-                "Delhi NCR",
-                "Bengaluru",
-                "Pune",
-                "Hyderabad",
-                "Chennai",
-                "Kolkata",
-                "Goa",
-              ].includes(city) ? (
-                <option value={city}>{city}</option>
-              ) : null}
-            </select>
-          </label>
-          <label className="block text-sm">
             <span className={labelClass}>Birthdate</span>
             <input
               type="date"
@@ -570,13 +534,32 @@ export const ProfileClient = () => {
         </div>
       </section>
 
-      {/* Saved address — search-only. User types, picks a Google
-          place suggestion, we resolve to coords + structured fields.
-          The component owns the input/chip rendering; the parent only
-          owns the captured value. Auto-save fires when the user hits
-          Save profile below. */}
+      {/* Address — collapsed when saved, expands to AddressSearchCard for editing. */}
       <div className="mt-4">
-        <AddressSearchCard value={savedAddress} onChange={setSavedAddress} />
+        {!addressEditMode && savedAddress ? (
+          <div className={`${cardClass} flex items-start justify-between gap-3`}>
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                Your address
+              </div>
+              <p className="mt-1 text-sm text-cream leading-relaxed">
+                {savedAddress.formattedAddress ||
+                  [savedAddress.addressLine1, savedAddress.city, savedAddress.state]
+                    .filter(Boolean)
+                    .join(", ")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddressEditMode(true)}
+              className="shrink-0 text-xs font-semibold text-[#c5ff3d] underline"
+            >
+              Edit
+            </button>
+          </div>
+        ) : (
+          <AddressSearchCard value={savedAddress} onChange={setSavedAddress} />
+        )}
       </div>
 
       {/* Instagram connect — own card so the embedded media grid +

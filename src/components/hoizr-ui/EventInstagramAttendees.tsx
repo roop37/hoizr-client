@@ -148,7 +148,7 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl, minAttendees = 0 }:
           <div className="h-ig-card__inner">
             <div className="h-ig-card__kicker">
               <Instagram size={13} />
-              Who&apos;s coming
+              Who&apos;s coming 👀
             </div>
 
             <div className="h-ig-card__stackrow">
@@ -257,7 +257,7 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl, minAttendees = 0 }:
           <div className="h-ig-cta__copy">
             <div className="h-ig-card__kicker">
               <Instagram size={13} />
-              Who&apos;s coming
+              Who&apos;s coming 👀
             </div>
             <h3 className="h-ig-cta__hed">{headline}</h3>
             <p className="h-ig-cta__sub">{sub}</p>
