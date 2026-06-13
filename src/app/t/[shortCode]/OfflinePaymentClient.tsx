@@ -7,7 +7,8 @@ import {
   type OfflinePaymentLinkView,
 } from "@/lib/guestCheckout";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
-import { CheckCircle2, Loader2, TicketCheck } from "lucide-react";
+import { HoizrLogo } from "@/components/hoizr-ui/HoizrLogo";
+import { CheckCircle2, Loader2, ShieldCheck, TicketCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const rupee = (n: number) =>
@@ -115,6 +116,13 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
 
   return (
     <main className="mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center px-4 py-8">
+      <div className="mb-5 flex items-center justify-between">
+        <HoizrLogo size="small" href="/" />
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-white/45">
+          <ShieldCheck size={13} className="text-[var(--h-accent)]" />
+          Secure checkout
+        </span>
+      </div>
       {phase === "loading" ? (
         <div className="flex flex-col items-center gap-3 text-white/60">
           <Loader2 className="animate-spin" />
