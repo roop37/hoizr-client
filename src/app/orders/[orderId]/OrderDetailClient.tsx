@@ -3,7 +3,6 @@
 import {
   AlertTriangle,
   CalendarDays,
-  CheckCircle2,
   ChevronLeft,
   Clock,
   CreditCard,
@@ -44,6 +43,7 @@ import type {
 import { CenteredLoader, ErrorState } from "@/components/ui/feedback";
 import { OrderFeedbackCard } from "@/components/hoizr-ui/OrderFeedbackCard";
 import { EventInstagramAttendees } from "@/components/hoizr-ui/EventInstagramAttendees";
+import { TicketShareModal } from "@/components/hoizr-ui/TicketShareModal";
 
 type OrderEventSummary = Pick<
   PublicEvent,
@@ -286,6 +286,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   const [thingsToKnowOpen, setThingsToKnowOpen] = useState(false);
   const [qrFull, setQrFull] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [invoiceState, setInvoiceState] = useState<{
     busy: boolean;
     message: string | null;
@@ -720,6 +721,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
 
   const eventInstructions = eventSummary?.eventInstructions ?? [];
   const lineupArtists = people?.artists ?? [];
+  const organizers = people?.organizers ?? [];
   const hasThingsToKnowDetails =
     eventInstructions.length > 0 || prohibitedLabels.length > 0;
 
@@ -772,6 +774,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     : "";
 
   return (
+    <>
     <div className="relative min-h-screen overflow-hidden bg-ink text-cream">
       {/* Background — desktop renders a heavily blurred copy of the flyer
           as ambient art; mobile uses a YouTube-style radial glow sampled
@@ -859,13 +862,6 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
           </section>
 
           {/* Status banners */}
-          {justPaid && confirmed ? (
-            <div className="mt-5 flex items-center gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-              <CheckCircle2 size={16} />
-              Payment confirmed. Your ticket is ready below.
-            </div>
-          ) : null}
-
           {waitingForWebhook ? (
             <div className="mt-5 flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
               <Loader2 size={16} className="animate-spin" />
@@ -1068,7 +1064,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={handleShareTicket}
+                        onClick={() => setShareModalOpen(true)}
                         className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 text-xs font-semibold text-ink transition hover:bg-cream"
                       >
                         <Share2 size={14} />
@@ -1184,16 +1180,64 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 </section>
               ) : null}
 
+              {organizers.length > 0 ? (
+                <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
+                  <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+                    <Users size={14} />
+                    Organisers
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-3">
+                    {organizers.map((org, idx) => (
+                      <div
+                        key={`${org._id ?? org.name}-${idx}`}
+                        className="flex items-center gap-2.5"
+                      >
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream/10 ring-1 ring-cream/15"
+                          style={
+                            org.logo
+                              ? {
+                                  backgroundImage: `url(${org.logo})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                }
+                              : undefined
+                          }
+                          aria-hidden
+                        >
+                          {!org.logo ? (
+                            <span className="text-sm font-semibold text-cream/80">
+                              {org.name.charAt(0).toUpperCase()}
+                            </span>
+                          ) : null}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-cream">
+                            {org.name}
+                          </div>
+                          {org.city ? (
+                            <div className="truncate text-[11px] text-cream/60">
+                              {org.city}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
               {/* Who's coming — same Instagram attendees card as the event
                   page: signed-in-but-not-connected → "Connect Instagram"
                   (returns here after connect); connected → other attendees'
-                  faces for this event. */}
+                  faces for this event. Hide entirely if < 10 attendees. */}
               {order.eventId ? (
                 <EventInstagramAttendees
                   eventId={order.eventId}
                   flyerUrl={
                     eventSummary?.eventFlyer || eventSummary?.horizontalFlyer
                   }
+                  minAttendees={10}
                 />
               ) : null}
 
@@ -1534,5 +1578,18 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
       ) : null}
 
     </div>
+
+    {order && shareModalOpen ? (
+      <TicketShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        eventTitle={eventSummary?.title}
+        eventDate={eventSummary?.startDate}
+        orderShortId={order._id.slice(-6).toUpperCase()}
+        qrPayload={order.qrCodeData ?? null}
+        pageUrl={typeof window !== "undefined" ? window.location.href : ""}
+      />
+    ) : null}
+    </>
   );
 };

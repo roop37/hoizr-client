@@ -30,6 +30,7 @@ import {
   PREVIEW_COUPON_QUERY,
   REUSE_PENDING_ORDER_MUTATION,
   SET_CART_MUTATION,
+  VISIBLE_COUPONS_QUERY,
 } from "@/lib/queries";
 import { getStoredAttribution, track } from "@/lib/tracker";
 import { useAuthStore } from "@/store/auth";
@@ -42,6 +43,14 @@ import type {
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
 
 const RAZORPAY_SCRIPT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+type PublicCoupon = {
+  code: string;
+  description?: string | null;
+  discountLabel: string;
+  minCartValue?: number | null;
+  endDate: string;
+};
 
 const loadRazorpay = (): Promise<boolean> =>
   new Promise((resolve) => {
@@ -95,6 +104,9 @@ export const CheckoutClient = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<CouponPreview | null>(null);
   const [couponBusy, setCouponBusy] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+
+  const [publicOffers, setPublicOffers] = useState<PublicCoupon[]>([]);
+  const [offersModalOpen, setOffersModalOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrated) hydrate();
@@ -248,6 +260,17 @@ export const CheckoutClient = () => {
     if (profile) restorePendingCartOrFetch();
   }, [profile, restorePendingCartOrFetch]);
 
+  useEffect(() => {
+    if (!eventId) return;
+    gqlRequest<{ visibleCouponsForEvent: PublicCoupon[] }>(
+      VISIBLE_COUPONS_QUERY,
+      { eventId }
+    )
+      .then((d) => setPublicOffers(d.visibleCouponsForEvent ?? []))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
+
   const updateCartLine = async (
     kind: "ticket" | "extra",
     lineId: string,
@@ -285,9 +308,9 @@ export const CheckoutClient = () => {
     }
   };
 
-  const applyPromo = async () => {
+  const applyPromo = async (explicitCode?: string) => {
     if (!eventId || !cart) return;
-    const code = promoInput.trim();
+    const code = (explicitCode ?? promoInput).trim();
     if (!code) return;
     setCouponBusy(true);
     setCouponError(null);
@@ -534,12 +557,18 @@ export const CheckoutClient = () => {
   }
 
   if (fatalError) {
+    const activeCart = readActiveCart();
+    const backHref = activeCart?.eventSlug
+      ? `/events/${activeCart.eventSlug}`
+      : eventId
+        ? `/events?highlight=${eventId}`
+        : "/events";
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-10">
         <ErrorState
           title="Cart unavailable"
           message={fatalError}
-          onRetry={() => router.push("/events")}
+          onRetry={() => router.push(backHref)}
         />
       </div>
     );
@@ -579,10 +608,26 @@ export const CheckoutClient = () => {
       </p>
 
       <div className="mt-6 space-y-4">
-        {/* "Your details" sits at the top so identity is captured
-            before the customer reviews tickets + totals. The form is
-            prefilled from the signed-in profile and the Ready/Needed
-            chip mirrors the validity check on Pay. */}
+        {/* When the customer is already signed in, show a compact read-only
+            identity strip — no need to show the full editable form since
+            all required fields are already populated from their profile. */}
+        {profile ? (
+          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="font-semibold text-white">
+                  {[profile.firstName, profile.lastName].filter(Boolean).join(" ") || "You"}
+                </div>
+                <div className="mt-0.5 text-xs text-white/55">
+                  {profile.email ?? profile.phone ?? ""}
+                </div>
+              </div>
+              <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-200 ring-1 ring-inset ring-emerald-400/40">
+                Ready
+              </span>
+            </div>
+          </div>
+        ) : (
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -669,37 +714,7 @@ export const CheckoutClient = () => {
             </label>
           </div>
         </div>
-
-        {/* Pay sits directly below the form so once the customer fills
-            their details the primary CTA is the very next thing under
-            their thumb. Tickets + totals stay below the Pay button so
-            they remain reviewable but don't push the action down. */}
-        {actionError ? (
-          <ErrorState
-            title="Couldn't update your order"
-            message={actionError}
-          />
-        ) : null}
-
-        <button
-          type="button"
-          disabled={paying || updatingLine !== null}
-          onClick={startPayment}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
-        >
-          {paying ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : cart.pricing.totalAmount <= 0 ? (
-            "Confirm booking"
-          ) : (
-            `Pay ${rupee(cart.pricing.totalAmount)}`
-          )}
-        </button>
-        <p className="text-center text-xs text-white/55">
-          {cart.pricing.totalAmount <= 0
-            ? "No payment is needed for this booking."
-            : "Secured by Razorpay. Cards, UPI, net-banking, and wallets supported."}
-        </p>
+        )}
 
         <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.04] text-white backdrop-blur-xl">
           <div className="border-b border-white/[0.06] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
@@ -852,7 +867,7 @@ export const CheckoutClient = () => {
                 />
                 <button
                   type="button"
-                  onClick={applyPromo}
+                  onClick={() => applyPromo()}
                   disabled={couponBusy || paying || !promoInput.trim()}
                   className="inline-flex items-center gap-1.5 rounded-full bg-[#0F8842] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0d7639] disabled:opacity-50"
                 >
@@ -865,6 +880,15 @@ export const CheckoutClient = () => {
               </div>
               {couponError ? (
                 <p className="mt-2 text-xs text-red-300">{couponError}</p>
+              ) : null}
+              {publicOffers.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setOffersModalOpen(true)}
+                  className="mt-2 text-xs text-white/50 underline underline-offset-2 transition hover:text-white/70"
+                >
+                  View all offers
+                </button>
               ) : null}
             </>
           )}
@@ -926,12 +950,95 @@ export const CheckoutClient = () => {
           );
         })()}
 
+        {actionError ? (
+          <ErrorState
+            title="Couldn't update your order"
+            message={actionError}
+          />
+        ) : null}
+
+        <button
+          type="button"
+          disabled={paying || updatingLine !== null}
+          onClick={startPayment}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
+        >
+          {paying ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : cart.pricing.totalAmount <= 0 ? (
+            "Confirm booking"
+          ) : (
+            `Pay ${rupee(cart.pricing.totalAmount)}`
+          )}
+        </button>
+        <p className="text-center text-xs text-white/55">
+          {cart.pricing.totalAmount <= 0
+            ? "No payment is needed for this booking."
+            : "Secured by Razorpay. Cards, UPI, net-banking, and wallets supported."}
+        </p>
+
         {/* AUDIT-034: SoT §27 disclosure on point of sale. */}
         <p className="text-center text-xs text-white/50">
           Ticketing by Hoizr. The event itself is run by the organiser —
           Hoizr is not the event organiser.
         </p>
       </div>
+
+      {/* Offers modal — lists public coupons for this event. Clicking one
+          auto-applies it via the normal promo flow. */}
+      {offersModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+          onClick={() => setOffersModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-white/[0.08] bg-[#0a0a0e] p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div className="text-sm font-semibold text-white">Available offers</div>
+              <button
+                type="button"
+                onClick={() => setOffersModalOpen(false)}
+                className="text-xs text-white/40 hover:text-white/70"
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-2">
+              {publicOffers.map((offer) => (
+                <button
+                  key={offer.code}
+                  type="button"
+                  onClick={() => {
+                    setPromoInput(offer.code);
+                    setOffersModalOpen(false);
+                    applyPromo(offer.code);
+                  }}
+                  className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-mono text-sm font-semibold tracking-widest text-[#9CCB3B]">
+                      {offer.code}
+                    </div>
+                    <div className="shrink-0 text-xs font-semibold text-white">
+                      {offer.discountLabel}
+                    </div>
+                  </div>
+                  {offer.description ? (
+                    <p className="mt-1 text-xs text-white/55">{offer.description}</p>
+                  ) : null}
+                  {offer.minCartValue ? (
+                    <p className="mt-0.5 text-[11px] text-white/40">
+                      Min. cart: {rupee(offer.minCartValue)}
+                    </p>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

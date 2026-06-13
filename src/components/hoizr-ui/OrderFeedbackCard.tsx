@@ -26,6 +26,7 @@ export const OrderFeedbackCard = ({
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const title = eventEnded
@@ -57,8 +58,31 @@ export const OrderFeedbackCard = ({
     }
   };
 
-  // Once submitted, hide the card entirely.
-  if (done) return null;
+  if (done && dismissed) return null;
+
+  if (done) {
+    const thankYou =
+      rating <= 2
+        ? "Thanks for the honest feedback — we'll use it to improve."
+        : rating === 3
+          ? "Thanks for sharing — means a lot."
+          : "Glad you loved it! See you at the next one.";
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-white/80">{thankYou}</p>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="shrink-0 text-xs text-white/40 transition hover:text-white/70"
+            aria-label="Dismiss"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const showRemarks = rating > 0;
 

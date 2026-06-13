@@ -20,6 +20,10 @@ type Props = {
   /** Event flyer — used as a blurred, low-opacity reflective backdrop so the
    *  card picks up the event's own colour palette. */
   flyerUrl?: string | null;
+  /** Minimum attendee count before the card shows. Defaults to 0 (always show
+   *  when connected + has attendees). Set to 10 on the order detail page so
+   *  the card stays hidden for low-attendance events. */
+  minAttendees?: number;
 };
 
 const FACE_ROW_LIMIT = 16;
@@ -44,7 +48,7 @@ const cleanHandle = (h?: string | null) => (h ? h.replace(/^@/, "") : "");
  * A blurred copy of the event flyer sits behind a translucent overlay so the
  * card reflects the event's colours without any IG-branded chrome.
  */
-export const EventInstagramAttendees = ({ eventId, flyerUrl }: Props) => {
+export const EventInstagramAttendees = ({ eventId, flyerUrl, minAttendees = 0 }: Props) => {
   const profile = useAuthStore((s) => s.profile);
   const hydrated = useAuthStore((s) => s.hydrated);
   const pathname = usePathname();
@@ -108,8 +112,12 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl }: Props) => {
   }
 
   const viewerConnected = Boolean(viewerIg?.connected);
-  const count = attendees.length;
-  const showFaces = viewerConnected && count > 0;
+  // Filter the viewer's own profile out of the attendees list.
+  const visibleAttendees = profile
+    ? attendees.filter((a) => a.customerId !== profile._id)
+    : attendees;
+  const count = visibleAttendees.length;
+  const showFaces = viewerConnected && count >= Math.max(minAttendees, 1);
 
   // Backdrop layer — blurred flyer (when present) under a dark/accent wash.
   const backdrop = (
@@ -126,9 +134,9 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl }: Props) => {
 
   // ── State 3: connected + attendees → avatar stack + count + handles ──────
   if (showFaces) {
-    const stack = attendees.slice(0, STACK_LIMIT);
+    const stack = visibleAttendees.slice(0, STACK_LIMIT);
     const overflow = count - stack.length;
-    const handles = attendees
+    const handles = visibleAttendees
       .map((a) => cleanHandle(a.handle))
       .filter(Boolean)
       .slice(0, HANDLE_LIMIT);
@@ -145,8 +153,9 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl }: Props) => {
 
             <div className="h-ig-card__stackrow">
               <ul className="h-ig-stack" aria-hidden>
-                {stack.map((a) => (
-                  <li key={a.customerId} className="h-ig-stack__item">
+                {stack.map((a) => {
+                  const handle = cleanHandle(a.handle);
+                  const inner = (
                     <span
                       className="h-ig-stack__avatar"
                       style={
@@ -155,16 +164,33 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl }: Props) => {
                               backgroundImage: `url(${a.avatar})`,
                               backgroundSize: "cover",
                               backgroundPosition: "center",
+                              borderRadius: "50%",
                             }
-                          : undefined
+                          : { borderRadius: "50%" }
                       }
                     >
                       {!a.avatar ? (
                         <span>{(a.firstName ?? a.handle ?? "?").charAt(0)}</span>
                       ) : null}
                     </span>
-                  </li>
-                ))}
+                  );
+                  return (
+                    <li key={a.customerId} className="h-ig-stack__item">
+                      {handle ? (
+                        <a
+                          href={`https://instagram.com/${handle}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`@${handle} on Instagram`}
+                        >
+                          {inner}
+                        </a>
+                      ) : (
+                        inner
+                      )}
+                    </li>
+                  );
+                })}
                 {overflow > 0 ? (
                   <li className="h-ig-stack__item">
                     <span className="h-ig-stack__avatar h-ig-stack__more">
@@ -177,7 +203,7 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl }: Props) => {
                 <strong>
                   {count} {count === 1 ? "person" : "people"}
                 </strong>
-                <span>locking it in</span>
+                <span>going</span>
               </div>
             </div>
 
@@ -221,7 +247,7 @@ export const EventInstagramAttendees = ({ eventId, flyerUrl }: Props) => {
   );
   const sub = earlyBird
     ? "You're early — opt in and you might just set the night's lineup."
-    : "Connect Instagram to peek at the off-stage lineup — half the fun is who's in the room.";
+    : "Connect Instagram to see how many people are going.";
 
   return (
     <div className="h-detail-section">
