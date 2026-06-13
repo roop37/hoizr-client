@@ -2,18 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { PostHogAnalytics } from "@/components/analytics/PostHogProvider";
-import { WebPushPrompt } from "@/components/notifications/WebPushPrompt";
 import { GlassFilter } from "@/components/hoizr-ui/GlassFilter";
-import { HSide } from "@/components/hoizr-ui/HSide";
-import { CityPickerModal } from "@/components/hoizr-ui/CityPickerModal";
-import { CityInitializer } from "@/components/hoizr-ui/CityInitializer";
-// Pre-launch: floating auth chip hidden; sidebar sign-in opens the real modal.
-// import { HFloatingAuth } from "@/components/hoizr-ui/HFloatingAuth";
-import { HCartBar } from "@/components/hoizr-ui/HCartBar";
-import { SignInModal } from "@/components/hoizr-ui/SignInModal";
-import { HFooter } from "@/components/hoizr-ui/HFooter";
-import { HMobileTabs } from "@/components/hoizr-ui/HMobileTabs";
-import { HMobileTopBar } from "@/components/hoizr-ui/HMobileTopBar";
+import { StorefrontShell } from "@/components/hoizr-ui/StorefrontShell";
 import Noise from "@/components/hoizr-ui/Noise";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { fetchCustomerMasters } from "@/lib/home-data";
@@ -125,23 +115,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
-          <HMobileTopBar />
-          <div className="h-shell">
-            <HSide cities={masters.cities} />
-            <div className="h-content">
-              <div className="h-content-grow">{children}</div>
-              <HFooter />
-            </div>
-          </div>
-          {/* Pre-launch: floating auth hidden.
-          <HFloatingAuth />
-          */}
-          <SignInModal />
-          <HCartBar />
-          <HMobileTabs />
-          <WebPushPrompt />
-          <CityInitializer cities={masters.cities} />
-          <CityPickerModal cities={masters.cities} />
+          <StorefrontShell cities={masters.cities}>{children}</StorefrontShell>
         </PostHogAnalytics>
       </body>
     </html>
