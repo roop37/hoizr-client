@@ -9,9 +9,6 @@ import {
   type PublicVenuePage,
 } from "@/lib/venue-queries";
 
-const venueImage = (v: PublicVenue): string | null =>
-  v.logo || v.gallery?.[0] || null;
-
 const cityOf = (v: PublicVenue): string =>
   v.address?.city || v.address?.formattedAddress || "";
 
@@ -37,11 +34,11 @@ export function VenuesListClient() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-4 sm:gap-5">
+        {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="h-48 animate-pulse rounded-2xl border border-white/5 bg-white/5"
+            className="h-56 animate-pulse rounded-2xl border border-white/5 bg-white/5"
           />
         ))}
       </div>
@@ -66,9 +63,15 @@ export function VenuesListClient() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 sm:gap-5">
       {venues.map((v) => {
-        const img = venueImage(v);
+        const gallery = (v.gallery ?? []).filter(Boolean);
+        const cover = gallery[0] || v.logo || null;
+        // Thumbnails = the gallery images not already used as the cover.
+        const thumbs = (cover === gallery[0] ? gallery.slice(1) : gallery).slice(
+          0,
+          4
+        );
         const city = cityOf(v);
         return (
           <Link
@@ -76,11 +79,11 @@ export function VenuesListClient() {
             href={`/venues/${v._id}`}
             className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-white/25 hover:bg-white/[0.06]"
           >
-            <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-white/10 to-white/[0.02]">
-              {img ? (
+            <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-white/10 to-white/[0.02]">
+              {cover ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={img}
+                  src={cover}
                   alt={v.name ?? "Venue"}
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
@@ -90,7 +93,31 @@ export function VenuesListClient() {
                   {(v.name ?? "V").charAt(0).toUpperCase()}
                 </div>
               )}
+              {/* Venue logo badge over the cover (when we have both). */}
+              {v.logo && cover !== v.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={v.logo}
+                  alt=""
+                  loading="lazy"
+                  className="absolute bottom-2 left-2 h-9 w-9 rounded-lg border border-white/20 object-cover shadow-lg"
+                />
+              ) : null}
             </div>
+            {thumbs.length > 0 ? (
+              <div className="flex gap-1 px-2 pt-2">
+                {thumbs.map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={i}
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    className="h-12 flex-1 rounded-md object-cover"
+                  />
+                ))}
+              </div>
+            ) : null}
             <div className="p-3">
               <div className="truncate text-[14px] font-semibold text-white">
                 {v.name ?? "Venue"}

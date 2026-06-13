@@ -55,21 +55,23 @@ export const EventPromoCodes = ({ eventId }: { eventId: string }) => {
   return (
     <div className="h-glass-card mt-4 p-4 sm:p-5">
       <div className="mb-3 flex items-center gap-2 text-white/85">
-        <TicketPercent size={16} className="text-[#9CCB3B]" />
+        <TicketPercent size={16} className="text-[#c5ff3d]" />
         <span className="text-sm font-semibold">Offers & promo codes</span>
       </div>
-      <div className="flex flex-col gap-2.5">
+      {/* Cards size to their content and wrap — a single coupon stays compact
+          instead of stretching the full width. */}
+      <div className="flex flex-wrap gap-2.5">
         {coupons.map((c) => (
           <div
             key={c.code}
-            className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.04] px-4 py-3"
+            className="flex min-w-[240px] max-w-[340px] flex-1 items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.04] px-4 py-3 sm:flex-none"
           >
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-sm font-bold tracking-wider text-white">
                   {c.code}
                 </span>
-                <span className="rounded-full bg-[#9CCB3B]/15 px-2 py-0.5 text-[11px] font-semibold text-[#9CCB3B]">
+                <span className="rounded-full bg-[#c5ff3d]/15 px-2 py-0.5 text-[11px] font-semibold text-[#c5ff3d]">
                   {c.discountLabel}
                 </span>
               </div>
@@ -87,7 +89,7 @@ export const EventPromoCodes = ({ eventId }: { eventId: string }) => {
             >
               {copied === c.code ? (
                 <>
-                  <Check size={13} className="text-[#9CCB3B]" /> Copied
+                  <Check size={13} className="text-[#c5ff3d]" /> Copied
                 </>
               ) : (
                 <>
