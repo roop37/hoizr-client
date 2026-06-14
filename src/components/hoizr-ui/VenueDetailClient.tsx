@@ -27,7 +27,10 @@ export function VenueDetailClient({ id }: { id: string }) {
           { id }
         );
         setVenue(data.getPublicVenueById ?? null);
-      } catch {
+      } catch (err) {
+        // A GraphQL/validation error (e.g. an unknown field) lands here too —
+        // log it so a query bug doesn't silently masquerade as "not found".
+        console.error("Failed to load venue", err);
         setVenue(null);
       } finally {
         setLoading(false);
@@ -141,21 +144,23 @@ export function VenueDetailClient({ id }: { id: string }) {
       {gallery.length > 0 ? (
         <div className="mt-8">
           <h2 className="mb-3 text-[15px] font-semibold text-white">Gallery</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {/* Masonry (CSS columns) so photos render at their NATURAL aspect
+              ratio — portrait, landscape, or square — never force-cropped. */}
+          <div className="gap-3 [column-fill:balance] columns-2 sm:columns-3">
             {gallery.map((src, i) => (
               <a
                 key={`${src}-${i}`}
                 href={src}
                 target="_blank"
                 rel="noreferrer"
-                className="block overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                className="mb-3 block break-inside-avoid overflow-hidden rounded-xl border border-white/10 bg-white/5"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={src}
                   alt={`${venue.name ?? "Venue"} photo ${i + 1}`}
                   loading="lazy"
-                  className="aspect-square h-full w-full object-cover transition hover:scale-[1.03]"
+                  className="h-auto w-full object-cover transition duration-300 hover:scale-[1.02]"
                 />
               </a>
             ))}

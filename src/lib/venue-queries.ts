@@ -14,8 +14,6 @@ export type PublicVenue = {
     formattedAddress?: string | null;
     city?: string | null;
     state?: string | null;
-    latitude?: number | null;
-    longitude?: number | null;
   } | null;
 };
 
@@ -50,6 +48,11 @@ export const GET_PUBLIC_VENUES_QUERY = /* GraphQL */ `
   }
 `;
 
+// NOTE: `address` only exposes formattedAddress / city / state. The
+// AddressInfo GraphQL type has no `latitude`/`longitude` fields (it stores
+// `coordinates` as a CoordinatePoint), so requesting them made the WHOLE
+// operation fail validation → every venue 404'd ("Venue not found"). The
+// detail page doesn't use lat/lng anyway (maps link uses the address text).
 export const GET_PUBLIC_VENUE_BY_ID_QUERY = /* GraphQL */ `
   query GetPublicVenueById($id: String!) {
     getPublicVenueById(id: $id) {
@@ -64,8 +67,6 @@ export const GET_PUBLIC_VENUE_BY_ID_QUERY = /* GraphQL */ `
         formattedAddress
         city
         state
-        latitude
-        longitude
       }
     }
   }

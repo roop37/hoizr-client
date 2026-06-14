@@ -16,7 +16,7 @@ import { track } from "@/lib/tracker";
 import { useAuthStore } from "@/store/auth";
 import type { PublicEvent, PublicExtra, PublicTicket } from "@/types/event";
 import type { CartResponse } from "@/types/order";
-import { GuestCheckoutModal } from "@/components/hoizr-ui/GuestCheckoutModal";
+import { AuthSheet } from "@/components/auth/AuthSheet";
 
 type Selection = Record<string, number>;
 type LineSel = { tickets: { ticketId: string; quantity: number }[]; extras: { extraId: string; quantity: number }[] };
@@ -87,14 +87,25 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
   const [extraSel, setExtraSel] = useState<Selection>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  // Guest checkout (not-logged-in) modal — opened from "Continue to checkout".
-  const [guestSel, setGuestSel] = useState<LineSel | null>(null);
+  // Login gate (not-logged-in) — opened from "Continue to checkout". This is
+  // NOT a guest order: the buyer signs in (phone OTP) without leaving the page,
+  // their ticket selection stays put, and they just tap "Continue to checkout".
+  const [loginSel, setLoginSel] = useState<LineSel | null>(null);
 
   useEffect(() => {
     if (!hydrated) {
       hydrate();
     }
   }, [hydrated, hydrate]);
+
+  // After sign-in: re-hydrate so `profile` flips to logged-in on this same page
+  // (mirrors the checkout-gate pattern), then close the sheet. The selection is
+  // preserved in state — the buyer just taps "Continue to checkout" again.
+  const handleAuthenticated = async () => {
+    useAuthStore.setState({ hydrated: false });
+    await hydrate();
+    setLoginSel(null);
+  };
 
   useEffect(() => {
     const activeCart = readActiveCart();
@@ -167,10 +178,10 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
     });
 
     if (!profile) {
-      // Not logged in → open the guest-checkout modal (bottom sheet on
-      // mobile) right here. The buyer can fill details + pay as a guest, or
-      // choose "Log in" which falls back to the existing checkout-page flow.
-      setGuestSel({ tickets: selectedTickets, extras: selectedExtras });
+      // Not logged in → open the sign-in sheet right here (log in BEFORE the
+      // order — not a guest checkout). The selection is remembered; once signed
+      // in they're logged in on this same page and just tap Continue again.
+      setLoginSel({ tickets: selectedTickets, extras: selectedExtras });
       return;
     }
 
@@ -197,6 +208,9 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
         eventId: event._id,
         hostId: (event as any).hostId,
         itemIds: selectedTicketIds,
+        // Identify the logged-in buyer so the abandoned-cart automation
+        // (retarget_abandoned) can reach them — this branch is logged-in only.
+        customerId: profile?._id,
       });
       router.push(`/checkout?eventId=${event._id}`);
     } catch (err: any) {
@@ -449,30 +463,12 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
         </button>
       </div>
 
-      <GuestCheckoutModal
-        open={!!guestSel}
-        onClose={() => setGuestSel(null)}
-        eventId={event._id}
-        eventTitle={event.title ?? "this event"}
-        tickets={guestSel?.tickets ?? []}
-        extras={guestSel?.extras ?? []}
-        onLoginInstead={() => {
-          // Fall back to the existing login → checkout-page flow: persist the
-          // selection locally and let the checkout page prompt sign-in.
-          writeActiveCart({
-            eventId: event._id,
-            eventSlug: event.slug,
-            eventTitle: event.title,
-            eventImage: event.horizontalFlyer ?? event.eventFlyer,
-            totalAmount: preview.totalAmount,
-            expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-            tickets: guestSel?.tickets ?? [],
-            extras: guestSel?.extras ?? [],
-            pending: true,
-          });
-          setGuestSel(null);
-          router.push(`/checkout?eventId=${event._id}`);
-        }}
+      <AuthSheet
+        open={!!loginSel}
+        onClose={() => setLoginSel(null)}
+        onAuthenticated={handleAuthenticated}
+        headline="Sign in to book your tickets"
+        subheadline="Verify with a quick phone OTP — your selection is saved and you'll pick up right here."
       />
     </div>
   );

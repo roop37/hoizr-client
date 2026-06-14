@@ -12,6 +12,23 @@ import {
 const cityOf = (v: PublicVenue): string =>
   v.address?.city || v.address?.formattedAddress || "";
 
+// Deterministic bento sizing. A repeating 6-tile rhythm gives a mosaic with
+// the occasional hero / tall / wide tile while staying balanced; `grid-flow-dense`
+// backfills the gaps the varied spans leave behind. Sizes are chosen to read
+// well at BOTH the 2-col (mobile) and 4-col (desktop) track counts.
+const bentoSpan = (i: number): string => {
+  switch (i % 6) {
+    case 0:
+      return "col-span-2 row-span-2"; // hero
+    case 2:
+      return "row-span-2"; // tall / portrait emphasis
+    case 4:
+      return "sm:col-span-2"; // wide / landscape emphasis
+    default:
+      return "";
+  }
+};
+
 export function VenuesListClient() {
   const [venues, setVenues] = useState<PublicVenue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +41,8 @@ export function VenuesListClient() {
           { input: { page: 1, pageSize: 48 } }
         );
         setVenues(data.getPublicVenues?.venues ?? []);
-      } catch {
+      } catch (err) {
+        console.error("Failed to load venues", err);
         setVenues([]);
       } finally {
         setLoading(false);
@@ -34,11 +52,13 @@ export function VenuesListClient() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:gap-5">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-flow-dense grid-cols-2 gap-3 [grid-auto-rows:8.5rem] sm:grid-cols-4 sm:gap-4 sm:[grid-auto-rows:10.5rem]">
+        {Array.from({ length: 9 }).map((_, i) => (
           <div
             key={i}
-            className="h-56 animate-pulse rounded-2xl border border-white/5 bg-white/5"
+            className={`animate-pulse rounded-2xl border border-white/5 bg-white/5 ${bentoSpan(
+              i
+            )}`}
           />
         ))}
       </div>
@@ -63,69 +83,54 @@ export function VenuesListClient() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:gap-5">
-      {venues.map((v) => {
+    <div className="grid grid-flow-dense grid-cols-2 gap-3 [grid-auto-rows:8.5rem] sm:grid-cols-4 sm:gap-4 sm:[grid-auto-rows:10.5rem]">
+      {venues.map((v, i) => {
         const gallery = (v.gallery ?? []).filter(Boolean);
         const cover = gallery[0] || v.logo || null;
-        // Thumbnails = the gallery images not already used as the cover.
-        const thumbs = (cover === gallery[0] ? gallery.slice(1) : gallery).slice(
-          0,
-          4
-        );
         const city = cityOf(v);
+        const meta = [v.venueType, city].filter(Boolean).join(" · ") || "Venue";
         return (
           <Link
             key={v._id}
             href={`/venues/${v._id}`}
-            className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-white/25 hover:bg-white/[0.06]"
+            className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-[#c5ff3d]/40 ${bentoSpan(
+              i
+            )}`}
           >
-            <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-white/10 to-white/[0.02]">
-              {cover ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={cover}
-                  alt={v.name ?? "Venue"}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-white/30">
-                  {(v.name ?? "V").charAt(0).toUpperCase()}
-                </div>
-              )}
-              {/* Venue logo badge over the cover (when we have both). */}
-              {v.logo && cover !== v.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={v.logo}
-                  alt=""
-                  loading="lazy"
-                  className="absolute bottom-2 left-2 h-9 w-9 rounded-lg border border-white/20 object-cover shadow-lg"
-                />
-              ) : null}
-            </div>
-            {thumbs.length > 0 ? (
-              <div className="flex gap-1 px-2 pt-2">
-                {thumbs.map((src, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={i}
-                    src={src}
-                    alt=""
-                    loading="lazy"
-                    className="h-12 flex-1 rounded-md object-cover"
-                  />
-                ))}
+            {cover ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cover}
+                alt={v.name ?? "Venue"}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/10 to-white/[0.02] text-4xl font-bold text-white/25">
+                {(v.name ?? "V").charAt(0).toUpperCase()}
               </div>
-            ) : null}
-            <div className="p-3">
-              <div className="truncate text-[14px] font-semibold text-white">
+            )}
+
+            {/* Bottom scrim so the venue name stays legible over any photo. */}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent p-3 pt-10">
+              <div className="truncate text-[14px] font-semibold text-white drop-shadow">
                 {v.name ?? "Venue"}
               </div>
-              <div className="mt-0.5 truncate text-[12px] text-white/55">
-                {[v.venueType, city].filter(Boolean).join(" · ") || "Venue"}
+              <div className="mt-0.5 truncate text-[11px] text-white/70">
+                {meta}
               </div>
             </div>
+
+            {/* Logo chip when the cover isn't already the logo. */}
+            {v.logo && cover !== v.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={v.logo}
+                alt=""
+                loading="lazy"
+                className="absolute left-2 top-2 h-8 w-8 rounded-lg border border-white/20 object-cover shadow-lg"
+              />
+            ) : null}
           </Link>
         );
       })}
