@@ -239,6 +239,7 @@ export const CheckoutClient = () => {
         track("cartCreated", {
           eventId,
           itemIds: (pending.tickets ?? []).map((line) => line.ticketId),
+          customerId: profile?._id,
           metadata: { restoredAfterAuth: true },
         });
       } catch (err: any) {
@@ -296,6 +297,7 @@ export const CheckoutClient = () => {
       track("cartUpdated", {
         eventId,
         itemIds: [lineId],
+        customerId: profile?._id,
         metadata: { kind, delta },
       });
     } catch (err: any) {
