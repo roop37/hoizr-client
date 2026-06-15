@@ -2880,8 +2880,15 @@ body,
   /* Cap landscape hero so it doesn't dominate the viewport on wide
      screens — a 16:9 at full readable column width was approaching
      720px tall on desktop, pushing the title, CTA, and booking panel
-     below the fold. */
+     below the fold.
+     Cap the WIDTH proportionally too (height × 16/9) so the box stays a
+     true 16:9 when the height clamp kicks in. Previously only the height
+     was capped while width stayed 100%, so on wide screens the box became
+     wider than 16:9 and `object-fit: cover` cropped the image top/bottom
+     ("zoomed in"). Centering keeps it tidy in the readable column. */
   max-height: min(48vh, 460px);
+  max-width: min(85.34vh, 818px);
+  margin-inline: auto;
 }
 .h-event-hero--portrait,
 .h-event-hero--fallback {

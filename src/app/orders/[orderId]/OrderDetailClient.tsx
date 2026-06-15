@@ -421,8 +421,13 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     }
   };
 
+  // Portrait flyer first on the order/ticket page (desktop + mobile) so
+  // the artwork shows the same way whether or not the host also uploaded
+  // a landscape image. Landscape is only a fallback when no portrait
+  // flyer exists. (Previously desktop preferred the landscape crop, which
+  // looked inconsistent next to events that only had a portrait flyer.)
   const heroFlyer = useMemo(
-    () => eventSummary?.horizontalFlyer || eventSummary?.eventFlyer || "",
+    () => eventSummary?.eventFlyer || eventSummary?.horizontalFlyer || "",
     [eventSummary?.eventFlyer, eventSummary?.horizontalFlyer]
   );
 
@@ -812,8 +817,8 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
             <ChevronLeft size={14} /> All tickets
           </Link>
 
-          {/* Desktop hero — compact event header with landscape flyer
-              on the left and title/badge column on the right. Hidden on
+          {/* Desktop hero — compact event header with the portrait event
+              flyer on the left and title/badge column on the right. Hidden on
               mobile (md:hidden block below) because the redesigned
               mobile card composes the flyer + badge + meta INSIDE the
               white ticket card so everything sits under one surface and
