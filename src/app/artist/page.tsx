@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArtistFilters } from "./ArtistFilters";
-import { TrackView } from "@/components/analytics/TrackView";
 import { PUBLIC_ARTISTS_QUERY } from "@/lib/artist-queries";
 import { gqlRequest } from "@/lib/graphql";
 import { gqlMainRequest } from "@/lib/graphql-main";
@@ -83,17 +82,6 @@ export default async function ArtistsPage({
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
-      <TrackView
-        event="artistListView"
-        payload={{
-          metadata: {
-            totalResults: artists.total,
-            page: artists.page,
-            city: searchParams.city,
-            query: searchParams.q,
-          },
-        }}
-      />
       <header className="mb-6">
         <h1 className="text-3xl font-semibold md:text-4xl">Discover artists</h1>
         <p className="mt-1 text-sm text-muted">

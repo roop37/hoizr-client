@@ -12,50 +12,23 @@
  * doesn't drag in the full shared package on the customer-facing site.
  */
 
+/**
+ * The complete, intentionally tiny analytics taxonomy. Everything else
+ * (event-list / event-detail / artist views) is derived at report time
+ * from `pageView`'s `route`, so we don't fire a separate event for it.
+ *
+ *   pageView      — every route change (subsumes list + detail views)
+ *   cartCreated   — a cart is started (feeds the abandoned-cart automation)
+ *   cartDestroyed — the buyer discards an active cart
+ *   orderPlaced   — server-emitted conversion (customer-server, never the client)
+ *
+ * Keep this list small: every type here is a row in Mongo forever.
+ */
 export type AnalyticsEventName =
-  // Generic
   | "pageView"
-  | "identify"
-  | "clickGeneric"
-  | "search"
-  | "error"
-  // Event browsing
-  | "eventListView"
-  | "eventListFilter"
-  | "eventDetailView"
-  | "eventViewList"
-  | "eventShare"
-  | "eventFavorite"
-  // Ticketing
-  | "ticketSelect"
   | "cartCreated"
-  | "cartUpdated"
-  | "cartExpired"
-  | "checkoutStarted"
-  | "checkoutTriggered"
-  | "checkoutPaymentInit"
-  | "checkoutPaymentFailed"
-  | "checkoutCompleted"
-  | "couponApplied"
-  // Artist
-  | "artistListView"
-  | "artistDetailView"
-  | "artistFollow"
-  | "artistMerchListView"
-  | "artistMerchDetailView"
-  | "artistMerchPurchased"
-  // Host
-  | "hostDetailView"
-  | "hostFollow"
-  // Auth
-  | "authOtpRequested"
-  | "authOtpVerified"
-  | "authSignupCompleted"
-  | "authLogin"
-  | "authLogout"
-  // Campaign attribution
-  | "campaignEmailOpened"
-  | "campaignEmailClicked";
+  | "cartDestroyed"
+  | "orderPlaced";
 
 /** Per-event payload accepted by the SDK. Server enforces the schema. */
 export type AnalyticsEventPayload = {
@@ -212,25 +185,29 @@ export const getStoredAttribution = (): Attribution => {
   return readAttributionFromUrl();
 };
 
+/**
+ * Minimal context attached to every event. Deliberately lean — the
+ * tracking-server stores one row per event, so we only send what's
+ * actually queried: the route (to derive page-level funnels), session +
+ * visitor ids (to stitch a journey), the referrer (server derives the
+ * traffic source + host from it, then drops the raw value), and the
+ * first-touch UTM cluster (attribution). Page title, full URL, query
+ * string, viewport, language and timezone were write-only weight and
+ * are no longer sent.
+ */
 const baseContext = (): Record<string, any> => {
   if (typeof window === "undefined") return {};
   const attribution = getAttribution();
   return {
     sessionId: getSessionId(),
     clientVisitorId: getVisitorId(),
-    pageUrl: window.location.href,
     route: window.location.pathname,
-    pageTitle: document.title || undefined,
-    pageQuery: window.location.search || undefined,
     referrer: document.referrer || undefined,
     utmSource: attribution.utmSource,
     utmMedium: attribution.utmMedium,
     utmCampaign: attribution.utmCampaign,
     utmTerm: attribution.utmTerm,
     utmContent: attribution.utmContent,
-    viewport: `${window.innerWidth}x${window.innerHeight}`,
-    language: navigator.language,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     clientTimestamp: new Date().toISOString(),
     app: "hoizr-client",
   };
@@ -269,7 +246,7 @@ const post = (path: string, body: any) => {
  * returns immediately and posts in the background.
  *
  * Example:
- *   track("eventDetailView", { eventId: "e_123", hostId: "h_456" });
+ *   track("cartCreated", { eventId: "e_123", hostId: "h_456" });
  */
 export const track = (
   eventType: AnalyticsEventName,
@@ -313,12 +290,4 @@ export const trackBatch = (
  */
 export const trackPageView = (extra?: AnalyticsEventPayload): void => {
   track("pageView", extra);
-};
-
-/**
- * Identify the current user — call after a successful OTP verify.
- * Server stores customerId on subsequent events from this session.
- */
-export const trackIdentify = (customerId: string): void => {
-  track("identify", { customerId });
 };

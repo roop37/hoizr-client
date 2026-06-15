@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { TrackView } from "@/components/analytics/TrackView";
 import {
   ArtistJsonLd,
   BreadcrumbJsonLd,
@@ -176,18 +175,6 @@ export default async function ArtistPage({ params }: PageProps) {
           { name: "Artists", href: "/artists" },
           { name: displayName, href: `/artist/${profile.slug ?? profile._id}` },
         ]}
-      />
-      <TrackView
-        event="artistDetailView"
-        payload={{
-          artistId: profile._id,
-          metadata: {
-            slug: profile.slug,
-            city: profile.city,
-            followers: counts?.totalFollowers,
-            merchCount: merch?.length ?? 0,
-          },
-        }}
       />
       {profile.coverImage ? (
         <div className="relative -mx-4 mb-6 h-40 overflow-hidden sm:rounded-2xl">

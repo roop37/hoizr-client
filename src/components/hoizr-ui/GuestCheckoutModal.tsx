@@ -12,7 +12,6 @@ import {
   REQUEST_OTP_MUTATION,
   VERIFY_OTP_MUTATION,
 } from "@/lib/queries";
-import { track } from "@/lib/tracker";
 import type { CouponPreview } from "@/types/order";
 import { rupee } from "@/lib/format";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
@@ -185,13 +184,6 @@ export const GuestCheckoutModal = ({
     setError(null);
     setAccountNote(null);
     setPhase("submitting");
-    track("checkoutTriggered", {
-      eventId,
-      metadata: {
-        guest: true,
-        ticketCount: tickets.reduce((s, t) => s + t.quantity, 0),
-      },
-    });
     try {
       const input: GuestCheckoutInput = {
         eventId,
@@ -218,11 +210,7 @@ export const GuestCheckoutModal = ({
       }
 
       if (!res.checkout) {
-        track("checkoutCompleted", {
-          eventId,
-          orderId: res.order._id,
-          metadata: { guest: true, free: true },
-        });
+        // Free guest order — finalized server-side (emits `orderPlaced`).
         clearActiveCart();
         finishPaid(email.trim());
         return;
@@ -249,11 +237,7 @@ export const GuestCheckoutModal = ({
           },
           theme: { color: "#0F8842" },
           handler: (_response: RazorpayPaymentResponse) => {
-            track("checkoutCompleted", {
-              eventId,
-              orderId: res.order._id,
-              metadata: { guest: true },
-            });
+            // Conversion is recorded server-side as `orderPlaced`.
             clearActiveCart();
             finishPaid(email.trim());
             resolve();

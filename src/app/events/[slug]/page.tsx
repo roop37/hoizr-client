@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EventDetailClient } from "@/components/hoizr-ui/EventDetailClient";
-import { TrackView } from "@/components/analytics/TrackView";
 import { BreadcrumbJsonLd, EventJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 import { gqlRequest } from "@/lib/graphql";
@@ -132,18 +131,6 @@ export default async function EventDetailPage({
           { name: "Events", href: "/events" },
           { name: event.title ?? "Event", href: `/events/${event.slug ?? event._id}` },
         ]}
-      />
-      <TrackView
-        event="eventDetailView"
-        payload={{
-          eventId: event._id,
-          hostId: (event as unknown as { hostId?: string }).hostId,
-          metadata: {
-            slug: event.slug,
-            city: event.city,
-            ticketingEnabled: event.ticketingEnabled,
-          },
-        }}
       />
       <EventDetailClient
         event={event}

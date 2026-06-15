@@ -55,7 +55,7 @@ test("track does not throw when browser storage is unavailable", () => {
   installBrowserGlobals();
 
   assert.doesNotThrow(() => {
-    track("checkoutStarted", { eventId: "event_1" });
+    track("cartCreated", { eventId: "event_1" });
   });
 });
 
@@ -63,6 +63,6 @@ test("trackBatch does not throw when browser storage is unavailable", () => {
   installBrowserGlobals();
 
   assert.doesNotThrow(() => {
-    trackBatch([{ eventType: "checkoutStarted", eventId: "event_1" }]);
+    trackBatch([{ eventType: "cartCreated", eventId: "event_1" }]);
   });
 });

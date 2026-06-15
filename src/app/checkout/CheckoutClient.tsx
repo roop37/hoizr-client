@@ -294,12 +294,6 @@ export const CheckoutClient = () => {
         setAppliedCoupon(null);
         setCouponError(null);
       }
-      track("cartUpdated", {
-        eventId,
-        itemIds: [lineId],
-        customerId: profile?._id,
-        metadata: { kind, delta },
-      });
     } catch (err: any) {
       setActionError(
         err?.response?.errors?.[0]?.message ??
@@ -332,10 +326,6 @@ export const CheckoutClient = () => {
       }
       setAppliedCoupon(preview);
       setPromoInput(preview.code);
-      track("couponApplied", {
-        eventId,
-        metadata: { code: preview.code, discount: preview.discountAmount },
-      });
     } catch (err: any) {
       setAppliedCoupon(null);
       setCouponError(
@@ -364,21 +354,6 @@ export const CheckoutClient = () => {
     // Read first-touch attribution from localStorage so the order
     // doc carries the campaign that brought this customer in.
     const attribution = getStoredAttribution();
-
-    track("checkoutStarted", {
-      eventId,
-      metadata: {
-        totalAmount: cart.pricing?.totalAmount,
-        ticketCount: cart.tickets?.length ?? 0,
-      },
-    });
-    track("checkoutTriggered", {
-      eventId,
-      metadata: {
-        totalAmount: cart.pricing?.totalAmount,
-        ticketCount: cart.tickets?.length ?? 0,
-      },
-    });
 
     try {
       // AUDIT-030: resume the existing PaymentPending order if the
@@ -419,20 +394,11 @@ export const CheckoutClient = () => {
 
       const { checkout, order } = createRes.createOrder;
       if (!checkout) {
-        track("checkoutCompleted", {
-          eventId,
-          orderId: order._id,
-          metadata: { totalAmount: order.totalAmount, freeOrder: true },
-        });
+        // Free order — finalized server-side, which emits the canonical
+        // `orderPlaced` analytics event. Nothing to track here.
         router.push(`/orders/${order._id}?just_paid=1`);
         return;
       }
-
-      track("checkoutPaymentInit", {
-        eventId,
-        orderId: order._id,
-        metadata: { totalAmount: order.totalAmount },
-      });
 
       const ready = await loadRazorpay();
       if (!ready) throw new Error("Unable to load Razorpay. Please retry.");
@@ -476,32 +442,17 @@ export const CheckoutClient = () => {
                   razorpaySignature: response.razorpay_signature,
                 }
               );
-              track("checkoutCompleted", {
-                eventId,
-                orderId: order._id,
-                metadata: { totalAmount: order.totalAmount },
-              });
-            } catch (err: any) {
-              track("checkoutPaymentFailed", {
-                eventId,
-                orderId: order._id,
-                metadata: {
-                  stage: "confirm-fast-path",
-                  reason: err?.message ?? "unknown",
-                  handoff: "order-detail-poll",
-                },
-              });
+            } catch {
+              // Fast-path confirm failed — swallow and hand off to the order
+              // detail page, which polls for the webhook-driven finaliser.
+              // Conversion is recorded server-side as `orderPlaced`, so there's
+              // nothing to track here either way. NEVER block the redirect.
             }
             router.push(`/orders/${order._id}?just_paid=1`);
             resolve();
           },
           modal: {
             ondismiss: () => {
-              track("checkoutPaymentFailed", {
-                eventId,
-                orderId: order._id,
-                metadata: { stage: "razorpay-modal", reason: "cancelled" },
-              });
               reject(new Error("Payment cancelled"));
             },
           },

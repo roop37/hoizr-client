@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { EventsPageClient } from "@/components/hoizr-ui/EventsPageClient";
-import { TrackView } from "@/components/analytics/TrackView";
 import { BreadcrumbJsonLd, CollectionPageJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 import { fetchCustomerMasters, fetchPublishedEvents } from "@/lib/home-data";
@@ -108,18 +107,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Searc
         }))}
       />
       <BreadcrumbJsonLd items={[{ name: "Hoizr", href: "/" }, { name: "Events", href: "/events" }]} />
-      <TrackView
-        event="eventListView"
-        payload={{
-          metadata: {
-            totalResults: list.total,
-            vibe: initialVibe,
-            city: searchParams.city,
-            when: initialWhen,
-            price: initialPrice,
-          },
-        }}
-      />
       <EventsPageClient
         events={events}
         cities={masters.cities}

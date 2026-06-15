@@ -167,15 +167,6 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
     const selectedTicketIds = Object.entries(ticketSel)
       .filter(([, qty]) => qty > 0)
       .map(([ticketId]) => ticketId);
-    track("ticketSelect", {
-      eventId: event._id,
-      hostId: (event as any).hostId,
-      itemIds: selectedTicketIds,
-      metadata: {
-        ticketCount: totalTickets,
-        extraCount: Object.values(extraSel).reduce((s, n) => s + n, 0),
-      },
-    });
 
     if (!profile) {
       // Not logged in → open the sign-in sheet right here (log in BEFORE the
