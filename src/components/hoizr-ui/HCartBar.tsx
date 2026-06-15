@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearActiveCart, readActiveCart, type ActiveCart } from "@/lib/active-cart";
 import { rupee } from "@/lib/format";
+import { track } from "@/lib/tracker";
 import { GlassSurface } from "./GlassSurface";
 import { HICONS } from "./icons";
 
@@ -82,6 +83,12 @@ export const HCartBar = () => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                // User explicitly discarded the cart — the one place we fire
+                // cartDestroyed (NOT on checkout success / error cleanup).
+                track("cartDestroyed", {
+                  eventId: cart.eventId,
+                  metadata: { reason: "dismissed" },
+                });
                 clearActiveCart();
               }}
               aria-label="Dismiss"
