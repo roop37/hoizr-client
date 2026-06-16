@@ -9,9 +9,10 @@ import { HICONS } from "./icons";
  * ≥1101px where the floating sidebar takes over (see `.h-mobile-tabs`
  * media query in globals.css).
  *
- * Search is intentionally omitted while the catalogue is small. The
- * Library tab points at /orders so a fan can find their tickets on
- * touch devices without going through the sidebar.
+ * Search is intentionally omitted while the catalogue is small.
+ * "Local" points at the events discovery surface for now (the dedicated
+ * Hoizr Local feature is still coming soon); Profile replaces the old
+ * Library tab so a fan reaches their account/tickets from the bottom bar.
  */
 
 type Tab = {
@@ -22,9 +23,9 @@ type Tab = {
 
 const TABS: Tab[] = [
   { href: "/", label: "Home", icon: HICONS.home },
-  { href: "/events", label: "Events", icon: HICONS.grid },
+  { href: "/events", label: "Local", icon: HICONS.grid },
   { href: "/live", label: "Live", icon: HICONS.radio },
-  { href: "/orders", label: "Library", icon: HICONS.ticket },
+  { href: "/me/profile", label: "Profile", icon: HICONS.user },
 ];
 
 const isActive = (pathname: string | null, href: string) => {

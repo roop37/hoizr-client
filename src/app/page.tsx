@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 // bottom of short pages. Page-level renders removed.
 import {
   fetchCustomerMasters,
+  fetchEventHostName,
   fetchPublicArtists,
   fetchPublishedEvents,
 } from "@/lib/home-data";
@@ -149,6 +150,10 @@ export default async function HomePage() {
   const heroEvent = all.find((e) => e.isHighDemand) ?? all[0];
   const others = all.filter((e) => e.id !== heroEvent.id);
 
+  // Label the hero with the organizing account's name (falls back to the
+  // event's series tag inside HHero when unavailable).
+  const heroHostName = await fetchEventHostName(heroEvent.id);
+
   // Genres collection rail — surface the full active genre catalogue
   // (same list the event-journey "Genre" picker uses on business-client)
   // so the home page reads as a complete map of vibes, not just the
@@ -183,7 +188,7 @@ export default async function HomePage() {
           rail version rendered each card at full landscape size and
           dominated the viewport. HHero is one card with built-in
           progression through the landscape-flyer pool. */}
-      <HHero event={heroEvent} />
+      <HHero event={heroEvent} hostName={heroHostName} />
 
       {liveGenres.length > 0 ? (
         <div className="h-rail-sec">

@@ -113,6 +113,7 @@ export const HSide = ({ cities }: Props) => {
   const cityMenuRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const userMenuPopRef = useRef<HTMLDivElement | null>(null);
   const [userMenuRect, setUserMenuRect] = useState<DOMRect | null>(null);
 
   const signedIn = Boolean(profile);
@@ -151,7 +152,15 @@ export const HSide = ({ cities }: Props) => {
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
-      if (!userMenuRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // The menu is portaled to <body> (outside userMenuRef), so without
+      // also excluding the popup itself this handler closed the menu on
+      // pointerdown BEFORE the click could navigate — that's why "View
+      // profile" never opened.
+      if (
+        !userMenuRef.current?.contains(target) &&
+        !userMenuPopRef.current?.contains(target)
+      ) {
         setUserMenuOpen(false);
       }
     };
@@ -371,7 +380,7 @@ export const HSide = ({ cities }: Props) => {
                         Soon
                       </span>
                     </div>
-                    <div className="truncate text-[11px] text-white/55">
+                    <div className="text-[11px] leading-snug text-white/55">
                       Crazy houseparties &amp; foodspots near you.
                     </div>
                   </div>
@@ -454,6 +463,7 @@ export const HSide = ({ cities }: Props) => {
                 ? createPortal(
                     <div
                       role="menu"
+                      ref={userMenuPopRef}
                       style={{
                         position: "fixed",
                         left: userMenuRect.left,
@@ -509,7 +519,23 @@ export const HSide = ({ cities }: Props) => {
                   textAlign: "left",
                 }}
               >
-                <div className="avatar">{initials}</div>
+                <div className="avatar">
+                  {profile?.profilePic ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.profilePic}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: "inherit",
+                      }}
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
                 <div className="who">{displayName}</div>
                 <span
                   style={{
