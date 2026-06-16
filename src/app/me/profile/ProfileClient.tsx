@@ -5,6 +5,7 @@ import {
   Apple,
   Camera,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   LifeBuoy,
   Loader2,
@@ -119,6 +120,9 @@ export const ProfileClient = () => {
   const [error, setError] = useState<string | null>(null);
   const [savedTick, setSavedTick] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
+  // "What we can send you" is tucked away by default — most fans never
+  // touch it, so it shouldn't push the page down on every visit.
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrated) hydrate();
@@ -350,6 +354,35 @@ export const ProfileClient = () => {
     },
   ];
 
+  // Only surface "Save changes" when the form actually differs from the
+  // loaded profile. Compares the editable fields (incl. notification
+  // opt-ins, avatar, and address) against the persisted values.
+  const baseline = JSON.stringify({
+    firstName: profile.firstName ?? "",
+    lastName: profile.lastName ?? "",
+    birthdate: formatDateForInput(profile.birthdate),
+    gender: profile.gender ?? "",
+    emailOpt: profile.emailMarketingOptIn !== false,
+    smsOpt: profile.smsMarketingOptIn !== false,
+    whatsappOpt: profile.whatsappMarketingOptIn !== false,
+    pushOpt: profile.pushNotificationMarketingOptIn !== false,
+    profilePic: profile.profilePic ?? "",
+    address: profile.address?.formattedAddress ?? "",
+  });
+  const current = JSON.stringify({
+    firstName,
+    lastName,
+    birthdate,
+    gender,
+    emailOpt,
+    smsOpt,
+    whatsappOpt,
+    pushOpt,
+    profilePic: profilePic ?? "",
+    address: savedAddress?.formattedAddress ?? "",
+  });
+  const isDirty = baseline !== current;
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 text-cream md:py-12">
       <button
@@ -534,6 +567,35 @@ export const ProfileClient = () => {
         </div>
       </section>
 
+      {/* Save — surfaces directly under the details form, only when the
+          form has unsaved changes. */}
+      {isDirty ? (
+        <div className="mt-4">
+          {error ? (
+            <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-400/30 bg-rose-500/[0.08] p-3 text-sm text-rose-200">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            disabled={saving || profileLoading}
+            onClick={save}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] px-5 text-sm font-semibold text-ink transition hover:bg-[#d9ff6e] disabled:opacity-60"
+          >
+            {saving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : savedTick ? (
+              <>
+                <CheckCircle2 size={16} /> Saved
+              </>
+            ) : (
+              "Save changes"
+            )}
+          </button>
+        </div>
+      ) : null}
+
       {/* Address — collapsed when saved, expands to AddressSearchCard for editing. */}
       <div className="mt-4">
         {!addressEditMode && savedAddress ? (
@@ -569,11 +631,25 @@ export const ProfileClient = () => {
         <InstagramConnectCard />
       </div>
 
-      {/* Marketing opt-ins */}
+      {/* Marketing opt-ins — collapsed by default. */}
       <section className={`mt-4 ${cardClass}`}>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
-          What we can send you
-        </div>
+        <button
+          type="button"
+          onClick={() => setNotifOpen((open) => !open)}
+          aria-expanded={notifOpen}
+          className="flex w-full items-center justify-between gap-3 text-left"
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
+            What we can send you
+          </span>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-cream/50 transition-transform ${
+              notifOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {notifOpen ? (
         <ul className="mt-3 divide-y divide-cream/[0.06]">
           {channels.map((c) => (
             <li
@@ -606,35 +682,22 @@ export const ProfileClient = () => {
             </li>
           ))}
         </ul>
+        ) : null}
       </section>
 
-      {error ? (
+      {/* Save errors still surface here when the dirty Save above failed. */}
+      {error && !isDirty ? (
         <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-400/30 bg-rose-500/[0.08] p-3 text-sm text-rose-200">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={saving || profileLoading}
-          onClick={save}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] px-5 text-sm font-semibold text-ink transition hover:bg-[#d9ff6e] disabled:opacity-60"
-        >
-          {saving ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : savedTick ? (
-            <>
-              <CheckCircle2 size={16} /> Saved
-            </>
-          ) : (
-            "Save changes"
-          )}
-        </button>
+      {/* Support + logout — two equal halves filling the row. */}
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <Link
           href="/support"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-cream/15 px-4 text-sm font-semibold text-cream/85 transition hover:bg-cream/10"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-cream/15 px-4 text-sm font-semibold text-cream/85 transition hover:bg-cream/10"
         >
           <LifeBuoy size={16} />
           Get support
@@ -642,7 +705,7 @@ export const ProfileClient = () => {
         <button
           type="button"
           onClick={onLogout}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-cream/15 px-4 text-sm font-semibold text-cream/85 transition hover:bg-cream/10"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-cream/15 px-4 text-sm font-semibold text-cream/85 transition hover:bg-cream/10"
         >
           <LogOut size={16} />
           Log out
