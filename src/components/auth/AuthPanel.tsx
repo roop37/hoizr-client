@@ -363,15 +363,24 @@ const AuthPanelInner = ({
             <span className="text-xs uppercase tracking-[0.14em] text-white/55">
               Phone number
             </span>
-            <input
-              autoFocus
-              type="tel"
-              autoComplete="tel"
-              placeholder="+91 9876543210"
-              value={phoneInput}
-              onChange={(e) => setPhoneInput(e.target.value)}
-              className="mt-2 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-sm text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
-            />
+            <div className="mt-2 flex h-11 w-full items-center rounded-xl border border-white/12 bg-white/[0.06] px-4 transition focus-within:border-accent focus-within:bg-white/[0.08]">
+              <span className="mr-2 select-none text-sm font-medium text-white/70">
+                +91
+              </span>
+              <input
+                autoFocus
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={10}
+                placeholder="9876543210"
+                value={phoneInput}
+                onChange={(e) =>
+                  setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 10))
+                }
+                className="h-full w-full bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+              />
+            </div>
           </label>
           <p className="text-xs text-white/50">
             We'll send a 6-digit OTP to verify your number.
