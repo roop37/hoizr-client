@@ -2875,20 +2875,15 @@ body,
   border-radius: 16px;
 }
 .h-event-hero--landscape {
+  /* Full-width landscape hero. The box is a true 16:9 and the landscape
+     image is cropped to exactly 16:9 (1600×900) in business-client, so
+     `object-fit: cover` fills it edge-to-edge — no crop, no side gutters.
+     The height cap only engages past a ~1280px-wide column (where a
+     100%-width box still resolves to 16:9), so it never distorts the
+     ratio or "zooms in" on normal screens. */
   aspect-ratio: 16 / 9;
   width: 100%;
-  /* Cap landscape hero so it doesn't dominate the viewport on wide
-     screens — a 16:9 at full readable column width was approaching
-     720px tall on desktop, pushing the title, CTA, and booking panel
-     below the fold.
-     Cap the WIDTH proportionally too (height × 16/9) so the box stays a
-     true 16:9 when the height clamp kicks in. Previously only the height
-     was capped while width stayed 100%, so on wide screens the box became
-     wider than 16:9 and `object-fit: cover` cropped the image top/bottom
-     ("zoomed in"). Centering keeps it tidy in the readable column. */
-  max-height: min(48vh, 460px);
-  max-width: min(85.34vh, 818px);
-  margin-inline: auto;
+  max-height: min(68vh, 720px);
 }
 .h-event-hero--portrait,
 .h-event-hero--fallback {
@@ -4720,10 +4715,8 @@ a.h-ig-card__handle:hover {
   .h-event-hero--landscape {
     aspect-ratio: 16 / 10;
   }
-  /* Mobile inherits the height-driven sizing from the base rule —
-     overriding width here would re-introduce the crop the desktop
-     rule just removed. We just relax the side-padding so phones use
-     more of the available width before letterboxing kicks in. */
+  /* Relax the portrait poster's side-padding on phones so it uses more
+     of the available width before letterboxing kicks in. */
   .h-event-hero-poster {
     max-width: calc(100% - 16px);
     max-height: calc(100% - 24px);
