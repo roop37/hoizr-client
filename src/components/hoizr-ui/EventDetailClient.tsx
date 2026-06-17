@@ -11,6 +11,10 @@ import type {
 import { formatPrice, toDisplayEvent } from "@/lib/event-display";
 import { gqlRequest } from "@/lib/graphql";
 import {
+  fetchEventPublicGuestlists,
+  type PublicGuestlistView,
+} from "@/lib/guestlist";
+import {
   ARTIST_PAST_UPCOMING_EVENTS_QUERY,
   ORGANIZER_PAST_UPCOMING_EVENTS_QUERY,
 } from "@/lib/queries";
@@ -196,6 +200,18 @@ export const EventDetailClient = ({
   }, [peopleModal?.id, peopleModal?.kind]);
   const [venueOpen, setVenueOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [publicGuestlists, setPublicGuestlists] = useState<
+    PublicGuestlistView[]
+  >([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchEventPublicGuestlists(event._id).then((lists) => {
+      if (!cancelled) setPublicGuestlists(lists);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [event._id]);
 
   const venueFullAddress =
     event.location?.formattedAddress ??
@@ -476,6 +492,41 @@ export const EventDetailClient = ({
           )}
         </div>
       </div>
+
+      {publicGuestlists.length ? (
+        <div className="mb-5 rounded-2xl border border-amber-300/25 bg-gradient-to-br from-amber-200/[0.08] to-amber-500/[0.04] p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300">
+            On the guestlist?
+          </div>
+          <p className="mt-1 text-sm text-white/70">
+            Join free and get a golden pass that scans at the door.
+          </p>
+          <div className="mt-3 space-y-2">
+            {publicGuestlists.map((g) => (
+              <div
+                key={g.guestlistId}
+                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
+              >
+                <span className="truncate text-sm font-medium text-white">
+                  {g.contributorName || "Guestlist"}
+                </span>
+                {g.isFull ? (
+                  <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-white/40">
+                    Full
+                  </span>
+                ) : (
+                  <Link
+                    href={`/guestlist/${g.code}`}
+                    className="shrink-0 rounded-full bg-amber-400 px-4 py-1.5 text-xs font-bold text-[#2a1d00]"
+                  >
+                    Join
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="h-detail-grid h-detail-grid--with-aside">
         <div className="h-detail-body-card">

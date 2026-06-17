@@ -105,6 +105,39 @@ export async function joinGuestlist(
   return data.joinGuestlist;
 }
 
+export type PublicGuestlistView = {
+  guestlistId: string;
+  code: string;
+  contributorName?: string | null;
+  contributorType: string;
+  isFull: boolean;
+};
+
+const EVENT_PUBLIC_GUESTLISTS_QUERY = `
+  query EventPublicGuestlists($eventId: String!) {
+    eventPublicGuestlists(eventId: $eventId) {
+      guestlistId
+      code
+      contributorName
+      contributorType
+      isFull
+    }
+  }
+`;
+
+export async function fetchEventPublicGuestlists(
+  eventId: string
+): Promise<PublicGuestlistView[]> {
+  try {
+    const data = await gqlRequest<{
+      eventPublicGuestlists: PublicGuestlistView[];
+    }>(EVENT_PUBLIC_GUESTLISTS_QUERY, { eventId });
+    return data.eventPublicGuestlists ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchMyGuestlistTickets(): Promise<GuestlistTicketView[]> {
   try {
     const data = await gqlRequest<{
