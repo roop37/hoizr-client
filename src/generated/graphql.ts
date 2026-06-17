@@ -598,6 +598,8 @@ export type Event = {
   gallery?: Maybe<Array<EventGalleryItem>>;
   genreTagIds?: Maybe<Array<Scalars['String']['output']>>;
   genresPreferred?: Maybe<Array<Genre>>;
+  guestlistAutoAccept?: Maybe<Scalars['Boolean']['output']>;
+  guestlistEnabled?: Maybe<Scalars['Boolean']['output']>;
   horizontalFlyer?: Maybe<Scalars['String']['output']>;
   horizontalVideo?: Maybe<Scalars['String']['output']>;
   hostId: Scalars['String']['output'];
@@ -990,6 +992,42 @@ export type GuestOrderInput = {
   utm?: InputMaybe<UtmInput>;
 };
 
+export enum GuestlistEntryStatus {
+  Accepted = 'ACCEPTED',
+  Pending = 'PENDING',
+  Revoked = 'REVOKED'
+}
+
+export type GuestlistJoinView = {
+  __typename?: 'GuestlistJoinView';
+  alreadyJoined: Scalars['Boolean']['output'];
+  city?: Maybe<Scalars['String']['output']>;
+  code: Scalars['String']['output'];
+  contributorName?: Maybe<Scalars['String']['output']>;
+  eventDate?: Maybe<Scalars['String']['output']>;
+  eventFlyer?: Maybe<Scalars['String']['output']>;
+  eventId: Scalars['String']['output'];
+  eventTitle?: Maybe<Scalars['String']['output']>;
+  guestlistId: Scalars['String']['output'];
+  isFull: Scalars['Boolean']['output'];
+  isPublic: Scalars['Boolean']['output'];
+  myEntryStatus?: Maybe<GuestlistEntryStatus>;
+};
+
+export type GuestlistTicketView = {
+  __typename?: 'GuestlistTicketView';
+  checkedIn: Scalars['Boolean']['output'];
+  contributorName?: Maybe<Scalars['String']['output']>;
+  entryId: Scalars['String']['output'];
+  eventDate?: Maybe<Scalars['String']['output']>;
+  eventFlyer?: Maybe<Scalars['String']['output']>;
+  eventId: Scalars['String']['output'];
+  eventTitle?: Maybe<Scalars['String']['output']>;
+  qrCodeData?: Maybe<Scalars['String']['output']>;
+  status: GuestlistEntryStatus;
+  venue?: Maybe<Scalars['String']['output']>;
+};
+
 export type HoizrExtra = {
   __typename?: 'HoizrExtra';
   _id: Scalars['ID']['output'];
@@ -1070,6 +1108,7 @@ export type Mutation = {
   customerVerifyOtp: CustomerAuthResponse;
   disconnectInstagram: Scalars['Boolean']['output'];
   followArtist: ArtistFollow;
+  joinGuestlist: GuestlistTicketView;
   registerFcmToken: Scalars['Boolean']['output'];
   requestOrderRefund: CustomerOrderView;
   reusePendingOrder: CreateOrderResponse;
@@ -1156,6 +1195,11 @@ export type MutationCustomerVerifyOtpArgs = {
 
 export type MutationFollowArtistArgs = {
   artistId: Scalars['String']['input'];
+};
+
+
+export type MutationJoinGuestlistArgs = {
+  code: Scalars['String']['input'];
 };
 
 
@@ -1419,6 +1463,15 @@ export type PublicEventSummary = {
   title?: Maybe<Scalars['String']['output']>;
 };
 
+export type PublicGuestlistView = {
+  __typename?: 'PublicGuestlistView';
+  code: Scalars['String']['output'];
+  contributorName?: Maybe<Scalars['String']['output']>;
+  contributorType: Scalars['String']['output'];
+  guestlistId: Scalars['String']['output'];
+  isFull: Scalars['Boolean']['output'];
+};
+
 export type PublicVenue = {
   __typename?: 'PublicVenue';
   _id: Scalars['String']['output'];
@@ -1451,6 +1504,7 @@ export type Query = {
   __typename?: 'Query';
   customerPlaceDetails?: Maybe<CustomerPlaceDetail>;
   customerPlacesAutocomplete: Array<CustomerPlacePrediction>;
+  eventPublicGuestlists: Array<PublicGuestlistView>;
   getActiveEventCategories: Array<EventCategory>;
   getActiveGenreTags: Array<GenreTag>;
   getActiveIndianCities: Array<IndianCity>;
@@ -1471,9 +1525,11 @@ export type Query = {
   getPublicVenueById?: Maybe<PublicVenue>;
   getPublicVenues: PublicVenuePaginatedResponse;
   getPublishedEvents: PublicEventPaginatedResponse;
+  guestlistByCode: GuestlistJoinView;
   isFollowingArtist: Scalars['Boolean']['output'];
   myArtistMerchOrders: Array<ArtistMerchOrder>;
   myFollowedArtists: Array<Artist>;
+  myGuestlistTickets: Array<GuestlistTicketView>;
   offlinePaymentLink: OfflinePaymentLinkView;
   previewCoupon: CouponPreviewView;
   scannerEventManifest: ScannerManifest;
@@ -1489,6 +1545,11 @@ export type QueryCustomerPlaceDetailsArgs = {
 
 export type QueryCustomerPlacesAutocompleteArgs = {
   input: Scalars['String']['input'];
+};
+
+
+export type QueryEventPublicGuestlistsArgs = {
+  eventId: Scalars['String']['input'];
 };
 
 
@@ -1555,6 +1616,11 @@ export type QueryGetPublicVenuesArgs = {
 
 export type QueryGetPublishedEventsArgs = {
   input?: InputMaybe<PublicEventFilterInput>;
+};
+
+
+export type QueryGuestlistByCodeArgs = {
+  code: Scalars['String']['input'];
 };
 
 

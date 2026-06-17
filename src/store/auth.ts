@@ -42,5 +42,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // ignore network errors on logout
     }
     set({ profile: null });
+    // Hard-navigate so the cleared auth cookie is reflected everywhere
+    // (SSR pages, header, sidebar). A client-only state reset leaves
+    // SSR'd/protected surfaces showing stale signed-in UI — this is why
+    // logout "didn't work". See the cookie-then-navigate rule.
+    if (typeof window !== "undefined") {
+      window.location.assign("/");
+    }
   },
 }));

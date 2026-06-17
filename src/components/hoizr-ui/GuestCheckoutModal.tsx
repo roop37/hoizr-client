@@ -427,7 +427,8 @@ export const GuestCheckoutModal = ({
                       type="tel"
                       inputMode="numeric"
                       maxLength={10}
-                      placeholder="Phone (10-digit mobile)"
+                      prefix="+91"
+                      placeholder="10-digit mobile"
                       value={phone}
                       onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
                     />
@@ -570,6 +571,7 @@ const Input = ({
   type = "text",
   inputMode,
   maxLength,
+  prefix,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -577,16 +579,33 @@ const Input = ({
   type?: string;
   inputMode?: "numeric" | "tel" | "email" | "text";
   maxLength?: number;
-}) => (
-  <input
-    type={type}
-    inputMode={inputMode}
-    maxLength={maxLength}
-    value={value}
-    placeholder={placeholder}
-    onChange={(e) => onChange(e.target.value)}
-    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none transition focus:border-[var(--h-accent)]/60 placeholder:text-white/40"
-  />
-);
+  prefix?: string;
+}) =>
+  prefix ? (
+    <div className="flex h-11 w-full items-center rounded-xl border border-white/10 bg-white/[0.04] px-3 transition focus-within:border-[var(--h-accent)]/60">
+      <span className="mr-2 select-none text-sm font-medium text-white/70">
+        {prefix}
+      </span>
+      <input
+        type={type}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-full w-full bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+      />
+    </div>
+  ) : (
+    <input
+      type={type}
+      inputMode={inputMode}
+      maxLength={maxLength}
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none transition focus:border-[var(--h-accent)]/60 placeholder:text-white/40"
+    />
+  );
 
 export default GuestCheckoutModal;

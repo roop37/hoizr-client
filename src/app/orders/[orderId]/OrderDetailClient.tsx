@@ -1321,7 +1321,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                   routes it. The /support page prefills the orderId
                   so the ticket is already linked to this booking. */}
               <section className="rounded-3xl border border-cream/10 bg-cream/[0.04] p-5 text-sm text-cream/90 backdrop-blur-xl md:p-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cream/60">
                       <LifeBuoy size={14} />

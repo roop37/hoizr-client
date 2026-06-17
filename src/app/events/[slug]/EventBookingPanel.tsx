@@ -115,7 +115,12 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
     setExtraSel(selections.extras);
   }, [event._id]);
 
-  const tickets = event.tickets ?? [];
+  // Hidden tickets (ticketVisible === false) are removed entirely — they
+  // must not appear, and must NOT fall through to a misleading "Sold out"
+  // badge. "Sold out" is reserved for visible tickets at capacity.
+  const tickets = (event.tickets ?? []).filter(
+    (t) => t.ticketVisible !== false
+  );
   const extras = event.extras ?? [];
 
   // The actual rates come from the server but mirror env defaults for the

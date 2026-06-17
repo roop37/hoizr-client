@@ -38,14 +38,15 @@ export const TicketSelectionClient = ({ event }: { event: PublicEvent }) => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-ink text-cream">
-      {/* Soft ambient backdrop — desktop only. Mobile stays clean so the
-          flyer thumbnail and ticket controls dominate. */}
+      {/* Soft ambient flyer backdrop — full-bleed on every screen so the
+          page colour matches the event edge-to-edge (no grey gap on the
+          sides on mobile). */}
       {heroFlyer ? (
         <img
           src={heroFlyer}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-40 blur-3xl md:block"
+          className="pointer-events-none absolute inset-0 block h-full w-full scale-110 object-cover opacity-40 blur-3xl"
         />
       ) : null}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink/40 via-ink/85 to-ink" />

@@ -8,9 +8,12 @@ import { HICONS } from "./icons";
 
 type Props = {
   event: DisplayEvent;
+  /** Organizing account name — shown as the hero eyebrow instead of the
+   *  generic series tag when available. */
+  hostName?: string | null;
 };
 
-export const HHero = ({ event }: Props) => {
+export const HHero = ({ event, hostName }: Props) => {
   const router = useRouter();
   const href = `/events/${event.slug}`;
   return (
@@ -50,11 +53,11 @@ export const HHero = ({ event }: Props) => {
       <div className="scrim" />
       <div className="h-hero-tag">
         <i />
-        SELLING NOW
+        TRENDING NOW
       </div>
       <div className="h-hero-body">
         <div>
-          <div className="eye">{event.series}</div>
+          <div className="eye">{hostName || event.series}</div>
           <h1>{event.title}</h1>
           {event.sub ? <p>{event.sub}</p> : null}
         </div>
