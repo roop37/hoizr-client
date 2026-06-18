@@ -330,25 +330,33 @@ export const InstagramConnectCard = () => {
                 />
               </button>
             </div>
-          </details>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {/* Refresh hidden once connected — posts re-sync automatically; a
-                manual refresh just adds clutter to the connected state. */}
-            <button
-              type="button"
-              disabled={busy === "disconnect"}
-              onClick={disconnect}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-400/30 px-3 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-60"
-            >
-              {busy === "disconnect" ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Unplug size={14} />
-              )}
-              Disconnect
-            </button>
-          </div>
+            {/* Disconnect lives inside Additional details — it's a rare,
+                deliberate action, not a primary one, so it stays tucked
+                away next to the visibility control. */}
+            <div className="flex items-center justify-between gap-3 border-t border-cream/10 px-3 py-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">Disconnect Instagram</div>
+                <p className="mt-0.5 text-xs text-cream/55">
+                  Removes your handle, avatar and photos from Hoizr. You can
+                  reconnect any time.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={busy === "disconnect"}
+                onClick={disconnect}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-400/30 px-3 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/10 disabled:opacity-60"
+              >
+                {busy === "disconnect" ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Unplug size={14} />
+                )}
+                Disconnect
+              </button>
+            </div>
+          </details>
         </>
       )}
 

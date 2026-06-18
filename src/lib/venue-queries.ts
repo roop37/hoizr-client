@@ -38,6 +38,48 @@ export type VenuePublicGuestlist = {
   eventDate?: string | null;
 };
 
+// A venue's events for the detail page. A venue IS a host, so we reuse the
+// organiser past/upcoming query keyed by the venue's `_id` (= hostId).
+export type PublicEventSummary = {
+  _id: string;
+  title?: string | null;
+  slug?: string | null;
+  eventFlyer?: string | null;
+  horizontalFlyer?: string | null;
+  city?: string | null;
+  startDate?: string | null;
+};
+
+export type OrganizerEvents = {
+  upcoming: PublicEventSummary[];
+  past: PublicEventSummary[];
+};
+
+export const GET_ORGANIZER_EVENTS_QUERY = /* GraphQL */ `
+  query GetOrganizerPastUpcomingEvents($hostId: String!) {
+    getOrganizerPastUpcomingEvents(hostId: $hostId) {
+      upcoming {
+        _id
+        title
+        slug
+        eventFlyer
+        horizontalFlyer
+        city
+        startDate
+      }
+      past {
+        _id
+        title
+        slug
+        eventFlyer
+        horizontalFlyer
+        city
+        startDate
+      }
+    }
+  }
+`;
+
 export const GET_VENUE_PUBLIC_GUESTLISTS_QUERY = /* GraphQL */ `
   query VenuePublicGuestlists($venueId: String!) {
     venuePublicGuestlists(venueId: $venueId) {

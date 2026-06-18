@@ -68,6 +68,17 @@ export const GoldenTicket = ({ ticket }: { ticket: GuestlistTicketView }) => {
         </p>
       ) : null}
 
+      {/* Event flyer — same as a normal ticket. Portrait 3:4, the QR stays
+          below so the scannable chip is still the focus. */}
+      {ticket.eventFlyer ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={ticket.eventFlyer}
+          alt={ticket.eventTitle ?? "Event flyer"}
+          className="mt-4 aspect-[3/4] w-full rounded-2xl border border-black/10 object-cover shadow-md"
+        />
+      ) : null}
+
       <div className="mt-5 flex flex-col items-center">
         {accepted && ticket.qrCodeData ? (
           <>
