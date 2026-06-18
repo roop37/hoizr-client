@@ -24,6 +24,35 @@ export type PublicVenuePage = {
   pageSize: number;
 };
 
+// A host's public guestlist for an upcoming event, surfaced on the venue
+// detail page (the other entry point besides the shared invite link). Gated
+// server-side on host onboarding, so onboarding hosts never appear here.
+export type VenuePublicGuestlist = {
+  guestlistId: string;
+  code: string;
+  contributorName?: string | null;
+  isFull: boolean;
+  eventId: string;
+  eventTitle?: string | null;
+  eventFlyer?: string | null;
+  eventDate?: string | null;
+};
+
+export const GET_VENUE_PUBLIC_GUESTLISTS_QUERY = /* GraphQL */ `
+  query VenuePublicGuestlists($venueId: String!) {
+    venuePublicGuestlists(venueId: $venueId) {
+      guestlistId
+      code
+      contributorName
+      isFull
+      eventId
+      eventTitle
+      eventFlyer
+      eventDate
+    }
+  }
+`;
+
 export const GET_PUBLIC_VENUES_QUERY = /* GraphQL */ `
   query GetPublicVenues($input: PublicVenueFilterInput) {
     getPublicVenues(input: $input) {

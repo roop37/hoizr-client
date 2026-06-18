@@ -79,9 +79,13 @@ export default function GuestlistJoinClient({ code }: { code: string }) {
     }
   };
 
+  // The outer div is the direct child of `.h-content-grow`, so on desktop it
+  // picks up the floating-sidebar indent (padding-left ≈ the sidebar width).
+  // The centered card lives in a NESTED `max-w-md` box — keeping the indent off
+  // the card itself, otherwise the indent eats into the 448px and crushes it.
   const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center px-4 py-10 text-white">
-      {children}
+    <div className="flex min-h-[70vh] w-full flex-col items-center justify-center py-10 text-white">
+      <div className="w-full max-w-md px-4">{children}</div>
     </div>
   );
 

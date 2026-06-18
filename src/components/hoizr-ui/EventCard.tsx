@@ -40,7 +40,7 @@ const formatDateTimeLabel = (event: DisplayEvent): string => {
 export const EventCard = ({ event }: Props) => {
   const dateTime = formatDateTimeLabel(event);
   const price = formatPrice(event.fromPrice);
-  const priceSuffix = price === "Guestlist" || price === "Free" ? "" : " onwards";
+  const priceSuffix = price === "RSVP" || price === "Free" ? "" : " onwards";
   const cardImage = event.portraitImage ?? event.image;
 
   // Distance badge: shown only when the user has a saved address with

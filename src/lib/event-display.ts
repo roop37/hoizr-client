@@ -104,9 +104,11 @@ const pickBadge = (e: PublicEvent) => {
     const type = e.eventType.find(
       (t) => t && t.toUpperCase() !== "EXCLUSIVE"
     );
-    if (type) return type.toUpperCase();
+    // "Free" events are RSVP-entry; surface them as "RSVP" to customers
+    // (the host app labels this the same — enum value stays "Free").
+    if (type) return type.toUpperCase() === "FREE" ? "RSVP" : type.toUpperCase();
   }
-  if (e.ticketingEnabled === false) return "GUESTLIST";
+  if (e.ticketingEnabled === false) return "RSVP";
   return "NEW";
 };
 
@@ -124,7 +126,11 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
   const seriesType = (e.eventType ?? []).find(
     (t) => t && t.toUpperCase() !== "EXCLUSIVE"
   );
-  const series = seriesType ? seriesType.toUpperCase() : "HOIZR";
+  const series = seriesType
+    ? seriesType.toUpperCase() === "FREE"
+      ? "RSVP"
+      : seriesType.toUpperCase()
+    : "HOIZR";
   return {
     id: e._id,
     slug: e.slug ?? e._id,
@@ -166,7 +172,7 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
 };
 
 export const formatPrice = (n: number | null): string => {
-  if (n === null) return "Guestlist";
+  if (n === null) return "RSVP";
   if (n === 0) return "Free";
   return `₹${n.toLocaleString("en-IN")}`;
 };

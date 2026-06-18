@@ -1534,6 +1534,7 @@ export type Query = {
   previewCoupon: CouponPreviewView;
   scannerEventManifest: ScannerManifest;
   scannerEventSummary: ScannerEventSummary;
+  venuePublicGuestlists: Array<VenuePublicGuestlistView>;
   visibleCouponsForEvent: Array<PublicCoupon>;
 };
 
@@ -1636,6 +1637,11 @@ export type QueryOfflinePaymentLinkArgs = {
 
 export type QueryPreviewCouponArgs = {
   input: PreviewCouponInput;
+};
+
+
+export type QueryVenuePublicGuestlistsArgs = {
+  venueId: Scalars['String']['input'];
 };
 
 
@@ -1833,6 +1839,18 @@ export enum VenueLayout {
   Mixed = 'MIXED',
   Outdoor = 'OUTDOOR'
 }
+
+export type VenuePublicGuestlistView = {
+  __typename?: 'VenuePublicGuestlistView';
+  code: Scalars['String']['output'];
+  contributorName?: Maybe<Scalars['String']['output']>;
+  eventDate?: Maybe<Scalars['String']['output']>;
+  eventFlyer?: Maybe<Scalars['String']['output']>;
+  eventId: Scalars['String']['output'];
+  eventTitle?: Maybe<Scalars['String']['output']>;
+  guestlistId: Scalars['String']['output'];
+  isFull: Scalars['Boolean']['output'];
+};
 
 export type CustomerRequestOtpMutationVariables = Exact<{
   input: CustomerOtpRequestInput;
