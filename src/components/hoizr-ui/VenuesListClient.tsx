@@ -12,18 +12,34 @@ import {
 const cityOf = (v: PublicVenue): string =>
   v.address?.city || v.address?.formattedAddress || "";
 
-// Deterministic bento sizing. A repeating 6-tile rhythm gives a mosaic with
-// the occasional hero / tall / wide tile while staying balanced; `grid-flow-dense`
-// backfills the gaps the varied spans leave behind. Sizes are chosen to read
-// well at BOTH the 2-col (mobile) and 4-col (desktop) track counts.
-const bentoSpan = (i: number): string => {
+type Orient = "portrait" | "landscape" | "square";
+
+// Classify a cover image by its natural aspect ratio so the bento tile can be
+// SIZED TO THE IMAGE instead of cropping an arbitrary poster into a fixed cell.
+const orientOf = (ratio?: number): Orient => {
+  if (!ratio || !Number.isFinite(ratio)) return "square";
+  if (ratio >= 1.25) return "landscape"; // wide flyer / room shot
+  if (ratio <= 0.8) return "portrait"; // tall poster
+  return "square";
+};
+
+// Bento span driven by the image's real orientation once measured. Before the
+// cover loads we fall back to a deterministic 6-tile rhythm (so the grid never
+// renders empty), then settle into an orientation-matched span — portrait →
+// tall, landscape → wide, with the occasional square hero to anchor the mosaic.
+// `grid-flow-dense` backfills the gaps the varied spans leave behind.
+const bentoSpan = (i: number, orient?: Orient): string => {
+  if (orient === "portrait") return "row-span-2";
+  if (orient === "landscape") return "sm:col-span-2";
+  if (orient === "square") return i % 6 === 0 ? "col-span-2 row-span-2" : "";
+  // Not measured yet — deterministic fallback rhythm.
   switch (i % 6) {
     case 0:
-      return "col-span-2 row-span-2"; // hero
+      return "col-span-2 row-span-2";
     case 2:
-      return "row-span-2"; // tall / portrait emphasis
+      return "row-span-2";
     case 4:
-      return "sm:col-span-2"; // wide / landscape emphasis
+      return "sm:col-span-2";
     default:
       return "";
   }
@@ -32,6 +48,8 @@ const bentoSpan = (i: number): string => {
 export function VenuesListClient() {
   const [venues, setVenues] = useState<PublicVenue[]>([]);
   const [loading, setLoading] = useState(true);
+  // venueId → measured cover orientation (set on image load).
+  const [orients, setOrients] = useState<Record<string, Orient>>({});
 
   useEffect(() => {
     (async () => {
@@ -94,7 +112,8 @@ export function VenuesListClient() {
             key={v._id}
             href={`/venues/${v._id}`}
             className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-[#c5ff3d]/40 ${bentoSpan(
-              i
+              i,
+              orients[v._id]
             )}`}
           >
             {cover ? (
@@ -103,6 +122,14 @@ export function VenuesListClient() {
                 src={cover}
                 alt={v.name ?? "Venue"}
                 loading="lazy"
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  if (!img.naturalWidth || !img.naturalHeight) return;
+                  const next = orientOf(img.naturalWidth / img.naturalHeight);
+                  setOrients((prev) =>
+                    prev[v._id] === next ? prev : { ...prev, [v._id]: next }
+                  );
+                }}
                 className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
               />
             ) : (

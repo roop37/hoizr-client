@@ -50,11 +50,6 @@ export const SEO_CITIES: string[] = [
   "Goa",
   "Hyderabad",
   "Kolkata",
-  "Chennai",
-  "Surat",
-  "Ahmedabad",
-  "Jaipur",
-  "Chandigarh",
 ];
 
 /**

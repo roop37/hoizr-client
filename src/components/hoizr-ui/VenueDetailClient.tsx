@@ -4,8 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { gqlRequest } from "@/lib/graphql";
 import {
+  GET_ORGANIZER_EVENTS_QUERY,
   GET_PUBLIC_VENUE_BY_ID_QUERY,
   GET_VENUE_PUBLIC_GUESTLISTS_QUERY,
+  type OrganizerEvents,
+  type PublicEventSummary,
   type PublicVenue,
   type VenuePublicGuestlist,
 } from "@/lib/venue-queries";
@@ -31,9 +34,23 @@ const formatEventDate = (iso?: string | null): string => {
   }).format(d);
 };
 
+const formatEventDay = (iso?: string | null): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+};
+
+type VenueEvent = PublicEventSummary & { isPast: boolean };
+
 export function VenueDetailClient({ id }: { id: string }) {
   const [venue, setVenue] = useState<PublicVenue | null>(null);
   const [guestlists, setGuestlists] = useState<VenuePublicGuestlist[]>([]);
+  const [events, setEvents] = useState<VenueEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,6 +84,31 @@ export function VenueDetailClient({ id }: { id: string }) {
       } catch (err) {
         console.error("Failed to load venue guestlists", err);
         setGuestlists([]);
+      }
+    })();
+  }, [id]);
+
+  // The venue's events (a venue IS a host). Both buckets, merged latest-first
+  // so the newest shows on top regardless of past/upcoming. Best-effort.
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await gqlRequest<{
+          getOrganizerPastUpcomingEvents: OrganizerEvents;
+        }>(GET_ORGANIZER_EVENTS_QUERY, { hostId: id });
+        const res = data.getOrganizerPastUpcomingEvents;
+        const merged: VenueEvent[] = [
+          ...(res?.upcoming ?? []).map((e) => ({ ...e, isPast: false })),
+          ...(res?.past ?? []).map((e) => ({ ...e, isPast: true })),
+        ].sort((a, b) => {
+          const ta = a.startDate ? new Date(a.startDate).getTime() : 0;
+          const tb = b.startDate ? new Date(b.startDate).getTime() : 0;
+          return tb - ta; // latest first
+        });
+        setEvents(merged);
+      } catch (err) {
+        console.error("Failed to load venue events", err);
+        setEvents([]);
       }
     })();
   }, [id]);
@@ -173,6 +215,69 @@ export function VenueDetailClient({ id }: { id: string }) {
           </a>
         ) : null}
       </div>
+
+      {events.length > 0 ? (
+        <div className="mt-8">
+          <h2 className="mb-3 text-[15px] font-semibold text-white">Events</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {events.map((ev) => {
+              const cover = ev.eventFlyer || ev.horizontalFlyer || null;
+              const card = (
+                <>
+                  <div className="aspect-[16/9] w-full overflow-hidden bg-white/5">
+                    {cover ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={cover}
+                        alt={ev.title ?? "Event"}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="flex items-start justify-between gap-2 p-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-[14px] font-semibold text-white">
+                        {ev.title ?? "Event"}
+                      </div>
+                      <div className="truncate text-[12px] text-white/55">
+                        {[formatEventDay(ev.startDate), ev.city]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        ev.isPast
+                          ? "bg-white/10 text-white/50"
+                          : "bg-[#c5ff3d]/15 text-[#c5ff3d]"
+                      }`}
+                    >
+                      {ev.isPast ? "Past" : "Upcoming"}
+                    </span>
+                  </div>
+                </>
+              );
+              return ev.slug ? (
+                <Link
+                  key={ev._id}
+                  href={`/events/${ev.slug}`}
+                  className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] transition hover:border-[#c5ff3d]/40"
+                >
+                  {card}
+                </Link>
+              ) : (
+                <div
+                  key={ev._id}
+                  className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
+                >
+                  {card}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {guestlists.length > 0 ? (
         <div className="mt-8">
