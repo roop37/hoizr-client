@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { fetchPublicArtists, fetchPublishedEvents } from "@/lib/home-data";
+import { CITY_AREAS, SEO_CITIES, citySlug } from "@/lib/city-slug";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 
@@ -15,6 +16,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/artist`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${siteUrl}/venues`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
   ];
+
+  // City landing pages — high-value SEO targets ("events in <city>").
+  const cityRoutes: MetadataRoute.Sitemap = SEO_CITIES.map((c) => ({
+    url: `${siteUrl}/events-in/${citySlug(c)}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.8,
+  }));
+
+  // Neighbourhood landing pages ("events in <area> <city>").
+  const areaRoutes: MetadataRoute.Sitemap = Object.entries(CITY_AREAS).flatMap(
+    ([cSlug, areas]) =>
+      areas.map((a) => ({
+        url: `${siteUrl}/events-in/${cSlug}/${citySlug(a)}`,
+        lastModified: now,
+        changeFrequency: "daily" as const,
+        priority: 0.65,
+      }))
+  );
 
   const [eventsList, artistsList] = await Promise.all([
     fetchPublishedEvents({ pageSize: 200 }),
@@ -39,5 +59,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.75,
     }));
 
-  return [...staticRoutes, ...eventRoutes, ...artistRoutes];
+  return [
+    ...staticRoutes,
+    ...cityRoutes,
+    ...areaRoutes,
+    ...eventRoutes,
+    ...artistRoutes,
+  ];
 }

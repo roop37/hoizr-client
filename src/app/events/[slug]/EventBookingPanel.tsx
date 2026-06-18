@@ -267,7 +267,9 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{ticket.ticketName}</div>
                   <div className="mt-0.5 text-xs text-white/60">
-                    {ticket.ticketCategory}
+                    {ticket.ticketCategory === "GUESTLIST"
+                      ? "RSVP"
+                      : ticket.ticketCategory}
                     {ticket.ticketInfo ? ` · ${ticket.ticketInfo}` : ""}
                   </div>
                   <div className="mt-1 text-sm font-semibold">

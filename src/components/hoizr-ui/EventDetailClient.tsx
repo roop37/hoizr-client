@@ -701,7 +701,7 @@ export const EventDetailClient = ({
                       className="h-people-card h-glass-card h-people-card--linked"
                       onClick={() => {
                         if (realArtist) {
-                          router.push(`/artists/${artist.slug}`);
+                          router.push(`/artist/${artist.slug}`);
                         } else {
                           setPeopleModal({
                             kind: "artist",

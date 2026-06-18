@@ -51,7 +51,7 @@ const COMING_SOON_EVENT_EXAMPLES = [
   {
     title: "Warehouse Social",
     meta: "Party · Colaba",
-    price: "Guestlist live",
+    price: "RSVP live",
     image:
       "/eventflyers/ChatGPT%20Image%20May%2024%2C%202026%2C%2010_49_09%20PM%20(3).png",
   },

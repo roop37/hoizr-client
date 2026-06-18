@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { gqlRequest } from "@/lib/graphql";
 import {
   GET_PUBLIC_VENUE_BY_ID_QUERY,
+  GET_VENUE_PUBLIC_GUESTLISTS_QUERY,
   type PublicVenue,
+  type VenuePublicGuestlist,
 } from "@/lib/venue-queries";
 
 const mapsHref = (v: PublicVenue): string | null => {
@@ -15,8 +17,23 @@ const mapsHref = (v: PublicVenue): string | null => {
     : null;
 };
 
+const formatEventDate = (iso?: string | null): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(d);
+};
+
 export function VenueDetailClient({ id }: { id: string }) {
   const [venue, setVenue] = useState<PublicVenue | null>(null);
+  const [guestlists, setGuestlists] = useState<VenuePublicGuestlist[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +51,22 @@ export function VenueDetailClient({ id }: { id: string }) {
         setVenue(null);
       } finally {
         setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  // Public guestlists are best-effort: a failure here must never block the
+  // venue page itself, so it runs in its own effect and swallows errors.
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await gqlRequest<{
+          venuePublicGuestlists: VenuePublicGuestlist[];
+        }>(GET_VENUE_PUBLIC_GUESTLISTS_QUERY, { venueId: id });
+        setGuestlists(data.venuePublicGuestlists ?? []);
+      } catch (err) {
+        console.error("Failed to load venue guestlists", err);
+        setGuestlists([]);
       }
     })();
   }, [id]);
@@ -140,6 +173,51 @@ export function VenueDetailClient({ id }: { id: string }) {
           </a>
         ) : null}
       </div>
+
+      {guestlists.length > 0 ? (
+        <div className="mt-8">
+          <h2 className="mb-3 text-[15px] font-semibold text-white">
+            On the guestlist
+          </h2>
+          <div className="space-y-2">
+            {guestlists.map((g) => (
+              <Link
+                key={g.guestlistId}
+                href={`/guestlist/${g.code}`}
+                className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-[#c5ff3d]/40"
+              >
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                  {g.eventFlyer ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={g.eventFlyer}
+                      alt={g.eventTitle ?? "Event"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[14px] font-semibold text-white">
+                    {g.eventTitle ?? "Event"}
+                  </div>
+                  <div className="truncate text-[12px] text-white/55">
+                    {formatEventDate(g.eventDate)}
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold ${
+                    g.isFull
+                      ? "bg-white/10 text-white/50"
+                      : "bg-[#c5ff3d] text-[#0a0a0e]"
+                  }`}
+                >
+                  {g.isFull ? "Full" : "Join"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {gallery.length > 0 ? (
         <div className="mt-8">

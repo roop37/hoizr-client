@@ -49,7 +49,7 @@ const WHEN_OPTIONS: { id: WhenId; label: string }[] = [
 type PriceId = "any" | "free" | "under500" | "mid" | "premium";
 const PRICE_OPTIONS: { id: PriceId; label: string }[] = [
   { id: "any", label: "Any price" },
-  { id: "free", label: "Free / Guestlist" },
+  { id: "free", label: "Free / RSVP" },
   { id: "under500", label: "Under ₹500" },
   { id: "mid", label: "₹500 – ₹1,500" },
   { id: "premium", label: "₹1,500+" },
