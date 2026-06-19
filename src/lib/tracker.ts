@@ -28,6 +28,8 @@ export type AnalyticsEventName =
   | "pageView"
   | "cartCreated"
   | "cartDestroyed"
+  | "paymentStarted"
+  | "paymentFailed"
   | "orderPlaced";
 
 /** Per-event payload accepted by the SDK. Server enforces the schema. */

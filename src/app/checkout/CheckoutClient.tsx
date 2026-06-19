@@ -453,9 +453,21 @@ export const CheckoutClient = () => {
           },
           modal: {
             ondismiss: () => {
+              // Funnel: buyer opened the payment sheet then dismissed it
+              // without completing — the payment-stage drop-off signal.
+              track("paymentFailed", {
+                eventId: eventId ?? undefined,
+                orderId: order._id,
+              });
               reject(new Error("Payment cancelled"));
             },
           },
+        });
+        // Funnel: payment sheet is opening — a payment-stage step that
+        // route-based pageView tracking can't see. Fire-and-forget.
+        track("paymentStarted", {
+          eventId: eventId ?? undefined,
+          orderId: order._id,
         });
         rp.open();
       });
