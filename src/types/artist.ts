@@ -94,3 +94,16 @@ export type ArtistFollowerCounts = {
   totalFollowers: number;
   isFollowing: boolean;
 };
+
+export type PublicArtistGuestlist = {
+  guestlistId: string;
+  code: string;
+  eventId: string;
+  eventTitle: string;
+  eventCity?: string | null;
+  eventFlyer?: string | null;
+  startDate?: string | null;
+  isHighlighted: boolean;
+  cap?: number | null;
+  acceptedCount: number;
+};

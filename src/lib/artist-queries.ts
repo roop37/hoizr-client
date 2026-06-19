@@ -100,6 +100,23 @@ export const PUBLIC_ARTIST_EVENTS_QUERY = `
   }
 `;
 
+export const PUBLIC_ARTIST_GUESTLISTS_QUERY = `
+  query PublicArtistGuestlists($idOrSlug: String!) {
+    publicArtistGuestlists(idOrSlug: $idOrSlug) {
+      guestlistId
+      code
+      eventId
+      eventTitle
+      eventCity
+      eventFlyer
+      startDate
+      isHighlighted
+      cap
+      acceptedCount
+    }
+  }
+`;
+
 export const PUBLIC_ARTIST_FOLLOWER_COUNTS_QUERY = `
   query PublicArtistFollowerCounts($idOrSlug: String!) {
     publicArtistFollowerCounts(idOrSlug: $idOrSlug) {
