@@ -739,10 +739,18 @@ export type EventLineupArtist = {
   instagramLink?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   picture?: Maybe<Scalars['String']['output']>;
+  respondedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   spotifyLink?: Maybe<Scalars['String']['output']>;
+  status?: Maybe<EventLineupArtistStatus>;
   tempArtistId?: Maybe<Scalars['String']['output']>;
   youtubeLink?: Maybe<Scalars['String']['output']>;
 };
+
+export enum EventLineupArtistStatus {
+  Accepted = 'ACCEPTED',
+  Pending = 'PENDING',
+  Rejected = 'REJECTED'
+}
 
 export enum EventOrganizerSegment {
   New = 'NEW',
