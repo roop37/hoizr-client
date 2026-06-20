@@ -1,5 +1,6 @@
 import type { PublicEvent } from "@/types/event";
 import type { PublicArtistEvent, PublicArtistProfile } from "@/types/artist";
+import { getArtistDisplayName } from "@/lib/artist-name";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 const ORG_NAME = "Hoizr";
@@ -146,7 +147,7 @@ export const ArtistJsonLd = ({
   artist: PublicArtistProfile;
   events?: PublicArtistEvent[];
 }) => {
-  const name = `${artist.firstName} ${artist.lastName}`.trim();
+  const name = getArtistDisplayName(artist);
   const sameAs = [
     artist.instagramLink,
     artist.spotifyLink,

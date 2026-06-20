@@ -5,6 +5,7 @@ import {
   BreadcrumbJsonLd,
 } from "@/components/hoizr-ui/seo/JsonLd";
 import { MotionReveal } from "@/components/artist/MotionReveal";
+import { getArtistDisplayName } from "@/lib/artist-name";
 import { iconForLink } from "@/lib/link-icons";
 import type {
   ArtistFollowerCounts,
@@ -68,7 +69,7 @@ export const ArtistProfile = ({
   idOrSlug: string;
 }) => {
   const { profile, links, merch, riders, events, counts, guestlists } = data;
-  const displayName = `${profile.firstName} ${profile.lastName}`.trim();
+  const displayName = getArtistDisplayName(profile);
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
 
   return (

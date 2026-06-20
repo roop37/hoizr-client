@@ -9,6 +9,7 @@ import {
   PUBLIC_ARTIST_PROFILE_QUERY,
   PUBLIC_ARTIST_RIDERS_QUERY,
 } from "@/lib/artist-queries";
+import { getArtistDisplayName } from "@/lib/artist-name";
 import { gqlMainRequest } from "@/lib/graphql-main";
 import type {
   ArtistFollowerCounts,
@@ -38,7 +39,7 @@ export async function generateMetadata({
   const profile = await fetchArtistProfile(params.idOrSlug);
   if (!profile) return { title: "Artist not found" };
 
-  const name = `${profile.firstName} ${profile.lastName}`.trim();
+  const name = getArtistDisplayName(profile);
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const genres = profile.genres?.length ? profile.genres.join(", ") : null;
   // Canonical always points to the slug variant when available so the
