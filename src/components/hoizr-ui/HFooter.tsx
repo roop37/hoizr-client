@@ -106,7 +106,7 @@ export const HFooter = () => (
       </div>
     </div>
     <div className="h-footer-base">
-      <div>© 2026 Hoizr Technologies Pvt. Ltd. · Made in Mumbai</div>
+      <div>© 2026 Hoizr Technologies Pvt. Ltd.</div>
       <div style={{ opacity: 0.7 }}>iOS app · Android app · coming soon</div>
     </div>
     <div className="h-footer-family">
