@@ -73,7 +73,7 @@ export const ArtistProfile = ({
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-16 pt-6">
-      <ArtistJsonLd artist={profile} />
+      <ArtistJsonLd artist={profile} events={events} />
       <BreadcrumbJsonLd
         items={[
           { name: "Hoizr", href: "/" },
