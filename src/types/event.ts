@@ -2,6 +2,9 @@ export type PublicTicket = {
   _id: string;
   ticketCategory: string;
   ticketName: string;
+  // Multi-day: EventDay.dayId, the "ALL_DAYS" festival-pass sentinel, or
+  // null/undefined on a single-day event.
+  dayId?: string | null;
   ticketType?: string;
   ticketCapacity: number;
   ticketSold: number;
@@ -50,6 +53,13 @@ export type PublicEventFAQ = {
   answer: string;
 };
 
+export type PublicEventDay = {
+  dayId: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+};
+
 export type PublicPlaceInfo = {
   placeId?: string;
   displayName?: string;
@@ -82,6 +92,9 @@ export type PublicEvent = {
   eventType?: string[];
   startDate?: string;
   endDate?: string;
+  markSeparateDays?: boolean;
+  // Per-day segments; present (length >= 2) only for a multi-day event.
+  days?: PublicEventDay[];
   city?: string;
   cityId?: string;
   genreTagIds?: string[];
