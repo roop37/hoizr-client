@@ -879,7 +879,7 @@ export const EventDetailClient = ({
           className={`h-detail-bottom-cta${showFloatingCta ? " is-visible" : ""}`}
           aria-hidden={!showFloatingCta}
         >
-          Book tickets
+          Get tickets
         </Link>
       ) : null}
 
