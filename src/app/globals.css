@@ -12,7 +12,7 @@
    - SF Pro-style font stack (Inter as the cleanest fallback)
    ============================================================================= */
 
-@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700;6..96,800&family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700;6..96,800&display=swap");
 
 /* iOS Safari auto-zooms the viewport whenever a focused form control has
    a font-size below 16px. Pin every control to 16px on small screens so
@@ -53,8 +53,8 @@
   --h-volt: #c5ff3d;
 
   --h-font-serif: "Bodoni Moda", "Didot", Georgia, serif;
-  --h-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
-  --h-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --h-font-display: var(--font-sf-pro), -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --h-font-body: var(--font-sf-pro), -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   --h-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
   --h-sidebar: 256px;
