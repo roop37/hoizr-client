@@ -7,6 +7,7 @@ import {
   BreadcrumbJsonLd,
   CollectionPageJsonLd,
 } from "@/components/hoizr-ui/seo/JsonLd";
+import { getArtistDisplayName } from "@/lib/artist-name";
 import { fetchPublicArtists } from "@/lib/home-data";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
@@ -67,7 +68,7 @@ export default async function ArtistsPage() {
         href="/artists"
         items={artists.slice(0, 32).map((a) => ({
           url: `${SITE_URL}/artist/${a.slug ?? a._id}`,
-          name: `${a.firstName} ${a.lastName}`.trim(),
+          name: getArtistDisplayName(a),
         }))}
       />
       <div className="h-page-head">

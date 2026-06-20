@@ -1,5 +1,6 @@
 export type PublicArtistProfile = {
   _id: string;
+  stageName?: string | null;
   firstName: string;
   lastName: string;
   bio?: string | null;
@@ -21,6 +22,7 @@ export type PublicArtistProfile = {
 
 export type PublicArtistListItem = {
   _id: string;
+  stageName?: string | null;
   firstName: string;
   lastName: string;
   slug?: string | null;

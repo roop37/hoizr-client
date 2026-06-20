@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useRouter } from "next/navigation";
+import { getArtistDisplayName } from "@/lib/artist-name";
 import type { PublicArtistListItem } from "@/types/artist";
 
 type DomeItem = {
@@ -50,7 +51,7 @@ function buildItems(pool: PublicArtistListItem[], seg: number): DomeItem[] {
   }
   return coords.map((c, i) => {
     const a = pool[i % pool.length];
-    const name = `${a.firstName} ${a.lastName}`.trim();
+    const name = getArtistDisplayName(a);
     return { ...c, src: a.profilePhoto ?? "", alt: name, artist: a };
   });
 }
@@ -254,7 +255,7 @@ export const DomeGallery = ({
                     )}
                     {it.artist ? (
                       <span className="dome-name">
-                        {it.artist.firstName} {it.artist.lastName}
+                        {getArtistDisplayName(it.artist)}
                       </span>
                     ) : null}
                   </button>

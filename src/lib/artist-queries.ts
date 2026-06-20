@@ -4,6 +4,7 @@ export const PUBLIC_ARTISTS_QUERY = `
     publicArtists(input: $input) {
       artists {
         _id
+        stageName
         firstName
         lastName
         slug
@@ -25,6 +26,7 @@ export const PUBLIC_ARTIST_PROFILE_QUERY = `
   query PublicArtistProfile($idOrSlug: String!) {
     publicArtistProfile(idOrSlug: $idOrSlug) {
       _id
+      stageName
       firstName
       lastName
       bio
