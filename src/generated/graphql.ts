@@ -99,6 +99,7 @@ export type Artist = {
   slug?: Maybe<Scalars['String']['output']>;
   soundcloudLink?: Maybe<Scalars['String']['output']>;
   spotifyLink?: Maybe<Scalars['String']['output']>;
+  stageName?: Maybe<Scalars['String']['output']>;
   state?: Maybe<Scalars['String']['output']>;
   status: ArtistStatus;
   tagline?: Maybe<Scalars['String']['output']>;
