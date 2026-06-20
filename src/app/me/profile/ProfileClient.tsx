@@ -116,9 +116,11 @@ export const ProfileClient = () => {
 
   const [profilePic, setProfilePic] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedTick, setSavedTick] = useState(false);
+  const [addressSavedTick, setAddressSavedTick] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   // "What we can send you" is tucked away by default — most fans never
   // touch it, so it shouldn't push the page down on every visit.
@@ -268,7 +270,7 @@ export const ProfileClient = () => {
             smsMarketingOptIn: smsOpt,
             whatsappMarketingOptIn: whatsappOpt,
             pushNotificationMarketingOptIn: pushOpt,
-            address: buildAddressInput(savedAddress),
+            // Address is saved separately via saveAddress() / its own button.
           },
         }
       );
@@ -277,8 +279,6 @@ export const ProfileClient = () => {
       if (data.updateMyProfile) setProfile(data.updateMyProfile);
       setSavedTick(true);
       window.setTimeout(() => setSavedTick(false), 2500);
-      // Collapse the address card once the profile is saved.
-      if (savedAddress) setAddressEditMode(false);
     } catch (err: any) {
       setError(
         err?.response?.errors?.[0]?.message ??
@@ -287,6 +287,32 @@ export const ProfileClient = () => {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Address has its OWN save — independent of "Your details" — so updating
+  // an address never forces a re-save of name/email/marketing prefs.
+  const saveAddress = async () => {
+    setError(null);
+    setAddressSavedTick(false);
+    setSavingAddress(true);
+    try {
+      const data = await gqlRequest<{ updateMyProfile: CustomerProfile }>(
+        UPDATE_MY_PROFILE_MUTATION,
+        { input: { address: buildAddressInput(savedAddress) } }
+      );
+      if (data.updateMyProfile) setProfile(data.updateMyProfile);
+      setAddressSavedTick(true);
+      window.setTimeout(() => setAddressSavedTick(false), 2500);
+      if (savedAddress) setAddressEditMode(false);
+    } catch (err: any) {
+      setError(
+        err?.response?.errors?.[0]?.message ??
+          err?.message ??
+          "Could not save your address"
+      );
+    } finally {
+      setSavingAddress(false);
     }
   };
 
@@ -355,8 +381,9 @@ export const ProfileClient = () => {
   ];
 
   // Only surface "Save changes" when the form actually differs from the
-  // loaded profile. Compares the editable fields (incl. notification
-  // opt-ins, avatar, and address) against the persisted values.
+  // loaded profile. Compares the editable detail fields (incl. notification
+  // opt-ins + avatar) — address is intentionally EXCLUDED here; it has its
+  // own save button so it never piggybacks on "Your details".
   const baseline = JSON.stringify({
     firstName: profile.firstName ?? "",
     lastName: profile.lastName ?? "",
@@ -367,7 +394,6 @@ export const ProfileClient = () => {
     whatsappOpt: profile.whatsappMarketingOptIn !== false,
     pushOpt: profile.pushNotificationMarketingOptIn !== false,
     profilePic: profile.profilePic ?? "",
-    address: profile.address?.formattedAddress ?? "",
   });
   const current = JSON.stringify({
     firstName,
@@ -379,8 +405,12 @@ export const ProfileClient = () => {
     whatsappOpt,
     pushOpt,
     profilePic: profilePic ?? "",
-    address: savedAddress?.formattedAddress ?? "",
   });
+
+  // Address is dirty independently of the details form.
+  const addressDirty =
+    (savedAddress?.formattedAddress ?? "") !==
+    (profile.address?.formattedAddress ?? "");
   const isDirty = baseline !== current;
 
   return (
@@ -620,7 +650,26 @@ export const ProfileClient = () => {
             </button>
           </div>
         ) : (
-          <AddressSearchCard value={savedAddress} onChange={setSavedAddress} />
+          <>
+            <AddressSearchCard value={savedAddress} onChange={setSavedAddress} />
+            {/* Dedicated address save — independent of "Your details". */}
+            <button
+              type="button"
+              disabled={savingAddress || profileLoading || !addressDirty}
+              onClick={saveAddress}
+              className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] px-5 text-sm font-semibold text-ink transition hover:bg-[#d9ff6e] disabled:opacity-50"
+            >
+              {savingAddress ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : addressSavedTick ? (
+                <>
+                  <CheckCircle2 size={16} /> Address saved
+                </>
+              ) : (
+                "Save address"
+              )}
+            </button>
+          </>
         )}
       </div>
 
