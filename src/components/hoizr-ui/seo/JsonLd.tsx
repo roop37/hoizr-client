@@ -1,5 +1,5 @@
 import type { PublicEvent } from "@/types/event";
-import type { PublicArtistProfile } from "@/types/artist";
+import type { PublicArtistEvent, PublicArtistProfile } from "@/types/artist";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 const ORG_NAME = "Hoizr";
@@ -139,7 +139,13 @@ export const EventJsonLd = ({ event }: { event: PublicEvent }) => {
   });
 };
 
-export const ArtistJsonLd = ({ artist }: { artist: PublicArtistProfile }) => {
+export const ArtistJsonLd = ({
+  artist,
+  events,
+}: {
+  artist: PublicArtistProfile;
+  events?: PublicArtistEvent[];
+}) => {
   const name = `${artist.firstName} ${artist.lastName}`.trim();
   const sameAs = [
     artist.instagramLink,
@@ -149,6 +155,38 @@ export const ArtistJsonLd = ({ artist }: { artist: PublicArtistProfile }) => {
     artist.appleMusicLink,
     artist.twitterLink,
   ].filter(Boolean);
+
+  // Upcoming shows as MusicEvent — drives event rich-results tied to the
+  // artist. Past events are omitted (Google favours upcoming).
+  const now = Date.now();
+  const upcoming = (events ?? [])
+    .filter((e) => e.startDate && new Date(e.startDate).getTime() >= now)
+    .slice(0, 25)
+    .map((e) => ({
+      "@type": "MusicEvent",
+      name: e.title,
+      startDate: e.startDate,
+      ...(e.endDate ? { endDate: e.endDate } : {}),
+      eventStatus: "https://schema.org/EventScheduled",
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      ...(e.city
+        ? {
+            location: {
+              "@type": "Place",
+              name: e.city,
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: e.city,
+                addressCountry: "IN",
+              },
+            },
+          }
+        : {}),
+      ...(e.coverImage ? { image: e.coverImage } : {}),
+      url: `${SITE_URL}/events/${e.eventId}`,
+      performer: { "@type": "MusicGroup", name },
+    }));
+
   return ldScript(`hoizr-artist-${artist._id}-jsonld`, {
     "@context": "https://schema.org",
     "@type": "MusicGroup",
@@ -158,6 +196,7 @@ export const ArtistJsonLd = ({ artist }: { artist: PublicArtistProfile }) => {
     genre: artist.genres ?? undefined,
     sameAs,
     url: `${SITE_URL}/artist/${artist.slug ?? artist._id}`,
+    ...(upcoming.length ? { event: upcoming } : {}),
   });
 };
 
