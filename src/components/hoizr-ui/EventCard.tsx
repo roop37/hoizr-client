@@ -39,7 +39,9 @@ const formatDateTimeLabel = (event: DisplayEvent): string => {
  */
 export const EventCard = ({ event }: Props) => {
   const dateTime = formatDateTimeLabel(event);
-  const price = formatPrice(event.fromPrice);
+  // A guestlist-only event reads as "RSVP", not "Free" — guests register, they
+  // don't buy. Everything else uses the normal price label.
+  const price = event.isRsvpOnly ? "RSVP" : formatPrice(event.fromPrice);
   const priceSuffix = price === "RSVP" || price === "Free" ? "" : " onwards";
   const cardImage = event.portraitImage ?? event.image;
 
