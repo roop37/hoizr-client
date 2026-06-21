@@ -219,12 +219,15 @@ export function VenueDetailClient({ id }: { id: string }) {
       {events.length > 0 ? (
         <div className="mt-8">
           <h2 className="mb-3 text-[15px] font-semibold text-white">Events</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {events.map((ev) => {
+              // Match the listing card: show the FULL portrait flyer (3:4),
+              // not a cropped 16:9 band. Prefer the portrait asset; fall back
+              // to the landscape only when no portrait exists.
               const cover = ev.eventFlyer || ev.horizontalFlyer || null;
               const card = (
                 <>
-                  <div className="aspect-[16/9] w-full overflow-hidden bg-white/5">
+                  <div className="aspect-[3/4] w-full overflow-hidden bg-white/5">
                     {cover ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

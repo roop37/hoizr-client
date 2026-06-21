@@ -13,6 +13,12 @@ import {
   writeActiveCart,
 } from "@/lib/active-cart";
 import { track } from "@/lib/tracker";
+import {
+  isMultiDayEvent,
+  preselectDayId,
+  ticketAdmitsDay,
+  ticketSalesClosed,
+} from "@/lib/event-days";
 import { useAuthStore } from "@/store/auth";
 import type { PublicEvent, PublicExtra, PublicTicket } from "@/types/event";
 import type { CartResponse } from "@/types/order";
@@ -87,6 +93,19 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
   const [extraSel, setExtraSel] = useState<Selection>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Multi-day: a day selector filters which tickets show. The cart payload is
+  // unchanged (it sends ticketIds; the server resolves each ticket's dayId), so
+  // this is purely a display filter. now is captured once for stable preselect.
+  const multiDay = isMultiDayEvent(event);
+  const days = event.days ?? [];
+  const now = useMemo(() => new Date(), []);
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
+  useEffect(() => {
+    if (multiDay && selectedDayId == null) {
+      setSelectedDayId(preselectDayId(event, now));
+    }
+  }, [multiDay, selectedDayId, event, now]);
   // Login gate (not-logged-in) — opened from "Continue to checkout". This is
   // NOT a guest order: the buyer signs in (phone OTP) without leaving the page,
   // their ticket selection stays put, and they just tap "Continue to checkout".
@@ -121,6 +140,13 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
   const tickets = (event.tickets ?? []).filter(
     (t) => t.ticketVisible !== false
   );
+  // On a multi-day event, show the selected day's tickets plus the all-days
+  // passes (ticketAdmitsDay covers day-match + all-days + untagged). Single-day
+  // shows everything, exactly as before.
+  const displayTickets =
+    multiDay && selectedDayId
+      ? tickets.filter((t) => ticketAdmitsDay(t, selectedDayId))
+      : tickets;
   const extras = event.extras ?? [];
 
   // The actual rates come from the server but mirror env defaults for the
@@ -257,15 +283,46 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
         </div>
       </div>
 
+      {multiDay && days.length ? (
+        <div className="flex flex-wrap gap-2 border-b border-white/10 px-5 py-3">
+          {days.map((day, i) => {
+            const active = day.dayId === selectedDayId;
+            return (
+              <button
+                key={day.dayId}
+                type="button"
+                onClick={() => setSelectedDayId(day.dayId)}
+                className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+                  active
+                    ? "border-accent bg-accent text-cream"
+                    : "border-white/15 bg-white/5 text-white/70 hover:text-white"
+                }`}
+              >
+                {day.title || `Day ${i + 1}`}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
       <div className="divide-y divide-white/8">
-        {tickets.length ? (
-          tickets.map((ticket) => {
-            const available = isTicketAvailable(ticket);
+        {displayTickets.length ? (
+          displayTickets.map((ticket) => {
+            const salesClosed = multiDay && ticketSalesClosed(event, ticket, now);
+            const available = isTicketAvailable(ticket) && !salesClosed;
             const qty = ticketSel[ticket._id] ?? 0;
+            const isPass = ticket.dayId === "ALL_DAYS";
             return (
               <div key={ticket._id} className="flex items-center gap-3 px-5 py-4">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{ticket.ticketName}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold">{ticket.ticketName}</span>
+                    {multiDay && isPass ? (
+                      <span className="shrink-0 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                        All days
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="mt-0.5 text-xs text-white/60">
                     {ticket.ticketCategory === "GUESTLIST"
                       ? "RSVP"
@@ -302,7 +359,9 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                   </div>
                 ) : (
                   <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                    {ticket.markAsComingSoon
+                    {salesClosed
+                      ? "Sales closed"
+                      : ticket.markAsComingSoon
                       ? "Soon"
                       : ticket.markAsOnGroundOnly
                       ? "On-ground"
@@ -314,7 +373,7 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
           })
         ) : (
           <div className="px-5 py-6 text-center text-sm text-white/60">
-            No tickets configured yet.
+            {multiDay ? "No tickets for this day." : "No tickets configured yet."}
           </div>
         )}
       </div>

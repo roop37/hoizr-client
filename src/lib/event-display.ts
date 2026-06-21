@@ -28,6 +28,9 @@ export type DisplayEvent = {
   startTime: string;
   endTime: string;
   fromPrice: number | null;
+  // True when the event has visible tickets and EVERY one is a GUESTLIST
+  // ticket — the card shows "RSVP" instead of "Free".
+  isRsvpOnly: boolean;
   badge: string;
   series: string;
   sub: string;
@@ -153,6 +156,15 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     startTime: formatTime(e.startDate),
     endTime: formatTime(e.endDate),
     fromPrice: minTicketPrice(e.tickets ?? []),
+    isRsvpOnly: (() => {
+      const visible = (e.tickets ?? []).filter((t) => t.ticketVisible !== false);
+      return (
+        visible.length > 0 &&
+        visible.every(
+          (t) => String(t.ticketCategory ?? "").toUpperCase() === "GUESTLIST"
+        )
+      );
+    })(),
     badge: pickBadge(e),
     series,
     sub: e.description ? e.description.slice(0, 160) : `Live in ${e.city ?? "India"}`,

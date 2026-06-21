@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import {
   PUBLIC_ARTIST_EVENTS_QUERY,
   PUBLIC_ARTIST_FOLLOWER_COUNTS_QUERY,
-  PUBLIC_ARTIST_GUESTLISTS_QUERY,
   PUBLIC_ARTIST_LINKS_QUERY,
   PUBLIC_ARTIST_MERCH_QUERY,
   PUBLIC_ARTIST_PROFILE_QUERY,
@@ -14,7 +13,6 @@ import { gqlMainRequest } from "@/lib/graphql-main";
 import type {
   ArtistFollowerCounts,
   PublicArtistEvent,
-  PublicArtistGuestlist,
   PublicArtistLink,
   PublicArtistMerch,
   PublicArtistProfile,
@@ -88,7 +86,7 @@ const fetchArtistData = async (idOrSlug: string) => {
   const profile = profileRes?.publicArtistProfile ?? null;
   if (!profile) return null;
 
-  const [links, merch, riders, events, counts, guestlists] = await Promise.all([
+  const [links, merch, riders, events, counts] = await Promise.all([
     gqlMainRequest<{ publicArtistLinks: PublicArtistLink[] }>(
       PUBLIC_ARTIST_LINKS_QUERY,
       { idOrSlug }
@@ -118,15 +116,11 @@ const fetchArtistData = async (idOrSlug: string) => {
     }>(PUBLIC_ARTIST_FOLLOWER_COUNTS_QUERY, { idOrSlug })
       .then((r) => r.publicArtistFollowerCounts)
       .catch(() => ({ totalFollowers: 0, isFollowing: false })),
-    gqlMainRequest<{ publicArtistGuestlists: PublicArtistGuestlist[] }>(
-      PUBLIC_ARTIST_GUESTLISTS_QUERY,
-      { idOrSlug }
-    )
-      .then((r) => r.publicArtistGuestlists)
-      .catch(() => [] as PublicArtistGuestlist[]),
   ]);
 
-  return { profile, links, merch, riders, events, counts, guestlists };
+  // Guestlists are fetched CLIENT-SIDE inside ArtistGuestlistSection (they're
+  // visibility-gated on the viewer's auth cookie, which SSR can't forward).
+  return { profile, links, merch, riders, events, counts };
 };
 
 export default async function ArtistPageWithName({ params }: PageProps) {

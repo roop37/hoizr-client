@@ -65,6 +65,13 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
       eventType
       startDate
       endDate
+      markSeparateDays
+      days {
+        dayId
+        title
+        startDate
+        endDate
+      }
       city
       cityId
       genreTagIds
@@ -109,6 +116,7 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
         _id
         ticketName
         ticketCategory
+        dayId
         ticketType
         ticketCapacity
         ticketSold
