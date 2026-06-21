@@ -567,29 +567,6 @@ export const EventDetailClient = ({
             </div>
           ) : null}
 
-          {display.gallery && display.gallery.length > 0 ? (
-            <div className="h-detail-section">
-              <h2>Gallery</h2>
-              <div className="h-event-gallery">
-                {display.gallery.map((item) => (
-                  <div key={item.url} className="h-event-gallery-item">
-                    {String(item.type).toUpperCase() === "VIDEO" ? (
-                      <video
-                        src={item.url}
-                        muted
-                        playsInline
-                        loop
-                        controls
-                      />
-                    ) : (
-                      <img src={item.url} alt={display.title} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
           <div className="h-detail-section">
             <h2>When &amp; where</h2>
             <p>
@@ -778,6 +755,31 @@ export const EventDetailClient = ({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Gallery — kept LAST in the content column (after Who's coming +
+              Organizers), per the desired detail-page order. */}
+          {display.gallery && display.gallery.length > 0 ? (
+            <div className="h-detail-section">
+              <h2>Gallery</h2>
+              <div className="h-event-gallery">
+                {display.gallery.map((item) => (
+                  <div key={item.url} className="h-event-gallery-item">
+                    {String(item.type).toUpperCase() === "VIDEO" ? (
+                      <video
+                        src={item.url}
+                        muted
+                        playsInline
+                        loop
+                        controls
+                      />
+                    ) : (
+                      <img src={item.url} alt={display.title} />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           ) : null}
