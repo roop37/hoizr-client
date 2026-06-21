@@ -578,6 +578,7 @@ export type Event = {
   contactForQueriesTables?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   createdBy?: Maybe<Scalars['String']['output']>;
+  days?: Maybe<Array<EventDay>>;
   description?: Maybe<Scalars['String']['output']>;
   draftedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   endDate?: Maybe<Scalars['DateTimeISO']['output']>;
@@ -601,6 +602,7 @@ export type Event = {
   genresPreferred?: Maybe<Array<Genre>>;
   guestlistAutoAccept?: Maybe<Scalars['Boolean']['output']>;
   guestlistEnabled?: Maybe<Scalars['Boolean']['output']>;
+  guestlistMaxCapacity?: Maybe<Scalars['Float']['output']>;
   horizontalFlyer?: Maybe<Scalars['String']['output']>;
   horizontalVideo?: Maybe<Scalars['String']['output']>;
   hostId: Scalars['String']['output'];
@@ -696,6 +698,14 @@ export enum EventCollabStatus {
   Declined = 'DECLINED',
   Invited = 'INVITED'
 }
+
+export type EventDay = {
+  __typename?: 'EventDay';
+  dayId: Scalars['String']['output'];
+  endDate: Scalars['DateTimeISO']['output'];
+  startDate: Scalars['DateTimeISO']['output'];
+  title: Scalars['String']['output'];
+};
 
 export type EventFaq = {
   __typename?: 'EventFAQ';
@@ -830,6 +840,7 @@ export type EventTicket = {
   collectPartialAdvancePayment?: Maybe<Scalars['Boolean']['output']>;
   coverAmount?: Maybe<Scalars['Float']['output']>;
   coverType?: Maybe<CoverType>;
+  dayId?: Maybe<Scalars['String']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   groupCapacity?: Maybe<Scalars['Float']['output']>;
   gstRate?: Maybe<Scalars['Float']['output']>;
@@ -1345,6 +1356,7 @@ export enum OrderStatus {
 
 export type OrderTicketItem = {
   __typename?: 'OrderTicketItem';
+  dayId?: Maybe<Scalars['String']['output']>;
   quantity: Scalars['Float']['output'];
   ticketName: Scalars['String']['output'];
   ticketTypeId: Scalars['String']['output'];
@@ -1678,6 +1690,7 @@ export enum ScanResultStatus {
   PaymentIncomplete = 'PAYMENT_INCOMPLETE',
   Refunded = 'REFUNDED',
   ScannerInactive = 'SCANNER_INACTIVE',
+  WrongDay = 'WRONG_DAY',
   WrongEvent = 'WRONG_EVENT'
 }
 
