@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { Sparkles, Ticket } from "lucide-react";
-import { useUIStore } from "@/store/uiStore";
+import { useEffect, useState } from "react";
+import { gqlMainRequest } from "@/lib/graphql-main";
+import { PUBLIC_ARTIST_GUESTLISTS_QUERY } from "@/lib/artist-queries";
+import { useAuthStore } from "@/store/auth";
 import type { PublicArtistGuestlist } from "@/types/artist";
 
 const CUSTOMER_APP =
@@ -20,23 +23,49 @@ const fmtDate = (iso?: string | null) => {
       }).format(d);
 };
 
-const cityMatches = (selected: string, eventCity?: string | null) => {
-  if (!selected || selected === "All cities") return true; // no city filter
-  if (!eventCity) return false;
-  return eventCity.trim().toLowerCase() === selected.trim().toLowerCase();
-};
-
+/**
+ * An artist's public guestlists are visibility-gated server-side: shown ONLY to
+ * a logged-in viewer who follows the artist AND is in the event's city. That
+ * gate needs the viewer's auth cookie — which a server-rendered fetch can't
+ * forward — so we fetch CLIENT-SIDE here (browser → credentials:"include" →
+ * main-server sees ctx.user). A logged-out / non-follower / different-city
+ * viewer gets an empty list and the section renders nothing.
+ */
 export const ArtistGuestlistSection = ({
-  guestlists,
+  idOrSlug,
 }: {
-  guestlists: PublicArtistGuestlist[];
+  idOrSlug: string;
 }) => {
-  const city = useUIStore((s) => s.city);
-  const visible = guestlists.filter((g) => cityMatches(city, g.eventCity));
-  if (!visible.length) return null;
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const profile = useAuthStore((s) => s.profile);
+  const [guestlists, setGuestlists] = useState<PublicArtistGuestlist[]>([]);
 
-  const highlighted = visible.filter((g) => g.isHighlighted);
-  const rest = visible.filter((g) => !g.isHighlighted);
+  useEffect(() => {
+    // Only logged-in viewers can pass the server gate; skip the call otherwise.
+    if (!hydrated || !profile) {
+      setGuestlists([]);
+      return;
+    }
+    let active = true;
+    gqlMainRequest<{ publicArtistGuestlists: PublicArtistGuestlist[] }>(
+      PUBLIC_ARTIST_GUESTLISTS_QUERY,
+      { idOrSlug }
+    )
+      .then((r) => {
+        if (active) setGuestlists(r.publicArtistGuestlists ?? []);
+      })
+      .catch(() => {
+        if (active) setGuestlists([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [idOrSlug, hydrated, profile]);
+
+  if (!guestlists.length) return null;
+
+  const highlighted = guestlists.filter((g) => g.isHighlighted);
+  const rest = guestlists.filter((g) => !g.isHighlighted);
 
   return (
     <section className="mt-10">

@@ -10,7 +10,6 @@ import { iconForLink } from "@/lib/link-icons";
 import type {
   ArtistFollowerCounts,
   PublicArtistEvent,
-  PublicArtistGuestlist,
   PublicArtistLink,
   PublicArtistMerch,
   PublicArtistProfile,
@@ -27,7 +26,6 @@ export type ArtistProfileData = {
   riders: PublicArtistRider[];
   events: PublicArtistEvent[];
   counts: ArtistFollowerCounts;
-  guestlists: PublicArtistGuestlist[];
 };
 
 const RIDER_LABELS: Record<string, string> = {
@@ -64,11 +62,12 @@ const formatDate = (iso?: string | null) => {
 
 export const ArtistProfile = ({
   data,
+  idOrSlug,
 }: {
   data: ArtistProfileData;
   idOrSlug: string;
 }) => {
-  const { profile, links, merch, riders, events, counts, guestlists } = data;
+  const { profile, links, merch, riders, events, counts } = data;
   const displayName = getArtistDisplayName(profile);
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
 
@@ -170,11 +169,12 @@ export const ArtistProfile = ({
         </MotionReveal>
       ) : null}
 
-      {guestlists.length ? (
-        <MotionReveal delay={0.1}>
-          <ArtistGuestlistSection guestlists={guestlists} />
-        </MotionReveal>
-      ) : null}
+      {/* Guestlists are fetched client-side (authed) inside the section so the
+          follower + same-city visibility gate sees the viewer's cookie; it
+          renders nothing when the viewer doesn't qualify. */}
+      <MotionReveal delay={0.1}>
+        <ArtistGuestlistSection idOrSlug={idOrSlug} />
+      </MotionReveal>
 
       {events.length ? (
         <MotionReveal delay={0.1}>
