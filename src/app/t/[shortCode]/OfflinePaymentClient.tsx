@@ -1,40 +1,45 @@
 "use client";
 
 import {
-  createGuestOrder,
   fetchOfflinePaymentLink,
-  loadRazorpay,
   type OfflinePaymentLinkView,
 } from "@/lib/guestCheckout";
-import type { RazorpayPaymentResponse } from "@/types/razorpay";
+import { gqlRequest } from "@/lib/graphql";
+import { SET_CART_MUTATION } from "@/lib/queries";
+import type { CartResponse } from "@/types/order";
+import { useAuthStore } from "@/store/auth";
 import { HoizrLogo } from "@/components/hoizr-ui/HoizrLogo";
-import { CheckCircle2, Loader2, ShieldCheck, TicketCheck } from "lucide-react";
+import { CheckCircle2, Loader2, LogIn, ShieldCheck, TicketCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const rupee = (n: number) =>
   `₹${(n ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
-type Phase = "loading" | "ready" | "paying" | "paid" | "error";
+type Phase = "loading" | "ready" | "paying" | "error";
 
 export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
+  const router = useRouter();
+  // Guest checkout was removed — paying an offline link requires login like
+  // every other order. We seed the cart for the logged-in customer then hand
+  // off to the normal authed /checkout (which carries offlineOrderId through
+  // createOrder → Razorpay → confirm).
+  const profile = useAuthStore((s) => s.profile);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const hydrate = useAuthStore((s) => s.hydrate);
+
   const [link, setLink] = useState<OfflinePaymentLinkView | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
 
-  // Prefilled, editable contact fields.
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  useEffect(() => {
+    if (!hydrated) hydrate();
+  }, [hydrated, hydrate]);
 
   useEffect(() => {
     fetchOfflinePaymentLink(shortCode)
       .then((l) => {
         setLink(l);
-        setFirstName(l.customerFirstName ?? "");
-        setLastName(l.customerLastName ?? "");
-        setEmail(l.customerEmail ?? "");
-        setPhone(l.customerPhone ?? "");
         setPhase("ready");
       })
       .catch((e) => {
@@ -45,8 +50,16 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
       });
   }, [shortCode]);
 
+  const signInToPay = () => {
+    router.push(`/login?next=${encodeURIComponent(`/t/${shortCode}`)}`);
+  };
+
   const pay = async () => {
     if (!link) return;
+    if (!profile) {
+      signInToPay();
+      return;
+    }
     setError(null);
     setPhase("paying");
     try {
@@ -57,58 +70,20 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
         .filter((l) => l.isExtra)
         .map((l) => ({ extraId: l.itemId, quantity: l.quantity }));
 
-      const res = await createGuestOrder({
-        eventId: link.eventId,
-        tickets,
-        extras,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        notifyMe: true,
-        offlineOrderId: link.offlineOrderId,
+      // Seed the logged-in customer's cart with the host-locked lines, then
+      // hand off to the authed checkout carrying the offlineOrderId so the
+      // order links back to this payment link.
+      await gqlRequest<{ setCart: CartResponse }>(SET_CART_MUTATION, {
+        input: { eventId: link.eventId, tickets, extras },
       });
-
-      if (!res.checkout) {
-        setPhase("paid");
-        return;
-      }
-      const ready = await loadRazorpay();
-      if (!ready || !window.Razorpay) {
-        throw new Error("Couldn't load the payment window — please retry.");
-      }
-      const checkout = res.checkout;
-      await new Promise<void>((resolve, reject) => {
-        const rp = new window.Razorpay!({
-          key: checkout.razorpayKeyId,
-          amount: Math.round(checkout.amount * 100),
-          currency: checkout.currency,
-          name: "Hoizr",
-          description: link.eventTitle ?? "Event ticket",
-          order_id: checkout.razorpayOrderId,
-          prefill: {
-            name: `${firstName} ${lastName}`.trim(),
-            email: email.trim(),
-            contact: phone.trim(),
-          },
-          theme: { color: "#0F8842" },
-          handler: (_r: RazorpayPaymentResponse) => {
-            setPhase("paid");
-            resolve();
-          },
-          modal: { ondismiss: () => reject(new Error("Payment cancelled")) },
-        });
-        rp.open();
-      });
+      router.push(
+        `/checkout?eventId=${link.eventId}&offlineOrderId=${link.offlineOrderId}`
+      );
     } catch (e: any) {
       const message =
         e?.response?.errors?.[0]?.message ??
         e?.message ??
         "Something went wrong. Please try again.";
-      if (message === "Payment cancelled") {
-        setPhase("ready");
-        return;
-      }
       setError(message);
       setPhase("ready");
     }
@@ -132,18 +107,6 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
           <p className="text-base font-semibold text-white">Link unavailable</p>
           <p className="mt-1 text-sm text-white/55">{error}</p>
-        </div>
-      ) : phase === "paid" ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-          <CheckCircle2 size={44} className="mx-auto text-[#34d399]" />
-          <h1 className="mt-3 text-lg font-semibold text-white">
-            Payment received
-          </h1>
-          <p className="mt-1 text-sm text-white/60">
-            Your ticket for{" "}
-            <span className="text-white/80">{link?.eventTitle}</span> is on its
-            way to <span className="text-white/80">{email}</span>.
-          </p>
         </div>
       ) : link?.alreadyPaid ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
@@ -201,34 +164,45 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2.5">
-              <Input value={firstName} onChange={setFirstName} placeholder="First name" />
-              <Input value={lastName} onChange={setLastName} placeholder="Last name" />
-            </div>
-            <div className="mt-2.5">
-              <Input value={email} onChange={setEmail} placeholder="Email" type="email" />
-            </div>
-            <div className="mt-2.5">
-              <Input value={phone} onChange={setPhone} placeholder="Phone" type="tel" />
-            </div>
-
             {error ? (
-              <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+              <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                 {error}
               </p>
             ) : null}
 
-            <button
-              type="button"
-              disabled={phase === "paying" || phone.trim().length < 8}
-              onClick={pay}
-              className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e] disabled:opacity-50"
-            >
-              {phase === "paying" ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : null}
-              Pay {rupee(link.amountTotal)}
-            </button>
+            {!hydrated ? (
+              <div className="mt-4 flex h-12 items-center justify-center">
+                <Loader2 size={16} className="animate-spin text-white/50" />
+              </div>
+            ) : profile ? (
+              <button
+                type="button"
+                disabled={phase === "paying"}
+                onClick={pay}
+                className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e] disabled:opacity-50"
+              >
+                {phase === "paying" ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <TicketCheck size={16} />
+                )}
+                Continue to pay {rupee(link.amountTotal)}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={signInToPay}
+                  className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--h-accent)] text-sm font-semibold text-[#0a0a0e]"
+                >
+                  <LogIn size={16} />
+                  Sign in to pay {rupee(link.amountTotal)}
+                </button>
+                <p className="mt-2 text-center text-[11px] text-white/45">
+                  Sign in with your phone to pay securely and get your ticket.
+                </p>
+              </>
+            )}
             <p className="mt-2 text-center text-[11px] text-white/40">
               Secured by Razorpay.
             </p>
@@ -238,25 +212,5 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
     </main>
   );
 };
-
-const Input = ({
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  type?: string;
-}) => (
-  <input
-    type={type}
-    value={value}
-    placeholder={placeholder}
-    onChange={(e) => onChange(e.target.value)}
-    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none transition focus:border-[var(--h-accent)]/60 placeholder:text-white/40"
-  />
-);
 
 export default OfflinePaymentClient;

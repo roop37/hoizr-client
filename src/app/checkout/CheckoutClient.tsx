@@ -77,6 +77,10 @@ export const CheckoutClient = () => {
   const searchParams = useSearchParams();
   const eventId = searchParams.get("eventId");
   const retryOrderId = searchParams.get("retryOrderId");
+  // Set when arriving from a host's offline payment link (/t/<code>): the
+  // logged-in customer pays the linked OfflineOrder through this same authed
+  // flow (guest checkout was removed — login is required for every order).
+  const offlineOrderId = searchParams.get("offlineOrderId");
 
   const profile = useAuthStore((s) => s.profile);
   const hydrate = useAuthStore((s) => s.hydrate);
@@ -379,6 +383,8 @@ export const CheckoutClient = () => {
                   phone: guestInfo.phone?.trim() || profile.phone,
                 },
                 couponCode: appliedCoupon?.code,
+                // Link the order to the host's offline payment link when present.
+                ...(offlineOrderId ? { offlineOrderId } : {}),
                 utm: {
                   utmSource: attribution.utmSource,
                   utmMedium: attribution.utmMedium,
