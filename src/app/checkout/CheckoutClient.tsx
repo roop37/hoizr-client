@@ -569,6 +569,11 @@ export const CheckoutClient = () => {
   const stepperBtn =
     "inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30 hover:bg-white/[0.08]";
 
+  // A free / RSVP cart (nothing to pay) hides the price breakdown + the promo
+  // box entirely — there's no money to discount or itemise — and the CTA reads
+  // "Get in" instead of "Pay ₹0".
+  const isFreeCart = (cart.pricing?.totalAmount ?? 0) <= 0;
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 text-white md:py-12">
       <h1 className="text-2xl font-semibold text-white md:text-3xl">
@@ -798,8 +803,10 @@ export const CheckoutClient = () => {
           </div>
         </div>
 
-        {/* Promo code. Drives the summary below from a server-validated
-            preview, so the discount shown is the discount charged. */}
+        {/* Promo code. Hidden for a free/RSVP cart — there's nothing to
+            discount. Drives the summary below from a server-validated preview,
+            so the discount shown is the discount charged. */}
+        {!isFreeCart ? (
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
           {appliedCoupon?.ok ? (
             <div className="flex items-center justify-between gap-3">
@@ -864,8 +871,10 @@ export const CheckoutClient = () => {
             </>
           )}
         </div>
+        ) : null}
 
-        {(() => {
+        {/* Price breakdown — hidden entirely for a free/RSVP cart. */}
+        {!isFreeCart ? (() => {
           const applied = appliedCoupon?.ok ? appliedCoupon : null;
           const pr = applied?.pricing ?? cart.pricing;
           const subtotal = applied ? applied.ticketsSubtotal : cart.pricing.grossAmount;
@@ -919,7 +928,7 @@ export const CheckoutClient = () => {
               </div>
             </div>
           );
-        })()}
+        })() : null}
 
         {actionError ? (
           <ErrorState
@@ -936,15 +945,15 @@ export const CheckoutClient = () => {
         >
           {paying ? (
             <Loader2 size={16} className="animate-spin" />
-          ) : cart.pricing.totalAmount <= 0 ? (
-            "Confirm booking"
+          ) : isFreeCart ? (
+            "Get in"
           ) : (
             `Pay ${rupee(cart.pricing.totalAmount)}`
           )}
         </button>
         <p className="text-center text-xs text-white/55">
-          {cart.pricing.totalAmount <= 0
-            ? "No payment is needed for this booking."
+          {isFreeCart
+            ? "This is a free booking — no payment needed."
             : "Secured by Razorpay. Cards, UPI, net-banking, and wallets supported."}
         </p>
 
