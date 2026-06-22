@@ -58,6 +58,8 @@ export type PublicEventDay = {
   title: string;
   startDate: string;
   endDate: string;
+  // Per-day venue for a multi-city event; absent ⇒ uses the event location.
+  location?: PublicEventLocation;
 };
 
 export type PublicPlaceInfo = {
@@ -93,6 +95,8 @@ export type PublicEvent = {
   startDate?: string;
   endDate?: string;
   markSeparateDays?: boolean;
+  // Multi-city: each day has its own venue/city.
+  multiCity?: boolean;
   // Per-day segments; present (length >= 2) only for a multi-day event.
   days?: PublicEventDay[];
   city?: string;

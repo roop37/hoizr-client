@@ -76,7 +76,8 @@ export const SearchPageClient = ({ events, cities, genres }: Props) => {
       const rx = VERTICAL_RX[vert];
       if (rx) xs = xs.filter((e) => rx.test(e.series));
     }
-    if (city) xs = xs.filter((e) => e.city === city);
+    if (city)
+      xs = xs.filter((e) => (e.cities ?? [e.city]).some((c) => c === city));
     if (genreId) xs = xs.filter((e) => e.genreTagIds.includes(genreId));
     if (when) xs = xs.filter((e) => isInWhenRange(e.startDateIso, when));
     return xs;

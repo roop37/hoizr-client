@@ -21,6 +21,11 @@ export const PUBLIC_EVENT_LIST_QUERY = `
         endDate
         city
         cityId
+        multiCity
+        days {
+          title
+          location { city }
+        }
         genreTagIds
         location {
           city
@@ -66,11 +71,25 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
       startDate
       endDate
       markSeparateDays
+      multiCity
       days {
         dayId
         title
         startDate
         endDate
+        location {
+          addressLine1
+          addressLine2
+          city
+          state
+          pincode
+          formattedAddress
+          place {
+            placeId
+            displayName
+          }
+          coordinate { type coordinates }
+        }
       }
       city
       cityId

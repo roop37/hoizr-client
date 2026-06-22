@@ -574,21 +574,60 @@ export const EventDetailClient = ({
               {display.startTime ? ` · ${display.startTime}` : ""}
               {display.endTime ? ` - ${display.endTime}` : ""}
             </p>
-            <p>
-              {mapOpenInGoogleHref ? (
-                <a
-                  href={mapOpenInGoogleHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-cream/30 underline-offset-2 transition hover:text-[#c5ff3d] hover:decoration-[#c5ff3d]"
-                  title="Open in Google Maps"
-                >
-                  {display.venueShort}
-                </a>
-              ) : (
-                display.venueShort
-              )}
-            </p>
+            {display.multiCity &&
+            (display.days?.some((d) => d.location?.addressLine1) ?? false) ? (
+              // Multi-city: list each day's own venue instead of one location.
+              <div className="mt-1 space-y-2">
+                {display.days!.map((d, i) => {
+                  const loc = d.location;
+                  const venue =
+                    loc?.place?.displayName ||
+                    loc?.formattedAddress ||
+                    loc?.addressLine1 ||
+                    loc?.city ||
+                    display.venueShort;
+                  const q = encodeURIComponent(
+                    [loc?.formattedAddress || loc?.addressLine1, loc?.city]
+                      .filter(Boolean)
+                      .join(", ") || venue,
+                  );
+                  return (
+                    <div key={d.dayId ?? i} className="text-sm">
+                      <span className="font-semibold text-[#c5ff3d]">
+                        {d.title || `Day ${i + 1}`}
+                        {loc?.city ? ` · ${loc.city}` : ""}
+                      </span>
+                      <br />
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${q}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline decoration-cream/30 underline-offset-2 transition hover:text-[#c5ff3d] hover:decoration-[#c5ff3d]"
+                        title="Open in Google Maps"
+                      >
+                        {venue}
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p>
+                {mapOpenInGoogleHref ? (
+                  <a
+                    href={mapOpenInGoogleHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline decoration-cream/30 underline-offset-2 transition hover:text-[#c5ff3d] hover:decoration-[#c5ff3d]"
+                    title="Open in Google Maps"
+                  >
+                    {display.venueShort}
+                  </a>
+                ) : (
+                  display.venueShort
+                )}
+              </p>
+            )}
           </div>
 
           {thingsToKnow.length > 0 ? (
