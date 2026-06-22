@@ -18,7 +18,11 @@ export type DisplayEvent = {
   // event surfaces under ANY of its cities.
   cities: string[];
   cityId?: string;
-  // Per-day venues for a multi-city event (display on the detail page).
+  // Per-day venues for a multi-city event — ONLY fully populated on the detail
+  // page (GetPublicEventBySlug fetches dayId/start/end/location). The browse/
+  // search query under-fetches days (title + location.city only) purely to
+  // build `cities`; don't read dayId/startDate off `days` from a browse-sourced
+  // DisplayEvent. Detail page reads it; cards read only `cities`.
   days?: PublicEvent["days"];
   multiCity?: boolean;
   /** Geocoded venue position when the host saved a Google Place. */
