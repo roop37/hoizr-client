@@ -232,7 +232,11 @@ export const EventsPageClient = ({
   }, [vert, city, genreId, when, price, sort, search, pathname, router, searchParams]);
 
   const eventCities = useMemo(() => {
-    const citySet = new Set(events.map((event) => event.city).filter(Boolean));
+    // Include every city an event runs in (multi-city events contribute each
+    // day's city), so all are offered as filter chips.
+    const citySet = new Set(
+      events.flatMap((event) => event.cities ?? [event.city]).filter(Boolean),
+    );
     const fromMasters = cities
       .map(cityLabel)
       .filter((label) => citySet.has(label))
@@ -258,7 +262,10 @@ export const EventsPageClient = ({
     if (v && vert !== "All") xs = xs.filter(v.match);
     if (city !== "All cities") {
       const target = city.toLowerCase();
-      xs = xs.filter((e) => e.city?.toLowerCase() === target);
+      // A multi-city event surfaces under ANY of its cities.
+      xs = xs.filter((e) =>
+        (e.cities ?? [e.city]).some((c) => c?.toLowerCase() === target),
+      );
     }
     if (genreId !== "All genres") {
       xs = xs.filter((event) => event.genreTagIds.includes(genreId));

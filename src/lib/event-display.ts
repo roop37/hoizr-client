@@ -13,7 +13,18 @@ export type DisplayEvent = {
   gallery: PublicEvent["gallery"];
   imageStyle: string;
   city: string;
+  // All distinct cities this event runs in (multi-city events list every day's
+  // city; single-city = just [city]). Used by the browse filter so a multi-city
+  // event surfaces under ANY of its cities.
+  cities: string[];
   cityId?: string;
+  // Per-day venues for a multi-city event — ONLY fully populated on the detail
+  // page (GetPublicEventBySlug fetches dayId/start/end/location). The browse/
+  // search query under-fetches days (title + location.city only) purely to
+  // build `cities`; don't read dayId/startDate off `days` from a browse-sourced
+  // DisplayEvent. Detail page reads it; cards read only `cities`.
+  days?: PublicEvent["days"];
+  multiCity?: boolean;
   /** Geocoded venue position when the host saved a Google Place. */
   coordinate?: { lat: number; lng: number };
   genreTagIds: string[];
@@ -145,6 +156,26 @@ export const toDisplayEvent = (e: PublicEvent): DisplayEvent => {
     gallery: e.gallery ?? [],
     imageStyle: PLACEHOLDER_GRADIENTS[hashString(e._id) % PLACEHOLDER_GRADIENTS.length],
     city: e.city ?? "India",
+    cities: (() => {
+      // Event's own city + every per-day city (multi-city), distinct + trimmed.
+      const all = [
+        e.city,
+        e.location?.city,
+        ...(e.days ?? []).map((d) => d.location?.city),
+      ].filter((c): c is string => !!c && !!c.trim());
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const c of all) {
+        const key = c.trim().toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          out.push(c.trim());
+        }
+      }
+      return out.length ? out : [e.city ?? "India"];
+    })(),
+    multiCity: !!e.multiCity,
+    days: e.days,
     cityId: e.cityId,
     coordinate: coordToLatLng(e.location?.coordinate) ?? undefined,
     genreTagIds: e.genreTagIds ?? [],

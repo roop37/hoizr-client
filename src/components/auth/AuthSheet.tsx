@@ -1,7 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AuthPanel } from "./AuthPanel";
 
 type AuthSheetProps = {
@@ -26,6 +27,10 @@ export const AuthSheet = ({
   headline,
   subheadline,
 }: AuthSheetProps) => {
+  // Portal target only exists in the browser; gate on mount for SSR safety.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -40,9 +45,14 @@ export const AuthSheet = ({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // Render through a portal to <body> so the fixed-position overlay is
+  // positioned relative to the VIEWPORT — not a transformed/filtered ancestor.
+  // (EventBookingPanel uses backdrop-blur, which creates a containing block
+  // that would otherwise trap this modal inside the small panel: off-centre +
+  // not full-screen.)
+  return createPortal(
     <div
       className="h-auth-sheet-overlay"
       role="dialog"
@@ -71,6 +81,7 @@ export const AuthSheet = ({
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
