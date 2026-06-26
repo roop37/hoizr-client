@@ -23,10 +23,12 @@ import QRCode from "qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { rupee } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
+import { mapsSearchHref } from "@/lib/maps";
 import { sanitizeRichText } from "@/lib/sanitize";
 import {
   ACTIVE_LANGUAGES_QUERY,
   ACTIVE_PROHIBITED_ITEMS_QUERY,
+  GENERATE_MY_ORDER_INVOICE_MUTATION,
   MY_ORDER_BY_ID_QUERY,
   MY_ORDER_INVOICE_QUERY,
   PUBLIC_EVENT_PEOPLE_QUERY,
@@ -410,6 +412,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     if (!iso) return "";
     try {
       return new Date(iso).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
         weekday: "short",
         day: "2-digit",
         month: "short",
@@ -542,6 +545,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
       eventSummary?.title,
       eventSummary?.startDate
         ? new Date(eventSummary.startDate).toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
             day: "2-digit",
             month: "short",
             hour: "2-digit",
@@ -578,31 +582,80 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
   const handleDownloadInvoice = async () => {
     if (!order || invoiceState.busy) return;
     setInvoiceState({ busy: true, message: null });
-    try {
-      const data = await gqlRequest<{
-        getMyOrderInvoice: {
-          invoiceNumber: string;
-          pdfUrl: string;
-          expiresAt: string;
-        } | null;
-      }>(MY_ORDER_INVOICE_QUERY, { orderId: order._id });
 
-      if (!data.getMyOrderInvoice) {
+    type InvoiceResult = {
+      invoiceNumber: string;
+      pdfUrl: string;
+      expiresAt: string;
+    } | null;
+
+    const openInvoice = (invoice: { invoiceNumber: string; pdfUrl: string }) => {
+      // Open in a new tab so the customer keeps the order page open while the
+      // PDF downloads. Cloudinary's private_download_url uses attachment
+      // disposition, so most browsers save instead of rendering inline.
+      window.open(invoice.pdfUrl, "_blank", "noopener,noreferrer");
+      setInvoiceState({
+        busy: false,
+        message: `Invoice ${invoice.invoiceNumber} opened in a new tab.`,
+      });
+    };
+
+    const fetchInvoice = async (): Promise<InvoiceResult> => {
+      const data = await gqlRequest<{ getMyOrderInvoice: InvoiceResult }>(
+        MY_ORDER_INVOICE_QUERY,
+        { orderId: order._id }
+      );
+      return data.getMyOrderInvoice;
+    };
+
+    try {
+      // 1) Fast path — the invoice already exists, just open it.
+      const existing = await fetchInvoice();
+      if (existing) {
+        openInvoice(existing);
+        return;
+      }
+
+      // 2) Nothing on file yet — ask the server to get-or-generate it.
+      const gen = await gqlRequest<{
+        generateMyOrderInvoice: {
+          status: "READY" | "GENERATING" | "NO_INVOICE_FREE_ORDER";
+          invoice: InvoiceResult;
+        };
+      }>(GENERATE_MY_ORDER_INVOICE_MUTATION, { orderId: order._id });
+      const { status, invoice } = gen.generateMyOrderInvoice;
+
+      if (status === "NO_INVOICE_FREE_ORDER") {
         setInvoiceState({
           busy: false,
-          message:
-            "Your invoice isn't ready yet — Hoizr generates it within a few minutes of payment. Try again shortly, or check the order confirmation email.",
+          message: "No tax invoice for a free booking.",
         });
         return;
       }
 
-      // Open in a new tab so the customer keeps the order page open
-      // while the PDF downloads. Cloudinary's private_download_url uses
-      // attachment disposition, so most browsers save instead of inline.
-      window.open(data.getMyOrderInvoice.pdfUrl, "_blank", "noopener,noreferrer");
+      if (status === "READY" && invoice) {
+        openInvoice(invoice);
+        return;
+      }
+
+      // 3) GENERATING — a worker is producing the PDF. Poll getMyOrderInvoice
+      // on the same cadence/cap as the payment-confirmation poll until it
+      // lands, then open it; otherwise tell the customer to try again shortly.
+      for (let attempt = 0; attempt < PAYMENT_CONFIRMATION_MAX_POLLS; attempt++) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, PAYMENT_CONFIRMATION_POLL_INTERVAL_MS)
+        );
+        const ready = await fetchInvoice();
+        if (ready) {
+          openInvoice(ready);
+          return;
+        }
+      }
+
       setInvoiceState({
         busy: false,
-        message: `Invoice ${data.getMyOrderInvoice.invoiceNumber} opened in a new tab.`,
+        message:
+          "Your invoice is being generated — try again shortly, or check your order confirmation email.",
       });
     } catch (err: any) {
       const code = err?.response?.errors?.[0]?.extensions?.code;
@@ -671,6 +724,10 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     !webhookTimedOut &&
     !justPaid;
   const orderShortId = order._id.slice(-6).toUpperCase();
+  // A free booking has no platform fee, so there's no tax invoice to fetch —
+  // hide the Invoice action entirely (and let the action row collapse to a
+  // single column so the lone Share button isn't left half-width).
+  const isFreeOrder = (order.totalAmount ?? 0) <= 0;
   const ticketCount = order.tickets.reduce(
     (sum, t) => sum + Number(t.quantity ?? 0),
     0
@@ -732,6 +789,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
 
   const eventStartLong = eventSummary?.startDate
     ? new Date(eventSummary.startDate).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
         weekday: "long",
         day: "2-digit",
         month: "long",
@@ -742,6 +800,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     : "";
   const eventEndLong = eventSummary?.endDate
     ? new Date(eventSummary.endDate).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
         weekday: "long",
         day: "2-digit",
         month: "long",
@@ -761,6 +820,13 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
     ]
       .filter(Boolean)
       .join(", ");
+  // Deep-link the venue to Google Maps, mirroring the event-detail
+  // convention: free-text address query + an exact place_id pin when the
+  // host saved a Google Place. Null when there's no address to search.
+  const venueMapsHref = mapsSearchHref(
+    venueFullAddress,
+    eventSummary?.location?.place?.placeId
+  );
 
   const eventDescription = eventSummary?.description?.trim() ?? "";
   // Description on the public Event doc is rich-text HTML authored in
@@ -1066,7 +1132,11 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                 {/* Action row — only meaningful once the order is paid. */}
                 {confirmed ? (
                   <div className="border-t border-border bg-cream/60 px-3 py-3">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div
+                      className={`grid gap-2 ${
+                        isFreeOrder ? "grid-cols-1" : "grid-cols-2"
+                      }`}
+                    >
                       <button
                         type="button"
                         onClick={() => setShareModalOpen(true)}
@@ -1075,19 +1145,21 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                         <Share2 size={14} />
                         Share
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleDownloadInvoice}
-                        disabled={invoiceState.busy}
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 text-xs font-semibold text-ink transition hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {invoiceState.busy ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Download size={14} />
-                        )}
-                        Invoice
-                      </button>
+                      {!isFreeOrder ? (
+                        <button
+                          type="button"
+                          onClick={handleDownloadInvoice}
+                          disabled={invoiceState.busy}
+                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 text-xs font-semibold text-ink transition hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {invoiceState.busy ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Download size={14} />
+                          )}
+                          Invoice
+                        </button>
+                      ) : null}
                     </div>
                     {shareToast ? (
                       <div className="mt-2 rounded-lg bg-ink/90 px-3 py-2 text-center text-[11px] font-medium text-cream">
@@ -1275,7 +1347,19 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                           size={14}
                           className="mt-0.5 shrink-0 text-cream/60"
                         />
-                        <span>{venueFullAddress}</span>
+                        {venueMapsHref ? (
+                          <a
+                            href={venueMapsHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open in Google Maps"
+                            className="underline-offset-2 transition hover:text-cream hover:underline"
+                          >
+                            {venueFullAddress}
+                          </a>
+                        ) : (
+                          <span>{venueFullAddress}</span>
+                        )}
                       </div>
                     ) : null}
                   </div>

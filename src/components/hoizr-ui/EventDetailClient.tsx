@@ -243,6 +243,7 @@ export const EventDetailClient = ({
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
     return new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -1248,6 +1249,7 @@ const PeopleEventRow = ({
   const flyer = event.eventFlyer || event.horizontalFlyer || "";
   const when = event.startDate
     ? new Intl.DateTimeFormat("en-IN", {
+        timeZone: "Asia/Kolkata",
         day: "2-digit",
         month: "short",
         year: "numeric",

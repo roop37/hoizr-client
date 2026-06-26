@@ -50,6 +50,7 @@ export const TicketShareModal = ({
 
   const dateStr = eventDate
     ? new Date(eventDate).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
         day: "numeric",
         month: "short",
         year: "numeric",

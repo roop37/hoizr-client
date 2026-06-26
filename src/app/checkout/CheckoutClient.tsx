@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Loader2, Minus, Plus, ShoppingCart, Zap } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -401,7 +401,10 @@ export const CheckoutClient = () => {
       const { checkout, order } = createRes.createOrder;
       if (!checkout) {
         // Free order — finalized server-side, which emits the canonical
-        // `orderPlaced` analytics event. Nothing to track here.
+        // `orderPlaced` analytics event. Nothing to track here. Release the
+        // local active-cart pointer (mirrors the paid path's handler) so the
+        // bottom cart bar disappears the moment the booking is confirmed.
+        clearActiveCart();
         router.push(`/orders/${order._id}?just_paid=1`);
         return;
       }
@@ -946,7 +949,10 @@ export const CheckoutClient = () => {
           {paying ? (
             <Loader2 size={16} className="animate-spin" />
           ) : isFreeCart ? (
-            "Get in"
+            <>
+              <Zap size={16} />
+              Get in
+            </>
           ) : (
             `Pay ${rupee(cart.pricing.totalAmount)}`
           )}

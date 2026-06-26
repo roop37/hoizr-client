@@ -18,10 +18,20 @@ const formatDateTimeLabel = (event: DisplayEvent): string => {
   if (!event.startDateISO) return event.dateLong || event.date || "Date pending";
   const start = new Date(event.startDateISO);
   if (Number.isNaN(start.getTime())) return event.dateLong || event.date || "Date pending";
-  const weekday = new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(start);
-  const day = new Intl.DateTimeFormat("en-IN", { day: "2-digit" }).format(start);
-  const month = new Intl.DateTimeFormat("en-IN", { month: "short" }).format(start);
+  const weekday = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+  }).format(start);
+  const day = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+  }).format(start);
+  const month = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    month: "short",
+  }).format(start);
   const time = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,

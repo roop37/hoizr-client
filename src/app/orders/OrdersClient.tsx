@@ -142,6 +142,7 @@ const merchStatusBadge = (status: ArtistMerchOrderStatus) => {
 const formatDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -470,7 +471,10 @@ export const OrdersClient = () => {
           >
             <X size={18} />
           </button>
-          <div onClick={(e) => e.stopPropagation()}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto"
+          >
             <GoldenTicket ticket={selectedPass} />
           </div>
         </div>

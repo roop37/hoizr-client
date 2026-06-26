@@ -46,6 +46,10 @@ export const HCartBar = () => {
     return null;
   }
 
+  // A free / RSVP cart carries a zero total — the CTA reads "Get in" instead
+  // of "Continue to payment" (ActiveCart already carries totalAmount).
+  const isFree = (cart.totalAmount ?? 0) <= 0;
+
   return (
     <div className="h-cartbar-wrap" role="status" aria-live="polite">
       <GlassSurface
@@ -100,7 +104,10 @@ export const HCartBar = () => {
               href={`/checkout?eventId=${cart.eventId}`}
               className="h-cartbar__cta"
             >
-              <span>Continue to payment</span>
+              {/* A free/RSVP cart has nothing to pay — the CTA reads "Get in"
+                  (consistent with the checkout button) while keeping the same
+                  /checkout destination. */}
+              <span>{isFree ? "Get in" : "Continue to payment"}</span>
               <span style={{ display: "inline-flex" }}>{HICONS.arrowR}</span>
             </Link>
           </div>
