@@ -23,6 +23,11 @@ type Props = {
 export const MarqueeRow = ({ title, events }: Props) => {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const oneCopyWidth = useRef(0);
+  // Auto-scroll is paused while the user hovers / touches / drags the row.
+  const pausedRef = useRef(false);
+  const reduceMotionRef = useRef(false);
+  // A tiny row (< 4) would just drift through visible duplicates — keep it static.
+  const autoScrollEnabled = events.length >= 4;
 
   // Position scrollLeft at the start of the middle copy on mount so we
   // have equal "runway" on both sides.
@@ -41,6 +46,44 @@ export const MarqueeRow = ({ title, events }: Props) => {
     ro.observe(el);
     return () => ro.disconnect();
   }, [events.length]);
+
+  // Respect prefers-reduced-motion: no auto-scroll when the user asked for less.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    reduceMotionRef.current = mq.matches;
+    const onChange = () => {
+      reduceMotionRef.current = mq.matches;
+    };
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
+  // Very-very-slow continuous auto-scroll. Nudges scrollLeft a few px/sec; the
+  // existing onScroll boundary-wrap makes it loop seamlessly over the tripled
+  // list. Paused on hover/touch/drag and disabled for reduced-motion / tiny rows.
+  useEffect(() => {
+    if (!autoScrollEnabled) return;
+    const el = trackRef.current;
+    if (!el) return;
+    const SPEED_PX_PER_SEC = 10; // gentle drift
+    let raf = 0;
+    let last = performance.now();
+    const loop = (t: number) => {
+      const dt = t - last;
+      last = t;
+      if (
+        !pausedRef.current &&
+        !reduceMotionRef.current &&
+        oneCopyWidth.current
+      ) {
+        el.scrollLeft += (SPEED_PX_PER_SEC * dt) / 1000;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [autoScrollEnabled, events.length]);
 
   // Boundary wrap: if the user scrolls past either edge, instantly
   // shift scrollLeft by one copy-width so the loop is invisible.
@@ -69,6 +112,10 @@ export const MarqueeRow = ({ title, events }: Props) => {
     // elements (links / buttons) — we still want tile clicks to
     // navigate without being eaten by the drag handler.
     if (e.button !== 0) return;
+
+    // Hold the auto-scroll while the user is interacting; resumed on pointer-up
+    // (tap) or once the inertia tail finishes (drag).
+    pausedRef.current = true;
 
     const startX = e.clientX;
     const startScroll = el.scrollLeft;
@@ -105,7 +152,10 @@ export const MarqueeRow = ({ title, events }: Props) => {
       if (el.hasPointerCapture(ev.pointerId)) {
         el.releasePointerCapture(ev.pointerId);
       }
-      if (!dragging) return;
+      if (!dragging) {
+        pausedRef.current = false; // a tap, not a drag — resume now
+        return;
+      }
       // Suppress the click that would otherwise fire on the underlying
       // tile after a real drag.
       if (moved > DRAG_THRESHOLD) {
@@ -127,6 +177,7 @@ export const MarqueeRow = ({ title, events }: Props) => {
         lastTickT = t;
         if (Math.abs(velocity) < MIN_V) {
           cancelAnimationFrame(raf);
+          pausedRef.current = false; // inertia done — resume auto-scroll
           return;
         }
         el.scrollLeft -= velocity * dt;
@@ -157,6 +208,12 @@ export const MarqueeRow = ({ title, events }: Props) => {
           className="h-marquee-track"
           onScroll={onScroll}
           onPointerDown={onPointerDown}
+          onPointerEnter={() => {
+            pausedRef.current = true;
+          }}
+          onPointerLeave={() => {
+            pausedRef.current = false;
+          }}
         >
           {tripled.map((e, idx) => (
             <div key={`${e.id}-${idx}`} className="h-marquee-item">
