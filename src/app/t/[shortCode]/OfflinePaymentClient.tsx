@@ -8,6 +8,7 @@ import { gqlRequest } from "@/lib/graphql";
 import { SET_CART_MUTATION } from "@/lib/queries";
 import type { CartResponse } from "@/types/order";
 import { useAuthStore } from "@/store/auth";
+import { AuthSheet } from "@/components/auth/AuthSheet";
 import { HoizrLogo } from "@/components/hoizr-ui/HoizrLogo";
 import { CheckCircle2, Loader2, LogIn, ShieldCheck, TicketCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,11 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
   const [link, setLink] = useState<OfflinePaymentLinkView | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
+  // Inline sign-in (prefilled from the link) instead of bouncing to /login —
+  // keeps the resolved link mounted (offlineOrderId never at risk) and avoids
+  // putting the customer's phone in the URL. After auth we auto-continue to pay.
+  const [authOpen, setAuthOpen] = useState(false);
+  const [payAfterAuth, setPayAfterAuth] = useState(false);
 
   useEffect(() => {
     if (!hydrated) hydrate();
@@ -51,8 +57,29 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
   }, [shortCode]);
 
   const signInToPay = () => {
-    router.push(`/login?next=${encodeURIComponent(`/t/${shortCode}`)}`);
+    // Open the prefilled inline auth sheet (was a /login redirect that dropped
+    // the customer's known phone and left the OTP form blank/confusing).
+    setAuthOpen(true);
   };
+
+  // After the customer signs in via the inline sheet, re-hydrate the auth store
+  // and auto-continue to pay (they clicked "Sign in to pay" — one intent).
+  const handleAuthenticated = async () => {
+    setAuthOpen(false);
+    useAuthStore.setState({ hydrated: false });
+    await hydrate();
+    setPayAfterAuth(true);
+  };
+
+  useEffect(() => {
+    if (payAfterAuth && profile && link) {
+      setPayAfterAuth(false);
+      void pay();
+    }
+    // pay() reads the latest link/profile from closure; we only want to fire
+    // this once profile lands after auth.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payAfterAuth, profile, link]);
 
   const pay = async () => {
     if (!link) return;
@@ -209,6 +236,18 @@ export const OfflinePaymentClient = ({ shortCode }: { shortCode: string }) => {
           </div>
         </div>
       ) : null}
+
+      <AuthSheet
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onAuthenticated={handleAuthenticated}
+        headline="Sign in to get your ticket"
+        subheadline="We've prefilled the number this link was sent to — edit it if you'd rather use another."
+        initialPhone={link?.customerPhone ?? undefined}
+        initialFirstName={link?.customerFirstName ?? undefined}
+        initialLastName={link?.customerLastName ?? undefined}
+        initialEmail={link?.customerEmail ?? undefined}
+      />
     </main>
   );
 };

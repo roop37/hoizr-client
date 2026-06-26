@@ -11,6 +11,12 @@ type AuthSheetProps = {
   onAuthenticated: () => void | Promise<void>;
   headline?: string;
   subheadline?: string;
+  // Contextual prefill (e.g. an offline payment link knows the customer's
+  // phone/name/email) — passed straight through to the inner AuthPanel.
+  initialPhone?: string;
+  initialFirstName?: string;
+  initialLastName?: string;
+  initialEmail?: string;
 };
 
 /**
@@ -26,6 +32,10 @@ export const AuthSheet = ({
   onAuthenticated,
   headline,
   subheadline,
+  initialPhone,
+  initialFirstName,
+  initialLastName,
+  initialEmail,
 }: AuthSheetProps) => {
   // Portal target only exists in the browser; gate on mount for SSR safety.
   const [mounted, setMounted] = useState(false);
@@ -78,6 +88,10 @@ export const AuthSheet = ({
             onAuthenticated={onAuthenticated}
             headline={headline}
             subheadline={subheadline}
+            initialPhone={initialPhone}
+            initialFirstName={initialFirstName}
+            initialLastName={initialLastName}
+            initialEmail={initialEmail}
           />
         </div>
       </div>
