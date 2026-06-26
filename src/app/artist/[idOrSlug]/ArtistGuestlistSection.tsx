@@ -17,6 +17,7 @@ const fmtDate = (iso?: string | null) => {
   return Number.isNaN(d.getTime())
     ? ""
     : new Intl.DateTimeFormat("en-IN", {
+        timeZone: "Asia/Kolkata",
         weekday: "short",
         day: "numeric",
         month: "short",

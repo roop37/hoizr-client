@@ -54,6 +54,7 @@ const formatDate = (iso?: string | null) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     day: "2-digit",
     month: "short",
     year: "numeric",

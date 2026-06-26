@@ -10,6 +10,7 @@ const formatWhen = (iso?: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "short",
     day: "2-digit",
     month: "short",

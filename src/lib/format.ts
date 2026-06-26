@@ -13,6 +13,7 @@ export const formatEventDate = (value?: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Date pending";
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "short",
     day: "2-digit",
     month: "short",

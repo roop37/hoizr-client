@@ -82,6 +82,7 @@ const formatTime = (iso?: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -93,6 +94,7 @@ const formatDateShort = (iso?: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "Date TBA";
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -104,6 +106,7 @@ const formatDateLong = (iso?: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "Date pending";
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "long",
     day: "numeric",
     month: "long",

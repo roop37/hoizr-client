@@ -220,6 +220,10 @@ export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
         state
         pincode
         formattedAddress
+        place {
+          placeId
+          displayName
+        }
         coordinate { type coordinates }
       }
       refundPolicy
@@ -810,6 +814,25 @@ export const MY_ORDER_INVOICE_QUERY = `
       pdfUrl
       expiresAt
       dateOfIssue
+    }
+  }
+`;
+
+// Get-or-generate the tax invoice for a paid order. status is one of
+// "READY" | "GENERATING" | "NO_INVOICE_FREE_ORDER":
+//  - READY  → invoice carries a freshly signed pdfUrl, open it now.
+//  - GENERATING → a worker is producing it; poll getMyOrderInvoice.
+//  - NO_INVOICE_FREE_ORDER → free booking, there's no tax invoice.
+export const GENERATE_MY_ORDER_INVOICE_MUTATION = `
+  mutation GenerateMyOrderInvoice($orderId: String!) {
+    generateMyOrderInvoice(orderId: $orderId) {
+      status
+      invoice {
+        invoiceNumber
+        pdfUrl
+        expiresAt
+        dateOfIssue
+      }
     }
   }
 `;

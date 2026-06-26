@@ -9,6 +9,7 @@ const formatDate = (iso?: string | null) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -75,7 +76,7 @@ export const GoldenTicket = ({ ticket }: { ticket: GuestlistTicketView }) => {
         <img
           src={ticket.eventFlyer}
           alt={ticket.eventTitle ?? "Event flyer"}
-          className="mt-4 aspect-[3/4] w-full rounded-2xl border border-black/10 object-cover shadow-md"
+          className="mt-4 aspect-[3/4] max-h-[34vh] w-full rounded-2xl border border-black/10 object-cover shadow-md"
         />
       ) : null}
 
