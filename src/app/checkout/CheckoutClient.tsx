@@ -577,6 +577,16 @@ export const CheckoutClient = () => {
   // "Get in" instead of "Pay ₹0".
   const isFreeCart = (cart.pricing?.totalAmount ?? 0) <= 0;
 
+  // The amount actually charged: when a valid promo is applied, the server's
+  // recomputed (discounted) total — the SAME value the breakdown shows as
+  // "Total payable". The Pay button must use this, not cart.pricing.totalAmount,
+  // which is the PRE-discount total (the button used to show e.g. ₹5,188 while
+  // the breakdown said ₹2,329 after applying a promo).
+  const payableTotal =
+    (appliedCoupon?.ok ? appliedCoupon.pricing?.totalAmount : null) ??
+    cart.pricing?.totalAmount ??
+    0;
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 text-white md:py-12">
       <h1 className="text-2xl font-semibold text-white md:text-3xl">
@@ -954,7 +964,7 @@ export const CheckoutClient = () => {
               Get in
             </>
           ) : (
-            `Pay ${rupee(cart.pricing.totalAmount)}`
+            `Pay ${rupee(payableTotal)}`
           )}
         </button>
         <p className="text-center text-xs text-white/55">
