@@ -23,7 +23,21 @@ type AuthPanelProps = {
   // /login page leaves it default.
   headline?: string;
   subheadline?: string;
+  // Prefill for contextual sign-in (e.g. an offline payment link already knows
+  // the customer's phone/name/email). When initialPhone is supplied the panel
+  // opens straight on the phone step with it filled in. All stay EDITABLE — the
+  // customer may sign in with a different identity; the order is still
+  // attributed to the link via offlineOrderId.
+  initialPhone?: string;
+  initialFirstName?: string;
+  initialLastName?: string;
+  initialEmail?: string;
 };
+
+// The phone input holds the local 10-digit form (a separate "+91" prefix is
+// shown in the UI). Strip any country code from a prefilled E.164 number.
+const toLocalPhone = (e164?: string) =>
+  e164 ? e164.replace(/\D/g, "").slice(-10) : "";
 
 const GOOGLE_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
@@ -60,14 +74,18 @@ const AuthPanelInner = ({
   onAuthenticated,
   headline,
   subheadline,
+  initialPhone,
+  initialFirstName,
+  initialLastName,
+  initialEmail,
 }: AuthPanelProps) => {
-  const [step, setStep] = useState<Step>("choose");
-  const [phoneInput, setPhoneInput] = useState("");
+  const [step, setStep] = useState<Step>(initialPhone ? "phone" : "choose");
+  const [phoneInput, setPhoneInput] = useState(toLocalPhone(initialPhone));
   const [otp, setOtp] = useState("");
   const [otpId, setOtpId] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState(initialFirstName ?? "");
+  const [lastName, setLastName] = useState(initialLastName ?? "");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [profileRequired, setProfileRequired] = useState(false);
   const [pendingToken, setPendingToken] = useState<string>("");
   const [pendingPicture, setPendingPicture] = useState<string | undefined>();
