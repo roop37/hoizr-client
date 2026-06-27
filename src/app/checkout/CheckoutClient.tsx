@@ -715,8 +715,8 @@ export const CheckoutClient = () => {
                 key={line.ticketId}
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
-                <div>
-                  <div className="font-semibold text-white">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-white">
                     {line.ticketName}
                   </div>
                   <div className="text-xs text-white/55">
@@ -771,8 +771,8 @@ export const CheckoutClient = () => {
                 key={line.extraId}
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
-                <div>
-                  <div className="font-semibold text-white">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-white">
                     {line.extraName}
                   </div>
                   <div className="text-xs text-white/55">
