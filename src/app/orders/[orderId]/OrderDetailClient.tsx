@@ -972,7 +972,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
               </p>
               <Link
                 href={`/checkout?eventId=${encodeURIComponent(order.eventId)}&retryOrderId=${encodeURIComponent(order._id)}`}
-                className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-cream transition hover:opacity-95"
+                className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] px-4 text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e]"
               >
                 <CreditCard size={16} />
                 Continue this order
@@ -1421,7 +1421,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                     href={`/support?orderId=${encodeURIComponent(
                       order._id
                     )}&category=ORDER_ISSUE`}
-                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-cream transition hover:opacity-95"
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] px-4 text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e]"
                   >
                     <LifeBuoy size={16} />
                     Contact support

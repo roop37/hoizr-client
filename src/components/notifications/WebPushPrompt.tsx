@@ -73,7 +73,7 @@ export const WebPushPrompt = () => {
               type="button"
               onClick={enable}
               disabled={loading}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-accent px-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] px-3 text-sm font-semibold text-[#0a0a0e] disabled:opacity-60"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : null}
               Enable

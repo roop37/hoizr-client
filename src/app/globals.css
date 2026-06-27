@@ -128,6 +128,25 @@ button {
   cursor: pointer;
   padding: 0;
 }
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+/* iOS Safari force-zooms the viewport whenever a focused form control has a
+   font-size below 16px — that's the "page zooms / jumps when I tap a field"
+   bug on phones. Many inputs use 14px (Tailwind text-sm) for density, so pin
+   every control to 16px on phone-width screens. !important is required to beat
+   the Tailwind utility class. Desktop keeps its denser sizing. The fix is the
+   font-size itself — we deliberately do NOT set user-scalable=no (it would
+   break pinch-zoom accessibility). */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
 img {
   display: block;
   max-width: 100%;
@@ -1365,14 +1384,16 @@ body,
 }
 .h-tile > * { position: relative; z-index: 2; }
 .h-tile:hover {
-  transform: translateY(-5px);
-  border-color: rgba(255, 255, 255, 0.18);
+  /* Subtle lift only — a small rise + a slightly brighter edge. (Was a 5px
+     jump with a heavy shadow bloom + a glare sweep, which read as "massive".) */
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.14);
   box-shadow:
-    0 30px 64px rgba(0, 0, 0, 0.58),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    0 20px 44px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
-.h-tile:hover::before { opacity: 0.9; }
+.h-tile:hover::before { opacity: 0.62; }
 .h-tile-flyer {
   display: block;
   width: 100%;
@@ -1407,8 +1428,11 @@ body,
   transform: translateX(-120%);
   opacity: 0;
 }
+/* Glare sweep intentionally disabled — the bright band sliding across the
+   flyer was the bulk of the "massive" hover. The ::after + keyframes are kept
+   dormant in case a subtler treatment is wanted later. */
 .h-tile:hover .h-tile-flyer::after {
-  animation: h-tile-glare 0.85s ease-out forwards;
+  animation: none;
 }
 @keyframes h-tile-glare {
   0% { transform: translateX(-120%); opacity: 0; }
@@ -2926,6 +2950,27 @@ body,
   padding: 0 18px;
   text-decoration: none;
 }
+/* On phones the title + "Book tickets" CTA were a non-wrapping space-between
+   row, which squashed the title to the left and stranded the CTA — the
+   "Book tickets is all left-sided / alignment is off" report. Stack them:
+   full-width title block on top, full-width CTA below, matching every other
+   full-width section underneath. */
+@media (max-width: 640px) {
+  .h-detail-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .h-detail-heading > div {
+    min-width: 0;
+  }
+  .h-detail-heading > div:last-child {
+    width: 100%;
+  }
+  .h-detail-cta {
+    width: 100%;
+  }
+}
 .h-event-hero {
   position: relative;
   overflow: hidden;
@@ -3216,6 +3261,9 @@ body,
 .h-detail-about {
   white-space: pre-line;
   margin: 0;
+  /* A long unbroken token (pasted URL, run-on string) in host-authored copy
+     could otherwise force the body card wider than a phone screen. */
+  overflow-wrap: anywhere;
 }
 .h-detail-about.is-clamped {
   display: -webkit-box;
@@ -3312,6 +3360,12 @@ body,
   border: 0;
   display: block;
   background: var(--h-bg-3);
+  /* Google's `output=embed` map has no dark-style URL param, so we tint it to
+     match the dark modal: invert + hue-rotate flips the bright canvas to a
+     dark basemap while keeping roads/water legible. (This also inverts the
+     Google logo/labels — the accepted trade-off for embed-mode dark maps.) */
+  filter: invert(0.9) hue-rotate(180deg) brightness(0.95) contrast(0.9)
+    saturate(0.85);
 }
 .h-map-modal__cta {
   display: flex;
@@ -3634,6 +3688,10 @@ body,
    stack of unrelated blocks. */
 .h-detail-body-card {
   position: relative;
+  /* Grid children default to min-width:auto and won't shrink below their
+     content — long content would push the card past the viewport on mobile.
+     min-width:0 lets the card honour the single-column track width. */
+  min-width: 0;
   padding: 22px 24px 18px;
   border-radius: 22px;
   background: rgba(20, 20, 26, 0.55);

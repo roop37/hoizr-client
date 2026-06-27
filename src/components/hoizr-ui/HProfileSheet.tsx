@@ -86,6 +86,13 @@ export const HProfileSheet = () => {
               </Link>
             ))}
 
+            {/* ── SIGN-IN SWITCH (mobile profile sheet, hidden) ──────────────
+                Mobile mirror of the hidden sidebar foot. OTP delivery is gated
+                on WhatsApp (not integrated; SMS disabled), so the "Sign in"
+                button is hidden here too. Re-enable by replacing `null` with
+                the commented block below. */}
+            {null}
+            {/*
             {!signedIn ? (
               <button
                 type="button"
@@ -98,6 +105,7 @@ export const HProfileSheet = () => {
                 Sign in
               </button>
             ) : null}
+            */}
           </div>
 
           {/* Hoizr Local — coming soon */}
