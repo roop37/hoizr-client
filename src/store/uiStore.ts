@@ -9,6 +9,7 @@ type UIUser = {
 type UIState = {
   signInOpen: boolean;
   mobileSidebarOpen: boolean;
+  profileSheetOpen: boolean;
   user: UIUser;
   city: string;
   cityId?: string;
@@ -21,6 +22,8 @@ type UIState = {
   openMobileSidebar: () => void;
   closeMobileSidebar: () => void;
   toggleMobileSidebar: () => void;
+  openProfileSheet: () => void;
+  closeProfileSheet: () => void;
   signIn: (name?: string) => void;
   signOut: () => void;
   setCity: (city: string, cityId?: string) => void;
@@ -42,6 +45,7 @@ const initialsFrom = (name: string) =>
 export const useUIStore = create<UIState>((set) => ({
   signInOpen: false,
   mobileSidebarOpen: false,
+  profileSheetOpen: false,
   user: { signedIn: false, name: "Guest", initials: "G" },
   city: "All cities",
   cityId: undefined,
@@ -55,6 +59,8 @@ export const useUIStore = create<UIState>((set) => ({
   closeMobileSidebar: () => set({ mobileSidebarOpen: false }),
   toggleMobileSidebar: () =>
     set((s) => ({ mobileSidebarOpen: !s.mobileSidebarOpen })),
+  openProfileSheet: () => set({ profileSheetOpen: true }),
+  closeProfileSheet: () => set({ profileSheetOpen: false }),
   signIn: (name = "Rohan Sharma") =>
     set({
       user: { signedIn: true, name, initials: initialsFrom(name) },

@@ -59,13 +59,38 @@ export const MarqueeRow = ({ title, events }: Props) => {
     return () => mq.removeEventListener?.("change", onChange);
   }, []);
 
-  // Very-very-slow continuous auto-scroll. Nudges scrollLeft a few px/sec; the
-  // existing onScroll boundary-wrap makes it loop seamlessly over the tripled
-  // list. Paused on hover/touch/drag and disabled for reduced-motion / tiny rows.
+  // Very-very-slow continuous auto-scroll (DESKTOP only). Nudges scrollLeft a
+  // few px/sec; the existing onScroll boundary-wrap makes it loop seamlessly
+  // over the tripled list. Disabled on touch/small screens — there it competes
+  // with the user's vertical pan and feels janky; manual swipe still loops
+  // infinitely. Gated to in-view (IntersectionObserver) so offscreen rows don't
+  // burn frames. Paused on hover/drag, disabled for reduced-motion / tiny rows.
   useEffect(() => {
     if (!autoScrollEnabled) return;
     const el = trackRef.current;
     if (!el) return;
+
+    // Touch / coarse-pointer / narrow viewport → no auto-scroll (manual
+    // infinite swipe still works via the tripled list + boundary wrap).
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      (window.matchMedia("(pointer: coarse)").matches ||
+        window.matchMedia("(max-width: 640px)").matches);
+    if (isMobile) return;
+
+    let inView = true;
+    const io =
+      typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(
+            ([entry]) => {
+              inView = entry.isIntersecting;
+            },
+            { threshold: 0 }
+          )
+        : null;
+    io?.observe(el);
+
     const SPEED_PX_PER_SEC = 10; // gentle drift
     let raf = 0;
     let last = performance.now();
@@ -73,6 +98,7 @@ export const MarqueeRow = ({ title, events }: Props) => {
       const dt = t - last;
       last = t;
       if (
+        inView &&
         !pausedRef.current &&
         !reduceMotionRef.current &&
         oneCopyWidth.current
@@ -82,7 +108,10 @@ export const MarqueeRow = ({ title, events }: Props) => {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      io?.disconnect();
+    };
   }, [autoScrollEnabled, events.length]);
 
   // Boundary wrap: if the user scrolls past either edge, instantly

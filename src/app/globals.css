@@ -2735,6 +2735,14 @@ body,
     transparent 100%
   );
 }
+
+/* No edge-fade on mobile — it muddies the first/last card on small screens. */
+@media (max-width: 640px) {
+  .h-marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
 .h-marquee-track {
   display: flex;
   align-items: stretch;
@@ -2885,7 +2893,7 @@ body,
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin: 10px 0 22px;
+  margin: 8px 0 14px;
   font-size: 14px;
   color: var(--h-ink-2);
 }
@@ -2901,7 +2909,7 @@ body,
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-top: 24px;
+  margin-top: 16px;
 }
 .h-detail-cta {
   min-width: 138px;
@@ -3169,7 +3177,7 @@ body,
   display: grid;
   grid-template-columns: 1.7fr 1fr;
   gap: 48px;
-  margin-top: 32px;
+  margin-top: 22px;
   align-items: flex-start;
 }
 /* Single-column layout for both the "portrait-only" pivot AND the
@@ -3626,7 +3634,7 @@ body,
    stack of unrelated blocks. */
 .h-detail-body-card {
   position: relative;
-  padding: 28px 28px 22px;
+  padding: 22px 24px 18px;
   border-radius: 22px;
   background: rgba(20, 20, 26, 0.55);
   backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
@@ -3725,7 +3733,7 @@ body,
 }
 
 .h-detail-section {
-  margin-bottom: 36px;
+  margin-bottom: 24px;
 }
 
 /* "Who's coming 👀" card — a reflective surface that picks up the event
@@ -5231,6 +5239,16 @@ a.h-ig-card__handle:hover {
     letter-spacing: 0.01em;
     transition: color 200ms ease, background 200ms ease, transform 200ms ease;
     width: 100%;
+    /* Reset native <button> chrome so the Profile tab (a button that opens the
+       profile sheet) matches the three <a> tabs exactly — no grey UA box,
+       border or default font. */
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .h-mobile-tabs__btn:hover {
     color: var(--h-ink);

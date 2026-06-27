@@ -6,6 +6,7 @@ import { HSide } from "./HSide";
 import { HFooter } from "./HFooter";
 import { HMobileTopBar } from "./HMobileTopBar";
 import { HMobileTabs } from "./HMobileTabs";
+import { HProfileSheet } from "./HProfileSheet";
 import { HCartBar } from "./HCartBar";
 import { SignInModal } from "./SignInModal";
 import { CityInitializer } from "./CityInitializer";
@@ -49,6 +50,7 @@ export function StorefrontShell({
       <SignInModal />
       <HCartBar />
       <HMobileTabs />
+      <HProfileSheet />
       <WebPushPrompt />
       <CityInitializer cities={cities} />
       <CityPickerModal cities={cities} />
