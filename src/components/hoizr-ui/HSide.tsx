@@ -439,6 +439,13 @@ export const HSide = ({ cities }: Props) => {
           </div>
 
           {!signedIn ? (
+            // ── SIGN-IN SWITCH (sidebar foot hidden) ────────────────────────
+            // The sidebar "Sign in" button is hidden for now: OTP delivery is
+            // gated on WhatsApp, which isn't integrated yet (and SMS is
+            // disabled). Re-enable by replacing `null` with the commented
+            // block below.
+            null
+            /*
             <div className="h-side-foot">
               <button
                 type="button"
@@ -452,6 +459,7 @@ export const HSide = ({ cities }: Props) => {
                 Sign in
               </button>
             </div>
+            */
           ) : (
             <div
               className="h-side-foot"

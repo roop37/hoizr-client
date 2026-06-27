@@ -294,7 +294,7 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
                 onClick={() => setSelectedDayId(day.dayId)}
                 className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
                   active
-                    ? "border-accent bg-accent text-cream"
+                    ? "border-[#c5ff3d] bg-[#c5ff3d] text-[#0a0a0e]"
                     : "border-white/15 bg-white/5 text-white/70 hover:text-white"
                 }`}
               >
@@ -507,7 +507,7 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
           type="button"
           disabled={loading || totalTickets <= 0}
           onClick={proceed}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-50"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
         >
           {loading ? (
             <Loader2 size={16} className="animate-spin" />

@@ -626,26 +626,11 @@ export const CheckoutClient = () => {
       </p>
 
       <div className="mt-6 space-y-4">
-        {/* When the customer is already signed in, show a compact read-only
-            identity strip — no need to show the full editable form since
-            all required fields are already populated from their profile. */}
-        {profile ? (
-          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="font-semibold text-white">
-                  {[profile.firstName, profile.lastName].filter(Boolean).join(" ") || "You"}
-                </div>
-                <div className="mt-0.5 text-xs text-white/55">
-                  {profile.email ?? profile.phone ?? ""}
-                </div>
-              </div>
-              <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-200 ring-1 ring-inset ring-emerald-400/40">
-                Ready
-              </span>
-            </div>
-          </div>
-        ) : (
+        {/* When the customer is already signed in, their name/email/phone are
+            taken straight from their profile — there's nothing to confirm, so
+            we render no identity strip at all. Only guests (no profile) see the
+            editable details form below. */}
+        {profile ? null : (
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -889,7 +874,7 @@ export const CheckoutClient = () => {
                   type="button"
                   onClick={() => applyPromo()}
                   disabled={couponBusy || paying || !promoInput.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0F8842] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0d7639] disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#c5ff3d] px-4 py-2 text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
                 >
                   {couponBusy ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -919,22 +904,39 @@ export const CheckoutClient = () => {
         {!isFreeCart ? (() => {
           const applied = appliedCoupon?.ok ? appliedCoupon : null;
           const pr = applied?.pricing ?? cart.pricing;
-          const subtotal = applied ? applied.ticketsSubtotal : cart.pricing.grossAmount;
+          // `pr.grossAmount` is the taxable base AFTER any discount (incl.
+          // add-ons). The full item total BEFORE discount is therefore
+          // grossAmount + discountAmount — show that as the top line, then the
+          // discount, then the discounted subtotal. This reconciles cleanly:
+          // gross − discount + fees = total payable.
+          const discount = applied ? pr.discountAmount ?? 0 : 0;
+          const grossSubtotal = pr.grossAmount + discount;
+          const netSubtotal = pr.grossAmount;
           return (
             <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
               <div className="flex justify-between py-1">
                 <span className="text-white/55">Subtotal</span>
-                <span className="font-medium text-white">{rupee(subtotal)}</span>
+                <span className="font-medium text-white">
+                  {rupee(grossSubtotal)}
+                </span>
               </div>
               {applied ? (
-                <div className="flex justify-between py-1">
-                  <span className="text-[#9CCB3B]">
-                    Discount ({applied.code})
-                  </span>
-                  <span className="font-medium text-[#9CCB3B]">
-                    −{rupee(applied.discountAmount)}
-                  </span>
-                </div>
+                <>
+                  <div className="flex justify-between py-1">
+                    <span className="text-[#9CCB3B]">
+                      Discount ({applied.code})
+                    </span>
+                    <span className="font-medium text-[#9CCB3B]">
+                      −{rupee(discount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-white/55">Subtotal after discount</span>
+                    <span className="font-medium text-white">
+                      {rupee(netSubtotal)}
+                    </span>
+                  </div>
+                </>
               ) : null}
               {pr.taxes > 0 ? (
                 <div className="flex justify-between py-1">

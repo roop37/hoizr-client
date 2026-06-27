@@ -302,11 +302,17 @@ const AuthPanelInner = ({
           <button
             type="button"
             onClick={() => setStep("phone")}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e]"
           >
             <Phone size={16} /> Continue with phone OTP
           </button>
 
+          {/* ── GOOGLE SIGN-IN SWITCH (hidden) ────────────────────────────
+              Google sign-in isn't working in this environment, so the whole
+              affordance (button + "not configured" fallback) is hidden for
+              now — leaving phone OTP as the only choice. Re-enable by
+              uncommenting the block below. */}
+          {/*
           {GOOGLE_CLIENT_ID ? (
             <>
               <div className="flex items-center gap-3 py-1">
@@ -348,6 +354,7 @@ const AuthPanelInner = ({
               OTP below.
             </div>
           )}
+          */}
 
           {/* Phone OTP creates a new customer account on first verify,
               so this isn't a separate auth path — just a discoverability
@@ -407,7 +414,7 @@ const AuthPanelInner = ({
             type="button"
             disabled={loading}
             onClick={requestPhoneOtp}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -481,7 +488,7 @@ const AuthPanelInner = ({
             type="button"
             disabled={loading}
             onClick={verifyPhoneOtp}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -534,7 +541,7 @@ const AuthPanelInner = ({
             type="button"
             disabled={loading}
             onClick={requestPendingOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -596,7 +603,7 @@ const AuthPanelInner = ({
           type="button"
           disabled={loading}
           onClick={verifyPendingOtp}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-black transition hover:bg-accent/90 disabled:opacity-60"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
         >
           {loading ? (
             <Loader2 size={16} className="animate-spin" />
