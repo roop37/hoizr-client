@@ -53,50 +53,76 @@ export const EventPromoCodes = ({ eventId }: { eventId: string }) => {
   if (coupons.length === 0) return null;
 
   return (
-    <div className="h-glass-card mt-4 p-4 sm:p-5">
-      <div className="mb-3 flex items-center gap-2 text-white/85">
-        <TicketPercent size={16} className="text-[#c5ff3d]" />
-        <span className="text-sm font-semibold">Offers & promo codes</span>
+    <div className="mt-4">
+      <div className="mb-2.5 flex items-center gap-2 text-white/70">
+        <TicketPercent size={15} className="text-[#c5ff3d]" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+          Offers &amp; promo codes
+        </span>
       </div>
-      {/* Cards size to their content and wrap — a single coupon stays compact
-          instead of stretching the full width. */}
-      <div className="flex flex-wrap gap-2.5">
+      {/* On-brand coupon "ticket stubs": the discount is the hero, the code sits
+          in a tear-off stub on the right, Copy is the accent-filled CTA. Cards
+          wrap; a single coupon stays compact. */}
+      <div className="flex flex-wrap gap-3">
         {coupons.map((c) => (
           <div
             key={c.code}
-            className="flex min-w-[240px] max-w-[340px] flex-1 items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.04] px-4 py-3 sm:flex-none"
+            className="relative flex min-w-[260px] max-w-[380px] flex-1 items-stretch overflow-hidden rounded-2xl border border-[#c5ff3d]/25 bg-[#c5ff3d]/[0.06] sm:flex-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(120% 140% at 0% 0%, rgba(197,255,61,0.12), transparent 55%)",
+            }}
           >
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm font-bold tracking-wider text-white">
-                  {c.code}
-                </span>
-                <span className="rounded-full bg-[#c5ff3d]/15 px-2 py-0.5 text-[11px] font-semibold text-[#c5ff3d]">
-                  {c.discountLabel}
-                </span>
+            {/* Left: the offer */}
+            <div className="min-w-0 flex-1 p-4">
+              <div className="text-[15px] font-bold leading-tight text-[#c5ff3d]">
+                {c.discountLabel}
               </div>
-              <div className="mt-0.5 truncate text-xs text-white/55">
+              <div className="mt-1 line-clamp-2 text-xs leading-snug text-white/65">
                 {c.description ||
                   (c.minCartValue
-                    ? `On orders over ₹${c.minCartValue}`
+                    ? `On orders over ₹${c.minCartValue.toLocaleString("en-IN")}`
                     : "Apply at checkout")}
               </div>
+              {c.minCartValue && c.description ? (
+                <div className="mt-1.5 inline-flex rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-white/55">
+                  Min ₹{c.minCartValue.toLocaleString("en-IN")}
+                </div>
+              ) : null}
             </div>
-            <button
-              type="button"
-              onClick={() => copy(c.code)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/[0.1]"
-            >
-              {copied === c.code ? (
-                <>
-                  <Check size={13} className="text-[#c5ff3d]" /> Copied
-                </>
-              ) : (
-                <>
-                  <Copy size={13} /> Copy
-                </>
-              )}
-            </button>
+
+            {/* Perforated tear line */}
+            <div
+              className="my-2 w-0 border-l border-dashed border-[#c5ff3d]/30"
+              aria-hidden
+            />
+
+            {/* Right: the code + copy CTA */}
+            <div className="flex shrink-0 flex-col items-center justify-center gap-2 px-4 py-3">
+              <span className="font-mono text-sm font-bold tracking-[0.12em] text-white">
+                {c.code}
+              </span>
+              <button
+                type="button"
+                onClick={() => copy(c.code)}
+                aria-label={`Copy promo code ${c.code}`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  copied === c.code
+                    ? "bg-[#c5ff3d]/20 text-[#c5ff3d]"
+                    : "bg-[#c5ff3d] text-[#0a0a0e] hover:bg-[#d9ff6e]"
+                }`}
+              >
+                {copied === c.code ? (
+                  <>
+                    <Check size={13} /> Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy size={13} /> Copy
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         ))}
       </div>

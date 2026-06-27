@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUIStore } from "@/store/uiStore";
 import { HICONS } from "./icons";
 
 /**
@@ -11,8 +12,9 @@ import { HICONS } from "./icons";
  *
  * Search is intentionally omitted while the catalogue is small.
  * "Local" points at the events discovery surface for now (the dedicated
- * Hoizr Local feature is still coming soon); Profile replaces the old
- * Library tab so a fan reaches their account/tickets from the bottom bar.
+ * Hoizr Local feature is still coming soon). "Profile" opens a bottom sheet
+ * mirroring the sidebar menu (account, orders, artists, venues, organizer CTA)
+ * rather than navigating directly.
  */
 
 type Tab = {
@@ -25,7 +27,6 @@ const TABS: Tab[] = [
   { href: "/", label: "Home", icon: HICONS.home },
   { href: "/events", label: "Local", icon: HICONS.grid },
   { href: "/live", label: "Live", icon: HICONS.radio },
-  { href: "/me/profile", label: "Profile", icon: HICONS.user },
 ];
 
 const isActive = (pathname: string | null, href: string) => {
@@ -36,6 +37,8 @@ const isActive = (pathname: string | null, href: string) => {
 
 export const HMobileTabs = () => {
   const pathname = usePathname();
+  const openProfileSheet = useUIStore((s) => s.openProfileSheet);
+  const profileSheetOpen = useUIStore((s) => s.profileSheetOpen);
 
   return (
     <nav className="h-mobile-tabs" aria-label="Primary">
@@ -54,6 +57,20 @@ export const HMobileTabs = () => {
             </li>
           );
         })}
+        <li>
+          <button
+            type="button"
+            onClick={openProfileSheet}
+            aria-haspopup="dialog"
+            aria-expanded={profileSheetOpen}
+            className={`h-mobile-tabs__btn${
+              profileSheetOpen || isActive(pathname, "/me") ? " is-active" : ""
+            }`}
+          >
+            <span className="h-mobile-tabs__icon">{HICONS.user}</span>
+            <span className="h-mobile-tabs__label">Profile</span>
+          </button>
+        </li>
       </ul>
     </nav>
   );

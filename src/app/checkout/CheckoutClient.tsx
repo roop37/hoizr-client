@@ -27,6 +27,7 @@ import {
   CONFIRM_PAYMENT_MUTATION,
   CREATE_ORDER_MUTATION,
   GET_CART_QUERY,
+  MY_ORDER_BY_ID_QUERY,
   PREVIEW_COUPON_QUERY,
   REUSE_PENDING_ORDER_MUTATION,
   SET_CART_MUTATION,
@@ -472,6 +473,34 @@ export const CheckoutClient = () => {
             },
           },
         });
+        // A failed attempt (e.g. UPI declined) normally leaves the Razorpay
+        // sheet open to retry — that's correct. BUT if an EARLIER attempt
+        // actually succeeded (the order is already paid; the webhook confirmed
+        // it) Razorpay rejects the retry with "order already completed", which
+        // would otherwise strand the buyer on a scary error for a paid order.
+        // On any failure, check the order: if it's already paid, hand off to
+        // the confirmation instead of letting them keep retrying.
+        rp.on("payment.failed", async () => {
+          try {
+            const data = await gqlRequest<{
+              getMyOrderById: CustomerOrderView | null;
+            }>(MY_ORDER_BY_ID_QUERY, { orderId: order._id });
+            const st = data.getMyOrderById?.orderStatus;
+            if (st === "PAYMENT_SUCCESS" || st === "CHECKED_IN") {
+              clearActiveCart();
+              try {
+                rp.close();
+              } catch {
+                /* modal may already be closing */
+              }
+              router.push(`/orders/${order._id}?just_paid=1`);
+              resolve();
+            }
+            // Otherwise: genuine failure — leave the sheet open for a retry.
+          } catch {
+            // Status check failed — don't interfere with Razorpay's retry UI.
+          }
+        });
         // Funnel: payment sheet is opening — a payment-stage step that
         // route-based pageView tracking can't see. Fire-and-forget.
         track("paymentStarted", {
@@ -576,6 +605,16 @@ export const CheckoutClient = () => {
   // box entirely — there's no money to discount or itemise — and the CTA reads
   // "Get in" instead of "Pay ₹0".
   const isFreeCart = (cart.pricing?.totalAmount ?? 0) <= 0;
+
+  // The amount actually charged: when a valid promo is applied, the server's
+  // recomputed (discounted) total — the SAME value the breakdown shows as
+  // "Total payable". The Pay button must use this, not cart.pricing.totalAmount,
+  // which is the PRE-discount total (the button used to show e.g. ₹5,188 while
+  // the breakdown said ₹2,329 after applying a promo).
+  const payableTotal =
+    (appliedCoupon?.ok ? appliedCoupon.pricing?.totalAmount : null) ??
+    cart.pricing?.totalAmount ??
+    0;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 text-white md:py-12">
@@ -705,8 +744,8 @@ export const CheckoutClient = () => {
                 key={line.ticketId}
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
-                <div>
-                  <div className="font-semibold text-white">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-white">
                     {line.ticketName}
                   </div>
                   <div className="text-xs text-white/55">
@@ -761,8 +800,8 @@ export const CheckoutClient = () => {
                 key={line.extraId}
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
-                <div>
-                  <div className="font-semibold text-white">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-white">
                     {line.extraName}
                   </div>
                   <div className="text-xs text-white/55">
@@ -954,7 +993,7 @@ export const CheckoutClient = () => {
               Get in
             </>
           ) : (
-            `Pay ${rupee(cart.pricing.totalAmount)}`
+            `Pay ${rupee(payableTotal)}`
           )}
         </button>
         <p className="text-center text-xs text-white/55">

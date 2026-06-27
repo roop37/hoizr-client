@@ -172,11 +172,9 @@ export default async function LivePage() {
           </Link>
         </div>
       ) : (
-        <div className="h-live-grid">
-          {liveToday.map((e) => (
-            <EventCard key={e.id} event={e} />
-          ))}
-        </div>
+        // Horizontal auto-scrolling row (very slow; pauses on hover/touch,
+        // reduced-motion safe). Small lists stay a static horizontal row.
+        <MarqueeRow title="Live now" events={liveToday} />
       )}
 
       {genreRows.map((row) => (

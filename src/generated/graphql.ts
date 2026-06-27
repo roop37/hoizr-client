@@ -85,14 +85,14 @@ export type Artist = {
   coverImage?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   email?: Maybe<Scalars['String']['output']>;
-  firstName: Scalars['String']['output'];
+  firstName?: Maybe<Scalars['String']['output']>;
   genres?: Maybe<Array<Genre>>;
   instagramLink?: Maybe<Scalars['String']['output']>;
   isAdminVerified: Scalars['Boolean']['output'];
   isDeleted: Scalars['Boolean']['output'];
   isTemp: Scalars['Boolean']['output'];
   lastLoginAt?: Maybe<Scalars['DateTimeISO']['output']>;
-  lastName: Scalars['String']['output'];
+  lastName?: Maybe<Scalars['String']['output']>;
   merchStoreLink?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
   profilePhoto?: Maybe<Scalars['String']['output']>;
@@ -325,6 +325,7 @@ export type CreateOrderInput = {
   couponCode?: InputMaybe<Scalars['String']['input']>;
   eventId: Scalars['String']['input'];
   guestInfo?: InputMaybe<GuestInfoInput>;
+  offlineOrderId?: InputMaybe<Scalars['String']['input']>;
   pageQuery?: InputMaybe<Scalars['String']['input']>;
   promoterId?: InputMaybe<Scalars['String']['input']>;
   referralCode?: InputMaybe<Scalars['String']['input']>;
@@ -620,6 +621,7 @@ export type Event = {
   lookingForArtist?: Maybe<Scalars['Boolean']['output']>;
   markSeparateDays?: Maybe<Scalars['Boolean']['output']>;
   maxCapacity?: Maybe<Scalars['Float']['output']>;
+  multiCity?: Maybe<Scalars['Boolean']['output']>;
   offerDescription?: Maybe<Scalars['String']['output']>;
   paymentMethods?: Maybe<Array<Scalars['String']['output']>>;
   payoutProfile?: Maybe<Scalars['String']['output']>;
@@ -703,6 +705,7 @@ export type EventDay = {
   __typename?: 'EventDay';
   dayId: Scalars['String']['output'];
   endDate: Scalars['DateTimeISO']['output'];
+  location?: Maybe<AddressInfo>;
   startDate: Scalars['DateTimeISO']['output'];
   title: Scalars['String']['output'];
 };
@@ -880,6 +883,12 @@ export enum Gender {
   PreferNotToSay = 'PREFER_NOT_TO_SAY'
 }
 
+export type GenerateInvoiceResult = {
+  __typename?: 'GenerateInvoiceResult';
+  invoice?: Maybe<CustomerOrderInvoice>;
+  status: Scalars['String']['output'];
+};
+
 export enum Genre {
   Afro = 'AFRO',
   Afrobeat = 'AFROBEAT',
@@ -961,23 +970,9 @@ export type GoogleStartPrefill = {
   picture?: Maybe<Scalars['String']['output']>;
 };
 
-export type GuestCartExtraInput = {
-  extraId: Scalars['String']['input'];
-  quantity: Scalars['Int']['input'];
-};
-
 export type GuestCartTicketInput = {
   quantity: Scalars['Int']['input'];
   ticketId: Scalars['String']['input'];
-};
-
-export type GuestCheckoutResponse = {
-  __typename?: 'GuestCheckoutResponse';
-  accountEmail?: Maybe<Scalars['String']['output']>;
-  accountFound: Scalars['Boolean']['output'];
-  checkout?: Maybe<RazorpayCheckoutPayload>;
-  loggedIn: Scalars['Boolean']['output'];
-  order: CustomerOrderView;
 };
 
 export type GuestInfo = {
@@ -993,23 +988,6 @@ export type GuestInfoInput = {
   firstName?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
   phone: Scalars['String']['input'];
-};
-
-export type GuestOrderInput = {
-  couponCode?: InputMaybe<Scalars['String']['input']>;
-  email: Scalars['String']['input'];
-  eventId: Scalars['String']['input'];
-  extras?: InputMaybe<Array<GuestCartExtraInput>>;
-  firstName: Scalars['String']['input'];
-  lastName: Scalars['String']['input'];
-  notifyMe?: InputMaybe<Scalars['Boolean']['input']>;
-  offlineOrderId?: InputMaybe<Scalars['String']['input']>;
-  pageQuery?: InputMaybe<Scalars['String']['input']>;
-  phone: Scalars['String']['input'];
-  promoterId?: InputMaybe<Scalars['String']['input']>;
-  referralCode?: InputMaybe<Scalars['String']['input']>;
-  tickets: Array<GuestCartTicketInput>;
-  utm?: InputMaybe<UtmInput>;
 };
 
 export enum GuestlistEntryStatus {
@@ -1116,7 +1094,6 @@ export type Mutation = {
   confirmOrderPayment: CustomerOrderView;
   connectInstagram: CustomerInstagram;
   createArtistMerchOrder: CreateArtistMerchOrderResult;
-  createGuestOrder: GuestCheckoutResponse;
   createOrder: CreateOrderResponse;
   customerAppleStart: CustomerGoogleStartResponse;
   customerGoogleStart: CustomerGoogleStartResponse;
@@ -1128,6 +1105,7 @@ export type Mutation = {
   customerVerifyOtp: CustomerAuthResponse;
   disconnectInstagram: Scalars['Boolean']['output'];
   followArtist: ArtistFollow;
+  generateMyOrderInvoice: GenerateInvoiceResult;
   joinGuestlist: GuestlistTicketView;
   registerFcmToken: Scalars['Boolean']['output'];
   requestOrderRefund: CustomerOrderView;
@@ -1173,11 +1151,6 @@ export type MutationCreateArtistMerchOrderArgs = {
 };
 
 
-export type MutationCreateGuestOrderArgs = {
-  input: GuestOrderInput;
-};
-
-
 export type MutationCreateOrderArgs = {
   input: CreateOrderInput;
 };
@@ -1215,6 +1188,11 @@ export type MutationCustomerVerifyOtpArgs = {
 
 export type MutationFollowArtistArgs = {
   artistId: Scalars['String']['input'];
+};
+
+
+export type MutationGenerateMyOrderInvoiceArgs = {
+  orderId: Scalars['String']['input'];
 };
 
 
@@ -2055,7 +2033,7 @@ export type MyArtistMerchOrdersQuery = { __typename?: 'Query', myArtistMerchOrde
 export type MyFollowedArtistsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyFollowedArtistsQuery = { __typename?: 'Query', myFollowedArtists: Array<{ __typename?: 'Artist', _id: string, firstName: string, lastName: string, slug?: string | null, profilePhoto?: string | null, tagline?: string | null, city?: string | null, state?: string | null, genres?: Array<Genre> | null, totalFollowersCount: number }> };
+export type MyFollowedArtistsQuery = { __typename?: 'Query', myFollowedArtists: Array<{ __typename?: 'Artist', _id: string, firstName?: string | null, lastName?: string | null, slug?: string | null, profilePhoto?: string | null, tagline?: string | null, city?: string | null, state?: string | null, genres?: Array<Genre> | null, totalFollowersCount: number }> };
 
 export type MyProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
