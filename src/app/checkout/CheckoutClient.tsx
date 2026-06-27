@@ -27,6 +27,7 @@ import {
   CONFIRM_PAYMENT_MUTATION,
   CREATE_ORDER_MUTATION,
   GET_CART_QUERY,
+  MY_ORDER_BY_ID_QUERY,
   PREVIEW_COUPON_QUERY,
   REUSE_PENDING_ORDER_MUTATION,
   SET_CART_MUTATION,
@@ -471,6 +472,34 @@ export const CheckoutClient = () => {
               reject(new Error("Payment cancelled"));
             },
           },
+        });
+        // A failed attempt (e.g. UPI declined) normally leaves the Razorpay
+        // sheet open to retry — that's correct. BUT if an EARLIER attempt
+        // actually succeeded (the order is already paid; the webhook confirmed
+        // it) Razorpay rejects the retry with "order already completed", which
+        // would otherwise strand the buyer on a scary error for a paid order.
+        // On any failure, check the order: if it's already paid, hand off to
+        // the confirmation instead of letting them keep retrying.
+        rp.on("payment.failed", async () => {
+          try {
+            const data = await gqlRequest<{
+              getMyOrderById: CustomerOrderView | null;
+            }>(MY_ORDER_BY_ID_QUERY, { orderId: order._id });
+            const st = data.getMyOrderById?.orderStatus;
+            if (st === "PAYMENT_SUCCESS" || st === "CHECKED_IN") {
+              clearActiveCart();
+              try {
+                rp.close();
+              } catch {
+                /* modal may already be closing */
+              }
+              router.push(`/orders/${order._id}?just_paid=1`);
+              resolve();
+            }
+            // Otherwise: genuine failure — leave the sheet open for a retry.
+          } catch {
+            // Status check failed — don't interfere with Razorpay's retry UI.
+          }
         });
         // Funnel: payment sheet is opening — a payment-stage step that
         // route-based pageView tracking can't see. Fire-and-forget.
