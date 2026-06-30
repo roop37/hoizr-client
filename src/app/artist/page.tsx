@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArtistFilters } from "./ArtistFilters";
-import { TrackView } from "@/components/analytics/TrackView";
+import { getArtistDisplayName } from "@/lib/artist-name";
 import { PUBLIC_ARTISTS_QUERY } from "@/lib/artist-queries";
 import { gqlRequest } from "@/lib/graphql";
 import { gqlMainRequest } from "@/lib/graphql-main";
@@ -83,17 +83,6 @@ export default async function ArtistsPage({
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6">
-      <TrackView
-        event="artistListView"
-        payload={{
-          metadata: {
-            totalResults: artists.total,
-            page: artists.page,
-            city: searchParams.city,
-            query: searchParams.q,
-          },
-        }}
-      />
       <header className="mb-6">
         <h1 className="text-3xl font-semibold md:text-4xl">Discover artists</h1>
         <p className="mt-1 text-sm text-muted">
@@ -111,10 +100,7 @@ export default async function ArtistsPage({
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {artists.artists.map((artist) => {
-              const displayName = [artist.firstName, artist.lastName]
-                .filter(Boolean)
-                .join(" ")
-                .trim();
+              const displayName = getArtistDisplayName(artist);
               const avatarInitial = displayName.charAt(0).toUpperCase() || "A";
               const location = [artist.city, artist.state]
                 .filter(Boolean)
@@ -125,7 +111,7 @@ export default async function ArtistsPage({
                 <Link
                   key={artist._id}
                   href={artistHref(artist)}
-                  className="group flex h-full flex-col rounded-3xl border border-border bg-cream p-5 transition hover:-translate-y-0.5 hover:bg-background"
+                  className="group flex h-full flex-col rounded-3xl border border-border bg-cream p-5 text-ink transition hover:-translate-y-0.5 hover:bg-background"
                 >
                   <div className="flex items-start gap-4">
                     {artist.profilePhoto ? (

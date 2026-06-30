@@ -1,3 +1,20 @@
+export type CustomerAddress = {
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  formattedAddress?: string | null;
+  /**
+   * GeoJSON-style point matching `hoizr-shared` CoordinatePoint:
+   * `coordinates` is `[lng, lat]`. Use `coordToLatLng()` to unpack.
+   */
+  coordinate?: {
+    type?: string | null;
+    coordinates?: number[] | null;
+  } | null;
+};
+
 export type CustomerProfile = {
   _id: string;
   firstName: string;
@@ -10,6 +27,18 @@ export type CustomerProfile = {
   googleConnected?: boolean;
   appleConnected?: boolean;
   signupProvider?: "PHONE" | "GOOGLE" | "APPLE";
+  // Pulled fresh on /me/profile so the form can edit them. These are
+  // optional because the legacy auth-store hydration via the typed
+  // SDK (sdk.MyProfile) still uses the older selection set; the page
+  // re-fetches via gqlRequest with the extended query to populate.
+  birthdate?: string | null;
+  gender?: "Male" | "Female" | "Other" | "Prefer not to say" | null;
+  emailMarketingOptIn?: boolean;
+  smsMarketingOptIn?: boolean;
+  whatsappMarketingOptIn?: boolean;
+  pushNotificationMarketingOptIn?: boolean;
+  /** Optional saved address powering distance badges + nearby sort. */
+  address?: CustomerAddress | null;
 };
 
 export type GoogleStartOutcome =
@@ -31,6 +60,7 @@ export type CustomerGoogleStartResponse = {
   customerId?: string;
   accessToken?: string;
   refreshToken?: string;
+  uniqueId?: string;
   pendingToken?: string;
   prefill?: GoogleStartPrefill;
 };
@@ -40,6 +70,7 @@ export type CustomerPendingSignupVerifyResponse = {
   customerId: string;
   accessToken: string;
   refreshToken: string;
+  uniqueId: string;
   primaryEmailMasked?: string;
   secondaryEmail?: string;
 };

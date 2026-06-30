@@ -5,17 +5,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#FAFAF7",
+        // Aligned with the marketing palette: warm-cream canvas,
+        // vibrant deep green primary, neon chartreuse highlight.
+        background: "#F4EFE3",
         ink: "#0A0A0A",
-        accent: "#1F62E8",
-        cream: "#FFFFFF",
-        border: "#E7E7E3",
-        muted: "#5A5A57",
+        accent: "#0F8842",     // vibrant deep green — primary
+        accentDeep: "#0B6B33", // hover state
+        cream: "#FFFFFF",      // panels stay white for contrast
+        border: "#E5DFCF",
+        muted: "#5A554A",
         dark: "#0A0A0A",
+        acid: "#D6FF3F",       // neon chartreuse for highlight pops
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-sf-pro)", "-apple-system", "system-ui", "sans-serif"],
+        display: ["var(--font-sf-pro)", "-apple-system", "system-ui", "sans-serif"],
       },
     },
   },

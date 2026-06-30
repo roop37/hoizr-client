@@ -12,7 +12,19 @@
    - SF Pro-style font stack (Inter as the cleanest fallback)
    ============================================================================= */
 
-@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700;6..96,800&family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700;6..96,800&display=swap");
+
+/* iOS Safari auto-zooms the viewport whenever a focused form control has
+   a font-size below 16px. Pin every control to 16px on small screens so
+   the page no longer jumps/zooms on input focus. This does NOT disable
+   user pinch-zoom (no maximum-scale), so accessibility is preserved. */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
 
 :root {
   --h-bg: #141316;
@@ -41,8 +53,8 @@
   --h-volt: #c5ff3d;
 
   --h-font-serif: "Bodoni Moda", "Didot", Georgia, serif;
-  --h-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
-  --h-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --h-font-display: var(--font-sf-pro), -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --h-font-body: var(--font-sf-pro), -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   --h-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
   --h-sidebar: 256px;
@@ -115,6 +127,25 @@ button {
   color: inherit;
   cursor: pointer;
   padding: 0;
+}
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+/* iOS Safari force-zooms the viewport whenever a focused form control has a
+   font-size below 16px — that's the "page zooms / jumps when I tap a field"
+   bug on phones. Many inputs use 14px (Tailwind text-sm) for density, so pin
+   every control to 16px on phone-width screens. !important is required to beat
+   the Tailwind utility class. Desktop keeps its denser sizing. The fix is the
+   font-size itself — we deliberately do NOT set user-scalable=no (it would
+   break pinch-zoom accessibility). */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 img {
   display: block;
@@ -293,7 +324,12 @@ body,
   min-width: 0;
   padding: 0;
   position: relative;
-  z-index: 1;
+  /* No `z-index` here. The previous z:1 created a stacking context that
+     trapped page-level sheets/modals (z:100–120) — they could never
+     escape to clear the floating mobile tabs / cart bar (both z:80 at
+     <body> level). Position:relative is enough to host absolutely-
+     positioned background children; DOM order keeps content above the
+     Noise layer rendered earlier in <body>. */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -526,12 +562,18 @@ body,
 
 .h-side-foot {
   /* margin-top:auto is no longer needed — the biz block above carries
-     it now and the foot follows naturally. Top padding kept tight so
-     the sign-in pill hugs the legal line above. */
-  padding: 2px 8px 4px;
+     it now and the foot follows naturally. */
+  padding: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
+  /* Opaque backing so the signed-in profile/logout cluster stays legible
+     even when the glass backdrop-filter goes stale — Safari/iOS doesn't
+     reliably repaint backdrop-filter on scroll/hover-out, which made this
+     region read as transparent over page content. */
+  background: rgba(18, 18, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
 }
 .h-side-foot .avatar {
   width: 28px;
@@ -578,41 +620,39 @@ body,
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 11px 11px 9px;
-  border-radius: 14px;
+  padding: 9px 11px 8px;
+  border-radius: 13px;
   background:
     radial-gradient(
-      120% 80% at 0% 0%,
-      rgba(197, 255, 61, 0.18),
-      transparent 55%
+      120% 140% at 100% 0%,
+      rgba(197, 255, 61, 0.10) 0%,
+      rgba(197, 255, 61, 0) 55%
     ),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.02)
-    );
-  border: 1px solid rgba(197, 255, 61, 0.22);
+    #000;
+  border: 1px solid rgba(197, 255, 61, 0.26);
   color: var(--h-ink);
   text-decoration: none;
   overflow: hidden;
   transition:
     transform 200ms ease,
-    background 200ms ease,
     border-color 200ms ease,
     box-shadow 200ms ease;
 }
 .h-side-biz__card::after {
+  /* Thin accent sweep along the top edge — gives the compact card a
+     bit of glint so it reads as a punchy CTA, not a flat block. */
   content: "";
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    140% 90% at 100% 100%,
-    rgba(197, 255, 61, 0.18),
-    transparent 60%
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(197, 255, 61, 0.7),
+    transparent
   );
-  opacity: 0;
-  transition: opacity 220ms ease;
+  opacity: 0.5;
+  transition: opacity 200ms ease;
 }
 .h-side-biz__card:hover {
   border-color: rgba(197, 255, 61, 0.55);
@@ -634,13 +674,13 @@ body,
   z-index: 1;
 }
 .h-side-biz__hed {
-  margin-top: 4px;
+  margin-top: 3px;
   font-family: var(--h-font-display);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
-  letter-spacing: -0.018em;
+  letter-spacing: -0.02em;
   color: var(--h-ink);
-  line-height: 1.18;
+  line-height: 1.16;
   position: relative;
   z-index: 1;
 }
@@ -649,17 +689,8 @@ body,
   text-shadow: 0 0 12px rgba(197, 255, 61, 0.5);
   font-weight: 800;
 }
-.h-side-biz__sub {
-  margin-top: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--h-ink-2);
-  letter-spacing: 0.005em;
-  position: relative;
-  z-index: 1;
-}
 .h-side-biz__cta {
-  margin-top: 7px;
+  margin-top: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -868,23 +899,21 @@ body,
   cursor: pointer;
 }
 
-/* Rail section gets a `.h-bleed` wrapper class applied at render time
-   (set in templates that need scroll-under-sidebar). The rail itself
-   extends viewport edge-to-edge: negative margin on both sides cancels
-   .h-page's indent + .h-content's right pad, then we re-apply matching
-   padding to keep the first/last tile readable. The result: cards
-   scroll UNDER the sidebar on the left, off the screen on the right. */
-.h-rail-sec.h-bleed .h-rail-head {
-  /* head text stays in the readable column */
-  padding-left: 0;
-  padding-right: 0;
-}
 .h-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(280px, 1fr);
+  /* Cap the upper bound so a rail with only one or two cards doesn't
+     blow up to the viewport width (each track was previously 1fr of
+     the readable column). 260px is a comfortable poster width at the
+     3:4 aspect baked into .h-tile-flyer. */
+  grid-auto-columns: 260px;
+  justify-content: start;
   gap: 20px;
   overflow-x: auto;
+  /* iOS momentum scroll for the home rails so the touch-drag feels
+     fluid like Apple Music / Spotify rather than the snappy default. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   padding-bottom: 8px;
   scroll-snap-type: x mandatory;
   /* Bleed the scroll container edge-to-edge so cards visually pass UNDER
@@ -903,10 +932,15 @@ body,
   scroll-snap-align: start;
 }
 .h-rail-5 {
-  grid-auto-columns: minmax(200px, 1fr);
+  grid-auto-columns: 220px;
 }
 .h-rail-6 {
-  grid-auto-columns: minmax(170px, 1fr);
+  grid-auto-columns: 180px;
+}
+@media (max-width: 640px) {
+  .h-rail { grid-auto-columns: 200px; }
+  .h-rail-5 { grid-auto-columns: 180px; }
+  .h-rail-6 { grid-auto-columns: 160px; }
 }
 
 /* =============================================================================
@@ -1112,9 +1146,13 @@ body,
 .h-genrecol__title {
   font-family: var(--h-font-display);
   font-weight: 800;
-  font-size: clamp(28px, 2.8vw, 40px);
-  letter-spacing: -0.035em;
-  line-height: 0.96;
+  /* Was clamp(28, 2.8vw, 40px) — on wide desktop the upper bound made
+     short genre names ("Comedy", "Afro") look like billboards and
+     overlapped the rail's clean rhythm. Cap at 26 so the card reads
+     as a chip-with-context, not a hero card. */
+  font-size: clamp(20px, 2vw, 26px);
+  letter-spacing: -0.02em;
+  line-height: 1;
   text-transform: capitalize;
   word-break: break-word;
 }
@@ -1279,199 +1317,254 @@ body,
 /* =============================================================================
    Event tile — District-style tall poster with a glass info strip.
    ============================================================================= */
+/* =============================================================================
+   Event tile (canonical event card)
+   ─────────────────────────────────────────────────────────────────────────────
+   District-style card: the entire flyer renders at its natural aspect
+   ratio (no crop, no zoom, no overlay) on top, then a translucent
+   glass footer with the same Apple-fluid feel as `.h-cartbar` carries
+   date / title / venue / price. Card height varies with the flyer's
+   intrinsic aspect — `align-self: start` on the grid item keeps rows
+   from stretching shorter cards.
+   ============================================================================= */
 .h-tile {
-  display: block;
-  text-align: left;
-  cursor: pointer;
-  padding: 0;
-  background: none;
-  border: 0;
-  color: inherit;
-  width: 100%;
-  text-decoration: none;
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.h-tile:hover {
-  transform: translateY(-6px);
-}
-.h-tile .cover {
+  /* Fluid-glass aesthetic (no Three.js): deep translucent surface with
+     a diagonal sheen, a brightened inner edge, and a soft refraction
+     glow that scales on hover. Reads as the same family as
+     `.h-glass-card` / `.h-detail-body-card` so cards feel composed
+     rather than slapped onto the page. */
   position: relative;
-  /* 4:5 vertical poster — District proportion. Tall enough to feel
-     like a flyer, narrow enough to fit four-per-row on desktop. */
-  aspect-ratio: 4 / 5;
-  overflow: hidden;
-  border-radius: 14px;
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  background: var(--h-bg-3);
-  isolation: isolate;
-  transition: box-shadow 0.28s ease;
-}
-.h-tile:hover .cover {
-  box-shadow:
-    0 24px 48px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-}
-.h-tile .cover img {
-  position: absolute;
-  inset: 0;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  /* Stretch to the tallest card in the row (grid default) so every card in a
+     row is the same height — flyers share the 3:4 ratio, the info block below
+     flexes to fill. (Was align-self:start → ragged bottoms on 1- vs 2-line
+     titles.) */
   height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02) 55%),
+    rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(26px) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(26px) saturate(180%) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.32s ease,
+    border-color 0.32s ease;
 }
-.h-tile:hover .cover img {
-  transform: scale(1.04);
-}
-.h-tile .cover::after {
+/* Diagonal sheen that brightens on hover — fakes the "wet glass" pass
+   FluidGlass does with three/r3f, at near-zero perf cost. */
+.h-tile::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
   pointer-events: none;
-  /* Two-stop fade: top stays clean for the badge, bottom darkens hard so
-     the glass strip reads against any flyer. */
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, transparent 24%),
-    linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.78) 100%);
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, 0) 62%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  opacity: 0.55;
+  mix-blend-mode: overlay;
+  transition: opacity 0.32s ease;
+  z-index: 1;
 }
-.h-tile .cover .meta-top {
+.h-tile > * { position: relative; z-index: 2; }
+.h-tile:hover {
+  /* Subtle lift only — a small rise + a slightly brighter edge. (Was a 5px
+     jump with a heavy shadow bloom + a glare sweep, which read as "massive".) */
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+.h-tile:hover::before { opacity: 0.62; }
+.h-tile-flyer {
+  display: block;
+  width: 100%;
+  line-height: 0;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+.h-tile-flyer img,
+.h-tile-flyer video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* One-direction left→right glare sweep on hover — mirrors business-client's
+   "Get Started" shine. A single diagonal band parked off the left edge slides
+   across once per hover (no loop), then resets when the cursor leaves. */
+.h-tile-flyer::after {
+  content: "";
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  inset: 0;
+  pointer-events: none;
   z-index: 3;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 35%,
+    rgba(255, 255, 255, 0.38) 50%,
+    rgba(255, 255, 255, 0) 65%
+  );
+  transform: translateX(-120%);
+  opacity: 0;
 }
-.h-tile .cover .badge {
-  font-family: var(--h-font-display);
-  font-size: 9.5px;
-  letter-spacing: 0.16em;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  color: var(--h-volt);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  white-space: nowrap;
-  text-transform: uppercase;
+/* Glare sweep intentionally disabled — the bright band sliding across the
+   flyer was the bulk of the "massive" hover. The ::after + keyframes are kept
+   dormant in case a subtler treatment is wanted later. */
+.h-tile:hover .h-tile-flyer::after {
+  animation: none;
 }
-.h-tile .cover .fav {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #fff;
+@keyframes h-tile-glare {
+  0% { transform: translateX(-120%); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .h-tile:hover .h-tile-flyer::after { animation: none; }
+}
+/* Proximity chip — only rendered when the viewer has a saved address
+   with a coordinate AND the event is in the same city. Sits in the
+   top-left of the flyer so it doesn't fight the trending/coming-soon
+   badge that lives top-right elsewhere. */
+.h-tile-distance {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: color 0.15s, background 0.15s, transform 0.15s;
-}
-.h-tile .cover .fav:hover {
+  gap: 4px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 999px;
+  background: rgba(8, 8, 12, 0.62);
   color: var(--h-accent);
-  background: rgba(0, 0, 0, 0.72);
-  transform: scale(1.06);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  border: 1px solid rgba(197, 255, 61, 0.32);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.h-tile-flyer-fallback {
+  width: 100%;
+  height: 100%;
+}
+.h-tile-info {
+  /* Brighter, gradient-tinged glass footer — the section the user
+     specifically called out for not feeling like the rest of the fluid
+     glass language. Subtle inner highlight at the top reads as a wet
+     refraction edge against the flyer image above it. */
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Fill the stretched card so the price sits at a consistent bottom edge
+     across the row. */
+  flex: 1 1 auto;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025) 60%),
+    rgba(20, 20, 26, 0.42);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+}
+.h-tile-date {
+  font-family: var(--h-font-display);
+  color: var(--h-accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.h-tile-title {
+  font-family: var(--h-font-display);
+  color: var(--h-ink);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  margin: 4px 0 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Reserve two lines so a 1-line title doesn't pull the venue/price up and
+     misalign them against neighbouring 2-line cards. */
+  min-height: calc(1.22em * 2);
+}
+.h-tile-venue {
+  color: var(--h-ink-2);
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.h-tile-price {
+  margin: 6px 0 0;
+  color: var(--h-ink);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Glass strip — pinned to the bottom of the poster with a real
-   backdrop-filter. Title + date on the left, price chip on the right. */
-.h-tile .cover .glass-strip {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  z-index: 3;
-  padding: 11px 12px 12px;
-  border-radius: 12px;
-  background: rgba(10, 10, 14, 0.42);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.28);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.h-tile .cover .glass-strip .row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-}
-.h-tile .cover .glass-strip .title-block {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  flex: 1;
-}
-.h-tile .cover .glass-strip .date-tag {
-  font-family: var(--h-font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--h-volt);
-}
-.h-tile .cover .glass-strip .title {
-  font-family: var(--h-font-display);
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.2;
-  letter-spacing: -0.005em;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.h-tile .cover .glass-strip .price {
-  font-family: var(--h-font-display);
-  font-weight: 700;
-  font-size: 12.5px;
-  color: var(--h-bg);
-  background: var(--h-volt);
-  padding: 4px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  letter-spacing: -0.005em;
-}
-.h-tile .cover .glass-strip .venue {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.78);
-  min-width: 0;
-}
-.h-tile .cover .glass-strip .venue-ic {
-  flex-shrink: 0;
-  display: inline-flex;
-  color: rgba(255, 255, 255, 0.6);
-}
-.h-tile .cover .glass-strip .venue-ic svg {
-  width: 12px;
-  height: 12px;
-}
-.h-tile .cover .glass-strip .venue-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Compact card variant for small phones — the previous 17px title /
+   12.5px date / 14.5px price triple wrapped each into a 2nd line when
+   the grid dropped to 2 columns, producing the uneven "tall" cards. */
+@media (max-width: 640px) {
+  .h-tile {
+    border-radius: 16px;
+  }
+  .h-tile-info {
+    padding: 10px 12px 12px;
+    gap: 2px;
+  }
+  .h-tile-date {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .h-tile-title {
+    font-size: 14px;
+    line-height: 1.18;
+    margin: 2px 0 0;
+    -webkit-line-clamp: 2;
+  }
+  .h-tile-venue {
+    font-size: 11.5px;
+  }
+  .h-tile-price {
+    font-size: 12.5px;
+    margin-top: 4px;
+  }
 }
 
 /* =============================================================================
@@ -1720,6 +1813,10 @@ body,
   pointer-events: auto;
   margin: 0 auto;
   width: min(760px, 100%);
+  background: rgba(2, 2, 5, 0.78);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .h-cartbar {
   width: 100%;
@@ -1866,6 +1963,473 @@ body,
   margin: 0 4px;
 }
 
+/* /events page filter UX — calm toolbar + bottom-sheet for everything else.
+   Search + Filters button + Sort live on the toolbar; the heavy chip
+   rows hide inside a bottom sheet that slides up on mobile and lands
+   centred on desktop. Active filters surface as removable pills so
+   users see what's on without opening the sheet. */
+.h-evt-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 18px 0 12px;
+  flex-wrap: wrap;
+}
+
+/* Mobile: pin the search + filters + sort row at the top of the
+   viewport, just under the sticky `.h-mobile-topbar` (≈52px). The
+   page-head ("Find tonight, or any night.") scrolls behind it; the
+   grid scrolls beneath. Bleeds the toolbar to the viewport edges so
+   the glass strip reads as one continuous top chrome. */
+@media (max-width: 1100px) {
+  .h-evt-toolbar {
+    position: sticky;
+    top: calc(52px + env(safe-area-inset-top, 0px));
+    z-index: 55;
+    margin: 0 calc(-1 * var(--h-content-pad)) 12px;
+    padding: 10px var(--h-content-pad);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
+      rgba(10, 10, 14, 0.62);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  @supports not (backdrop-filter: blur(10px)) {
+    .h-evt-toolbar {
+      background: rgba(10, 10, 14, 0.9);
+    }
+  }
+  /* Active-filter pills row sits right under the sticky toolbar — keep
+     it normal flow but tighten the top margin so the pills don't feel
+     orphaned from the bar. */
+  .h-evt-pills {
+    margin-top: 4px;
+  }
+}
+.h-evt-search {
+  flex: 1 1 280px;
+  min-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--h-line);
+  color: var(--h-ink-3);
+  transition: border-color 0.15s, background 0.15s;
+}
+.h-evt-search:focus-within {
+  border-color: var(--h-ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+.h-evt-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--h-ink);
+  font-size: 14px;
+  font-family: inherit;
+}
+.h-evt-search input::placeholder {
+  color: var(--h-ink-3);
+}
+.h-evt-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--h-line);
+  color: var(--h-ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.h-evt-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--h-line-2);
+}
+.h-evt-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: var(--h-accent-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.h-evt-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--h-line);
+}
+.h-evt-sort-label {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--h-ink-3);
+  text-transform: uppercase;
+}
+.h-evt-sort select {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--h-ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+}
+.h-evt-sort select option {
+  background: var(--h-bg);
+  color: var(--h-ink);
+}
+
+/* Active-filter pills — only render when any filter is set. Tap to clear. */
+.h-evt-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.h-evt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 999px;
+  background: rgba(197, 255, 61, 0.12);
+  border: 1px solid rgba(197, 255, 61, 0.4);
+  color: var(--h-ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.h-evt-pill:hover {
+  background: rgba(197, 255, 61, 0.22);
+}
+.h-evt-pill svg {
+  opacity: 0.6;
+}
+.h-evt-pill-clear {
+  background: transparent;
+  border-color: var(--h-line);
+  color: var(--h-ink-2);
+  padding: 6px 12px;
+}
+.h-evt-pill-clear:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--h-ink);
+}
+
+/* Bottom-sheet filter dialog. Mobile: anchored to bottom edge, slides
+   up. Desktop (>768px): centred modal with the same chrome — feels
+   like a small popover rather than a full sheet. */
+.h-evt-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  /* Needs to clear the mobile bottom-tab pill (z-index 80) AND the
+     cart-resume bar (z-index 80) on small screens so the sheet visually
+     swallows them instead of letting them peek through over the
+     overlay. */
+  z-index: 120;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: h-fade-in 0.2s ease;
+}
+.h-evt-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  background: rgba(18, 18, 22, 0.96);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--h-ink);
+  box-shadow: 0 -24px 64px rgba(0, 0, 0, 0.6);
+  animation: h-slide-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.h-evt-sheet-handle {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 10px auto 6px;
+  flex-shrink: 0;
+}
+.h-evt-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px 14px;
+  flex-shrink: 0;
+}
+.h-evt-sheet-head h2 {
+  font-family: var(--h-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.h-evt-sheet-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--h-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.h-evt-sheet-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.h-evt-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.h-evt-sheet-section h3 {
+  font-family: var(--h-font-display);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--h-ink-3);
+  margin: 0 0 10px;
+}
+.h-evt-sheet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.h-evt-sheet-foot {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+.h-evt-sheet-clear {
+  flex: 0 0 auto;
+  padding: 0 18px;
+  height: 44px;
+  border-radius: 14px;
+  background: transparent;
+  border: 1px solid var(--h-line-2);
+  color: var(--h-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.h-evt-sheet-clear:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.h-evt-sheet-apply {
+  flex: 1;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--h-accent);
+  color: var(--h-accent-ink);
+  border: none;
+  font-family: var(--h-font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.h-evt-sheet-apply:hover {
+  background: var(--h-accent-h);
+}
+@keyframes h-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes h-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (min-width: 769px) {
+  /* Desktop: right-side drawer. Sheet slides in from the right edge
+     instead of popping as a centred modal — matches the "swap the
+     side rail for filters" pattern used in the rest of the dashboard. */
+  .h-evt-sheet-overlay {
+    align-items: stretch;
+    justify-content: flex-end;
+  }
+  .h-evt-sheet {
+    width: min(420px, 100vw);
+    max-width: 420px;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    border: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -24px 0 64px rgba(0, 0, 0, 0.55);
+    animation: h-slide-in-right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .h-evt-sheet-handle {
+    display: none;
+  }
+  .h-evt-sheet-head {
+    padding: 22px 22px 16px;
+  }
+  .h-evt-sheet-body {
+    padding: 4px 22px 18px;
+  }
+  .h-evt-sheet-foot {
+    padding: 16px 22px 22px;
+  }
+}
+@keyframes h-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* =============================================================================
+   Auth sheet — used by SignInModal + CheckoutAuthModal. Bottom sheet on
+   mobile, centred fluid-glass modal on desktop. Scrim deliberately keeps
+   the page visible (soft blur + low-opacity tint) instead of a black
+   wall — the underlying surface stays part of the composition so sign-in
+   doesn't feel like a context switch.
+   ============================================================================= */
+.h-auth-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(8, 10, 14, 0.38);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: h-fade-in 0.22s ease;
+}
+.h-auth-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--h-ink);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03)),
+    rgba(18, 18, 24, 0.72);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  border-radius: 28px 28px 0 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 -24px 64px rgba(0, 0, 0, 0.55);
+  animation: h-slide-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.h-auth-sheet-handle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  margin: 10px auto 4px;
+  flex-shrink: 0;
+}
+.h-auth-sheet-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  z-index: 2;
+}
+.h-auth-sheet-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.05);
+}
+.h-auth-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px calc(22px + env(safe-area-inset-bottom)) 22px;
+  -webkit-overflow-scrolling: touch;
+}
+.h-auth-sheet-body::-webkit-scrollbar { display: none; }
+@media (min-width: 769px) {
+  .h-auth-sheet-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+  .h-auth-sheet {
+    max-width: 460px;
+    max-height: min(86vh, 720px);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    animation: hModalIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 34px 90px rgba(0, 0, 0, 0.55);
+  }
+  .h-auth-sheet-handle {
+    display: none;
+  }
+  .h-auth-sheet-body {
+    padding: 28px;
+  }
+}
+
 .h-evt-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1975,7 +2539,7 @@ body,
 .h-coming-event-card img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 3 / 4;
   object-fit: cover;
 }
 .h-coming-event-card__body {
@@ -2127,14 +2691,114 @@ body,
   }
 }
 
-/* Live now */
+/* Live now — keep cards the same size as /events so the page reads
+   as a denser, browsable grid rather than a wall of giant posters. */
 .h-live-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px 18px;
 }
-.h-live-grid .h-tile .cover {
-  aspect-ratio: 16 / 9;
+@media (max-width: 1180px) {
+  .h-live-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 820px) {
+  .h-live-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Genre marquees on /live — full-bleed under the sidebar, infinite
+   left-to-right loop, pause on hover. The track is rendered with the
+   events duplicated; translating -50% lands cleanly on the second
+   copy's first card so the loop is seamless. */
+.h-marquee-sec {
+  margin: 28px 0 12px;
+}
+.h-marquee-sec .h-marquee-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.h-marquee-sec .h-marquee-head h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0;
+}
+.h-marquee-sec .h-marquee-head .h-marquee-sub {
+  font-size: 12.5px;
+  color: var(--h-ink-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.h-marquee {
+  position: relative;
+  overflow: hidden;
+  /* Full-bleed: extend past the sidebar gutter on the left and the
+     page padding on the right. Mirrors the .h-rail bleed trick so the
+     scroll passes visually under the sidebar. */
+  margin-left: calc(-1 * var(--h-content-indent));
+  margin-right: calc(-1 * var(--h-content-pad));
+  padding-block: 4px;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 48px,
+    black calc(100% - 48px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 48px,
+    black calc(100% - 48px),
+    transparent 100%
+  );
+}
+
+/* No edge-fade on mobile — it muddies the first/last card on small screens. */
+@media (max-width: 640px) {
+  .h-marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+.h-marquee-track {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  padding-left: var(--h-content-indent);
+  padding-right: var(--h-content-pad);
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  /* Hide scrollbars without disabling scroll. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Reset native momentum on iOS so our JS inertia is the only source
+     of motion — otherwise the two feel doubled. */
+  -webkit-overflow-scrolling: auto;
+  scroll-behavior: auto;
+  /* Drag handler reads pointer events, so the track must accept them
+     even when the user starts the drag on an empty gap. */
+  touch-action: pan-y;
+  user-select: none;
+}
+.h-marquee-track::-webkit-scrollbar {
+  display: none;
+}
+.h-marquee-track--dragging {
+  cursor: grabbing;
+}
+.h-marquee-track--dragging * {
+  pointer-events: none;
+}
+.h-marquee-item {
+  flex: 0 0 220px;
 }
 
 /* Search */
@@ -2198,21 +2862,47 @@ body,
    ============================================================================= */
 .h-detail {
   padding-top: 4px;
+  padding-bottom: 56px;
 }
 .h-detail-back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 8px 14px 8px 11px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   color: var(--h-ink);
   font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  /* Drop the back button down so its top edge sits on the same line
+     as the top of the floating sidebar (which starts at
+     --h-sidebar-edge from the viewport). */
+  margin-top: var(--h-sidebar-edge);
+  margin-bottom: 18px;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
 }
 .h-detail-back:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(-2px);
+}
+/* Mobile already has the bottom tab bar for navigation — the back chip
+   is desktop-only chrome. Hiding via CSS rather than removing in the
+   tree keeps the markup the same for SEO and lets the chip return on
+   tablet+ where there's no bottom nav. */
+@media (max-width: 1100px) {
+  .h-detail-back {
+    display: none !important;
+  }
+}
+.h-detail-back .h-back-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
 }
 .h-detail-title {
   font-family: var(--h-font-display);
@@ -2227,7 +2917,7 @@ body,
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin: 10px 0 22px;
+  margin: 8px 0 14px;
   font-size: 14px;
   color: var(--h-ink-2);
 }
@@ -2238,12 +2928,251 @@ body,
 .h-detail-line .sep {
   color: var(--h-ink-4);
 }
+.h-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 16px;
+}
+.h-detail-cta {
+  min-width: 138px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: #060616;
+  font-family: var(--h-font-display);
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  text-decoration: none;
+}
+/* On phones the title + "Book tickets" CTA were a non-wrapping space-between
+   row, which squashed the title to the left and stranded the CTA — the
+   "Book tickets is all left-sided / alignment is off" report. Stack them:
+   full-width title block on top, full-width CTA below, matching every other
+   full-width section underneath. */
+@media (max-width: 640px) {
+  .h-detail-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .h-detail-heading > div {
+    min-width: 0;
+  }
+  .h-detail-heading > div:last-child {
+    width: 100%;
+  }
+  .h-detail-cta {
+    width: 100%;
+  }
+}
+.h-event-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--h-bg-3);
+  border-radius: 16px;
+}
+.h-event-hero--landscape {
+  /* Full-width landscape hero. The box is a true 16:9 and the landscape
+     image is cropped to exactly 16:9 (1600×900) in business-client, so
+     `object-fit: cover` fills it edge-to-edge — no crop, no side gutters.
+     The height cap only engages past a ~1280px-wide column (where a
+     100%-width box still resolves to 16:9), so it never distorts the
+     ratio or "zooms in" on normal screens. */
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  max-height: min(68vh, 720px);
+}
+.h-event-hero--portrait,
+.h-event-hero--fallback {
+  height: min(48vh, 440px);
+  min-height: 300px;
+}
+.h-event-hero-landscape,
+.h-event-hero-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.h-event-hero-blur {
+  position: absolute;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  object-fit: cover;
+  filter: blur(58px) saturate(1.25);
+  opacity: 0.6;
+  z-index: 0;
+}
+.h-event-hero-poster {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  /* Show the WHOLE flyer — width drives off the image's natural
+     aspect, height fills the hero minus a 36px breathing band. No
+     forced aspect-ratio, no `object-fit: cover` crop: portrait
+     flyers that aren't exactly 3:4 (4:5 Instagram-ish, anything
+     off-spec a host uploaded) used to lose their top/bottom edges
+     under `cover`. `contain` is a safety net for the edge case
+     where width: auto resolves wider than the hero (e.g. landscape
+     portraits) — it'll letterbox instead of overflow. */
+  width: auto;
+  height: 100%;
+  max-width: calc(100% - 32px);
+  max-height: calc(100% - 36px);
+  object-fit: contain;
+  border-radius: 12px;
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.56),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.h-event-sneak-card {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3;
+  width: clamp(84px, 11vw, 138px);
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.46),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.h-event-sneak-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.h-event-sneak-card span {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.68);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+}
+.h-event-gallery {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(160px, 28%);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+}
+.h-event-gallery::-webkit-scrollbar {
+  display: none;
+}
+.h-event-gallery-item {
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  scroll-snap-align: start;
+}
+.h-event-gallery-item img,
+.h-event-gallery-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.h-faq-list {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+}
+.h-faq {
+  border: 1px solid var(--h-line);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.h-faq summary {
+  cursor: pointer;
+  font-family: var(--h-font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--h-ink);
+}
+.h-faq p {
+  margin-top: 8px;
+}
+.h-book--inline {
+  grid-column: 1 / -1;
+  position: static;
+}
+.h-more-modal {
+  max-height: min(760px, calc(100vh - 40px));
+  overflow-y: auto;
+}
+.h-more-modal h2 {
+  font-family: var(--h-font-display);
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 34px 18px 0;
+}
+.h-more-section {
+  padding: 16px 0;
+  border-top: 1px solid var(--h-line);
+}
+.h-more-section h3 {
+  font-family: var(--h-font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--h-ink);
+  margin: 0 0 8px;
+}
+.h-more-section ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--h-ink-2);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.h-more-section a {
+  color: var(--h-accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+.h-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.h-chip-row span {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--h-ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
 
+/* Event detail banner — compact horizontal strip with a blurred bg
+   and a centered poster card. Keeps the booking panel visible above
+   the fold instead of being pushed below a full-width flyer. */
 .h-banner {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  height: 440px;
+  height: 360px;
   background: var(--h-bg-3);
   isolation: isolate;
 }
@@ -2268,27 +3197,815 @@ body,
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
-  width: clamp(280px, 32%, 420px);
-  aspect-ratio: 16 / 10;
+  width: clamp(220px, 26%, 320px);
+  max-height: calc(100% - 32px);
+  aspect-ratio: 3 / 4;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: #000;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 .h-banner-poster img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+@media (max-width: 880px) {
+  .h-banner {
+    height: 280px;
+  }
 }
 
 .h-detail-grid {
   display: grid;
   grid-template-columns: 1.7fr 1fr;
   gap: 48px;
-  margin-top: 32px;
+  margin-top: 22px;
   align-items: flex-start;
 }
+/* Single-column layout for both the "portrait-only" pivot AND the
+   default detail page now that ticket selection has moved to its own
+   route — the body card always spans the full readable column. */
+.h-detail-grid--portrait,
+.h-detail-grid--single {
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+.h-detail-grid--portrait > .h-detail-body-card,
+.h-detail-grid--single > .h-detail-body-card {
+  grid-column: 1 / -1;
+}
+
+/* Two-column desktop layout — body card on the left, floating
+   booking card sticky to the right. Collapses to single column on
+   mobile (where the floating bottom CTA pattern takes over). */
+.h-detail-grid--with-aside {
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 360px);
+  gap: 36px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .h-detail-grid--with-aside {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .h-detail-grid--with-aside > .h-detail-body-card {
+    grid-column: 1 / -1;
+  }
+}
+
+/* About preview clamp + Read-more affordance. The full text lives in
+   the aboutOpen modal. */
+.h-detail-about {
+  white-space: pre-line;
+  margin: 0;
+  /* A long unbroken token (pasted URL, run-on string) in host-authored copy
+     could otherwise force the body card wider than a phone screen. */
+  overflow-wrap: anywhere;
+}
+.h-detail-about.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Floating "Book Tickets" card — desktop right column. Mirrors the
+   reference design: pin row, time row, divider, price + dark pill
+   CTA. Surface is a translucent dark glass to stay on-brand. */
+.h-detail-booking-card {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 18px;
+  border-radius: 22px;
+  background: rgba(28, 28, 34, 0.78);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 24px 60px -20px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+@media (max-width: 1100px) {
+  /* Hide on mobile — the existing top hero CTA + sticky bottom CTA
+     pattern already handles the action; rendering this card here
+     would double the booking affordance and crowd the body. */
+  .h-detail-booking-card {
+    display: none;
+  }
+}
+.h-detail-booking-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.h-detail-booking-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.h-detail-booking-row--button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: 6px 0;
+  border-radius: 12px;
+  transition: background-color 0.18s ease;
+}
+.h-detail-booking-row--button:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.h-detail-booking-row__chev {
+  margin-left: auto;
+  color: var(--h-ink-4);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.h-detail-booking-row__chev svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Map + schedule modals. Same .h-modal chrome on desktop; the global
+   mobile rule turns them into bottom sheets automatically. */
+.h-map-modal {
+  padding: 26px 0 0;
+  overflow: hidden;
+}
+.h-map-modal h2 {
+  padding: 0 24px;
+  margin: 0 0 4px;
+}
+.h-map-modal__addr {
+  padding: 0 24px;
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--h-ink-3);
+}
+.h-map-modal__iframe {
+  width: 100%;
+  height: 320px;
+  border: 0;
+  display: block;
+  background: var(--h-bg-3);
+  /* Google's `output=embed` map has no dark-style URL param, so we tint it to
+     match the dark modal: invert + hue-rotate flips the bright canvas to a
+     dark basemap while keeping roads/water legible. (This also inverts the
+     Google logo/labels — the accepted trade-off for embed-mode dark maps.) */
+  filter: invert(0.9) hue-rotate(180deg) brightness(0.95) contrast(0.9)
+    saturate(0.85);
+}
+.h-map-modal__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  margin: 0;
+  border-radius: 0 0 16px 16px;
+  background: var(--h-accent);
+  color: #0a0a0e;
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+.h-schedule-modal {
+  padding: 26px 26px 22px;
+}
+.h-schedule-modal__day {
+  margin: 4px 0 16px;
+  font-size: 13px;
+  color: var(--h-ink-3);
+}
+.h-schedule-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.h-schedule-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+.h-schedule-list__label {
+  font-size: 13px;
+  color: var(--h-ink-2);
+  font-weight: 500;
+}
+.h-schedule-list__time {
+  font-family: var(--h-font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--h-ink);
+  font-variant-numeric: tabular-nums;
+}
+.h-detail-booking-row__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--h-ink);
+}
+.h-detail-booking-row__icon svg {
+  width: 18px;
+  height: 18px;
+}
+.h-detail-booking-row__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.h-detail-booking-row__title {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--h-ink);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.h-detail-booking-row__sub {
+  font-size: 12.5px;
+  color: var(--h-ink-3);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+.h-detail-booking-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 2px 0 6px;
+}
+.h-detail-booking-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.h-detail-booking-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--h-font-display);
+  min-width: 0;
+}
+.h-detail-booking-price__amount {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--h-ink);
+  font-variant-numeric: tabular-nums;
+}
+.h-detail-booking-price__suffix {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--h-ink-3);
+}
+.h-detail-booking-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: var(--h-ink);
+  color: #0a0a0e;
+  font-family: var(--h-font-display);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.h-detail-booking-cta:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+.h-detail-booking-cta.is-disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--h-ink-3);
+  cursor: not-allowed;
+}
+
+/* Mini-profile modal for lineup artists (phantoms) and organizers.
+   Sized smaller than the More-details modal — it's one piece of
+   info, not a multi-section sheet. */
+.h-people-modal {
+  max-width: 420px;
+  padding: 28px 26px 22px;
+}
+.h-people-modal__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.h-people-modal__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08) center / cover no-repeat;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.h-people-modal__initial {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--h-ink);
+}
+.h-people-modal__name {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--h-ink);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h-people-modal__sub {
+  font-size: 12.5px;
+  color: var(--h-ink-3);
+}
+.h-people-modal__note {
+  font-size: 13px;
+  color: var(--h-ink-2);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+.h-people-modal__events {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px;
+}
+.h-people-modal__events ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.h-people-modal__section {
+  font-family: var(--h-font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--h-ink-3);
+  margin: 0 0 6px;
+}
+.h-people-modal__event {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.18s ease;
+}
+.h-people-modal__event:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.h-people-modal__event-flyer {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08) center / cover no-repeat;
+  flex-shrink: 0;
+}
+.h-people-modal__event-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.h-people-modal__event-title {
+  font-family: var(--h-font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--h-ink);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h-people-modal__event-sub {
+  font-size: 12px;
+  color: var(--h-ink-3);
+  margin-top: 2px;
+}
+
+/* Sticky "Book tickets" CTA pinned below the detail body. On desktop
+   it sits centered under the body card; on mobile it floats above the
+   bottom-tabs pill so it's always one tap away. */
+.h-detail-bottom-cta {
+  /* Spans the full body-card width on desktop and edge-to-edge on
+     mobile (overridden in the (max-width: 1100px) block below). The
+     lime drop-shadow was removed — it didn't match Hoizr's flat
+     button language and felt grafted on. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  height: 52px;
+  margin: 28px 0 0;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: #060616;
+  font-family: var(--h-font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.h-detail-bottom-cta:hover {
+  opacity: 0.92;
+}
+@media (max-width: 1100px) {
+  .h-detail-bottom-cta {
+    /* Floating above the bottom-tab pill (z-index 80), gated by the
+       `.is-visible` class so it only appears once the user has
+       scrolled past the top hero CTA. Pointer events are off while
+       hidden so it doesn't intercept taps under the surface. */
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+    z-index: 85;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s ease;
+  }
+  .h-detail-bottom-cta.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}
+/* Right column wraps all body content in one glass card so the page
+   reads as a single composed surface beneath the flyer instead of a
+   stack of unrelated blocks. */
+.h-detail-body-card {
+  position: relative;
+  /* Grid children default to min-width:auto and won't shrink below their
+     content — long content would push the card past the viewport on mobile.
+     min-width:0 lets the card honour the single-column track width. */
+  min-width: 0;
+  padding: 22px 24px 18px;
+  border-radius: 22px;
+  background: rgba(20, 20, 26, 0.55);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 16px 36px rgba(0, 0, 0, 0.36);
+}
+.h-detail-body-card > .h-detail-section:last-of-type {
+  margin-bottom: 0;
+}
+@media (max-width: 880px) {
+  .h-detail-body-card {
+    padding: 20px 18px 16px;
+    border-radius: 18px;
+  }
+}
+
+/* Rich-text content (terms, refund, cancellation, host description).
+   Hosts author these in a rich-text editor on the business side and
+   we render them through DOMPurify on the customer side. */
+.h-richtext {
+  font-size: 14px;
+  color: var(--h-ink-2);
+  line-height: 1.65;
+  max-width: 60ch;
+}
+.h-richtext p {
+  margin: 0 0 10px;
+}
+.h-richtext p:last-child {
+  margin-bottom: 0;
+}
+.h-richtext h1,
+.h-richtext h2,
+.h-richtext h3,
+.h-richtext h4 {
+  font-family: var(--h-font-display);
+  color: var(--h-ink);
+  margin: 14px 0 8px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.h-richtext h1 { font-size: 20px; }
+.h-richtext h2 { font-size: 18px; }
+.h-richtext h3 { font-size: 16px; }
+.h-richtext h4 { font-size: 14px; }
+.h-richtext strong, .h-richtext b {
+  color: var(--h-ink);
+  font-weight: 600;
+}
+.h-richtext em, .h-richtext i {
+  font-style: italic;
+}
+.h-richtext a {
+  color: var(--h-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.h-richtext a:hover {
+  opacity: 0.85;
+}
+.h-richtext ul,
+.h-richtext ol {
+  margin: 6px 0 12px;
+  padding-left: 22px;
+}
+.h-richtext li {
+  margin-bottom: 4px;
+}
+.h-richtext blockquote {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-left: 3px solid rgba(255, 255, 255, 0.18);
+  color: var(--h-ink-3);
+}
+.h-richtext code {
+  font-family: var(--h-font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.h-richtext hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  margin: 14px 0;
+}
+
+.h-detail-disclaimer {
+  font-size: 12px;
+  color: var(--h-ink-3);
+  margin: 28px 0 40px;
+  max-width: 60ch;
+}
+
 .h-detail-section {
-  margin-bottom: 36px;
+  margin-bottom: 24px;
+}
+
+/* "Who's coming 👀" card — a reflective surface that picks up the event
+   flyer's own palette (blurred flyer under a translucent wash) with two
+   shapes: a filled state (avatar stack + count + handles) and a bold CTA
+   state (kicker + headline + sub + arrow ↗, concept borrowed from the
+   venues card in the sidebar). No IG-branded chrome.
+   ──────────────────────────────────────────────────────────────── */
+.h-ig-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+  isolation: isolate;
+}
+.h-ig-card--cta {
+  border-color: rgba(197, 255, 61, 0.22);
+}
+.h-ig-card__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.h-ig-card__flyer {
+  position: absolute;
+  inset: -20%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(38px) saturate(1.25);
+  opacity: 0.28;
+  transform: scale(1.15);
+}
+.h-ig-card__wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 10, 14, 0.62) 0%,
+    rgba(10, 10, 14, 0.84) 60%,
+    rgba(197, 255, 61, 0.06) 100%
+  );
+  backdrop-filter: blur(2px);
+}
+.h-ig-card__inner {
+  position: relative;
+  z-index: 1;
+  padding: 16px 18px;
+}
+@media (min-width: 720px) {
+  .h-ig-card__inner {
+    padding: 18px 22px;
+  }
+}
+.h-ig-card__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--h-font-display);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Filled state ── */
+.h-ig-card__stackrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+.h-ig-stack {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.h-ig-stack__item {
+  margin-left: -12px;
+}
+.h-ig-stack__item:first-child {
+  margin-left: 0;
+}
+.h-ig-stack__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(15, 15, 20, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  font-family: var(--h-font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--h-ink);
+}
+.h-ig-stack__more {
+  background: rgba(197, 255, 61, 0.18);
+  color: var(--h-accent);
+  font-size: 13px;
+}
+.h-ig-card__count {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.h-ig-card__count strong {
+  font-family: var(--h-font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--h-ink);
+}
+.h-ig-card__count span {
+  font-size: 12.5px;
+  color: var(--h-ink-2);
+}
+.h-ig-card__handles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.h-ig-card__handle {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--h-ink);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+a.h-ig-card__handle:hover {
+  border-color: rgba(197, 255, 61, 0.55);
+  background: rgba(197, 255, 61, 0.08);
+}
+.h-ig-card__handle--rest {
+  background: transparent;
+  border-color: transparent;
+  color: var(--h-ink-2);
+  padding-left: 2px;
+}
+
+/* ── CTA state ── */
+.h-ig-card--cta .h-ig-card__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (min-width: 720px) {
+  .h-ig-card--cta .h-ig-card__inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+  }
+}
+.h-ig-cta__copy {
+  min-width: 0;
+}
+.h-ig-cta__hed {
+  font-family: var(--h-font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  line-height: 1.16;
+  margin: 8px 0 6px;
+  color: var(--h-ink);
+}
+.h-ig-cta__accent {
+  color: var(--h-accent);
+  text-shadow: 0 0 16px rgba(197, 255, 61, 0.45);
+}
+.h-ig-cta__sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--h-ink-2);
+  max-width: 46ch;
+}
+.h-ig-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: var(--h-accent-ink, #0a0a0e);
+  font-family: var(--h-font-display);
+  font-weight: 800;
+  font-size: 13px;
+  text-decoration: none;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+.h-ig-cta__btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px -10px rgba(197, 255, 61, 0.85);
+}
+.h-ig-cta__arrow {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+.h-ig-cta__btn:hover .h-ig-cta__arrow {
+  transform: translate(2px, -2px);
 }
 .h-detail-section h2 {
   font-family: var(--h-font-display);
@@ -2317,6 +4034,103 @@ body,
 }
 .h-detail-section .readmore:hover {
   color: var(--h-accent);
+}
+
+/* Lineup + Organizer row on the event detail page. Renders a
+   horizontally scrolling row of avatar + name + sub cards. Each
+   card is a square 88×88 avatar with truncated metadata under it.
+   --linked variants get a hover lift to signal click-through to
+   /artists/<slug> or /hosts/<id>. */
+.h-people-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.h-people-row::-webkit-scrollbar { display: none; }
+/* Reusable glass card — mirrors the sidebar GlassSurface fallback so any
+   surface can opt in without wrapping in a React component. */
+.h-glass-card {
+  position: relative;
+  background: rgba(20, 20, 26, 0.55);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+}
+.h-people-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 108px;
+  padding: 10px 8px 9px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+}
+.h-people-card--linked {
+  cursor: pointer;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.h-people-card--linked:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 14px 28px rgba(0, 0, 0, 0.36);
+}
+.h-people-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.06);
+  /* `contain` (vs `cover`) keeps wide wordmark logos — Krunk-style
+     horizontal lockups, festival banners — visible in full instead of
+     cropping their sides. Square portrait shots still fill the box;
+     extra padding on tall/wide art reads as a soft frame. */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+.h-people-avatar-initial {
+  font-family: var(--h-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1;
+}
+.h-people-name {
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--h-ink);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.h-people-sub {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--h-ink-3);
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
 }
 
 .h-things {
@@ -2502,6 +4316,40 @@ body,
 .h-modal.wide {
   max-width: 540px;
 }
+
+/* Mobile: turn `.h-scrim` centred modals (About, People, Schedule, Map)
+   into bottom sheets. The scrim docks to the bottom edge and the inner
+   modal grows to viewport width with rounded top corners and a slide-
+   up animation. Keeps the same close button — only the framing changes
+   — so callsites don't need to swap classes. */
+@media (max-width: 720px) {
+  .h-scrim {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .h-scrim .h-modal,
+  .h-scrim .h-modal.wide {
+    max-width: none !important;
+    width: 100% !important;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 22px 22px 0 0;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-left: 0;
+    border-right: 0;
+    animation: hSheetIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .h-scrim .h-modal::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    margin: -4px auto 10px;
+  }
+}
 @keyframes hModalIn {
   from {
     transform: scale(0.96);
@@ -2527,6 +4375,140 @@ body,
 }
 .h-modal-close:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* MOBILE: every .h-scrim / .h-modal pair renders as a bottom sheet
+   so the same component code reads as a centred modal on desktop and
+   slides up from the bottom on phones (matches the AuthSheet /
+   evt-sheet aesthetic without each callsite having to re-implement
+   it). Z-index 130 keeps the sheet above the mobile bottom-tabs pill
+   (z 80) and the floating cart bar (z 80). */
+@media (max-width: 720px) {
+  .h-scrim {
+    align-items: flex-end;
+    padding: 0;
+    z-index: 130;
+  }
+  .h-modal,
+  .h-modal.wide {
+    max-width: none;
+    width: 100%;
+    border-radius: 22px 22px 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    padding: 22px 18px 28px;
+    max-height: 88vh;
+    overflow-y: auto;
+    animation: hSheetIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  /* Drag-handle pill so the surface reads as a sheet, not a popup. */
+  .h-modal::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    margin: 0 auto 14px;
+  }
+}
+@keyframes hSheetIn {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Utility for Tailwind-inline modal panels (OrderDetailClient
+   description/refund-policy/refund-request) so they slide up as
+   bottom sheets on mobile without re-writing each callsite. The
+   panel is already `rounded-3xl items-end` etc.; this rule forces
+   square-bottom edges, full-width, slide-up animation, and a
+   drag-handle pill on phones. Desktop unchanged. */
+@media (max-width: 720px) {
+  .h-tw-sheet-overlay {
+    padding: 0 !important;
+  }
+  .h-tw-sheet-panel {
+    border-radius: 22px 22px 0 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    animation: hSheetIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .h-tw-sheet-panel::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+  /* Drag handle on light-themed panels (refund-request cream card). */
+  .h-tw-sheet-panel.is-light::before {
+    background: rgba(15, 15, 18, 0.22);
+  }
+}
+
+/* `.h-content` creates a `z-index: 1` stacking context to layer the
+   page over the noise/blur backdrop. Sheets rendered inside the page
+   tree therefore stack INSIDE that context — their internal z:120 can
+   never escape z:1 to clear the body-level floating mobile tabs and
+   cart bar (both z:80, body-level). The result is the bottom nav pill
+   visually sitting on top of the open sheet. Rather than portal every
+   sheet to <body>, hide those two floating bars while any sheet is
+   open. `:has()` is universally supported in 2026 browsers. */
+@media (max-width: 1100px) {
+  body:has(.h-tw-sheet-overlay) .h-mobile-tabs,
+  body:has(.h-evt-sheet-overlay) .h-mobile-tabs,
+  body:has(.h-auth-sheet-overlay) .h-mobile-tabs,
+  body:has(.h-scrim) .h-mobile-tabs,
+  body:has(.h-tw-sheet-overlay) .h-cartbar-wrap,
+  body:has(.h-evt-sheet-overlay) .h-cartbar-wrap,
+  body:has(.h-auth-sheet-overlay) .h-cartbar-wrap,
+  body:has(.h-scrim) .h-cartbar-wrap {
+    display: none !important;
+  }
+}
+
+.h-signin-real {
+  max-width: 430px;
+  padding: 28px;
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(6, 7, 10, 0.82);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(28px) saturate(1.15);
+}
+.h-auth-panel input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+.h-auth-panel input:-webkit-autofill,
+.h-auth-panel input:-webkit-autofill:hover,
+.h-auth-panel input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: #fff;
+}
+.h-auth-google,
+.h-auth-google__container {
+  width: 100%;
+  max-width: 100%;
+}
+.h-auth-google__container {
+  display: flex;
+  justify-content: center;
 }
 
 .h-signin h2 {
@@ -2732,7 +4714,12 @@ body,
   :root {
     --h-sidebar: 0px;
     --h-sidebar-edge: 0px;
-    --h-content-pad: 16px;
+    --h-content-pad: 14px;
+    /* Drop the desktop +8px breathing room on the left indent so the
+       content uses the full mobile viewport. Otherwise the detail
+       card had ~24px on the left + 14px on the right — visually
+       lopsided and the card felt cramped. */
+    --h-content-indent: var(--h-content-pad);
   }
   .h-side-mobile-backdrop {
     display: block;
@@ -2799,6 +4786,24 @@ body,
   .h-book {
     position: static;
   }
+  .h-detail-heading {
+    flex-direction: column;
+    /* Without `stretch`, the CTA wrapper inherits flex-start from the
+       desktop rule and shrinks to content width — the inner button's
+       `width: 100%` then resolves against that narrow box, not the
+       page column. Stretch makes the wrapper (and the button) span
+       the full content width on mobile. */
+    align-items: stretch;
+    gap: 8px;
+  }
+  .h-detail-cta {
+    width: 100%;
+  }
+  .h-event-hero--portrait,
+  .h-event-hero--fallback {
+    height: 360px;
+    min-height: 280px;
+  }
   .h-evt-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -2824,14 +4829,31 @@ body,
   }
 }
 @media (max-width: 720px) {
+  .h-event-hero--landscape {
+    aspect-ratio: 16 / 10;
+  }
+  /* Relax the portrait poster's side-padding on phones so it uses more
+     of the available width before letterboxing kicks in. */
+  .h-event-hero-poster {
+    max-width: calc(100% - 16px);
+    max-height: calc(100% - 24px);
+  }
+  .h-event-sneak-card {
+    right: 10px;
+    bottom: 10px;
+    width: 86px;
+  }
+  .h-event-gallery {
+    grid-auto-columns: minmax(132px, 48%);
+  }
+  .h-things {
+    grid-template-columns: 1fr;
+  }
   .h-evt-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   .h-search-advanced {
     grid-template-columns: 1fr;
-  }
-  .h-banner {
-    height: 300px;
   }
   .h-dome-section {
     height: 480px;
@@ -3206,7 +5228,8 @@ body,
   .h-mobile-topbar__inner {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
+    gap: 12px;
     padding: 10px 16px;
     padding-top: calc(10px + env(safe-area-inset-top, 0px));
   }
@@ -3274,6 +5297,16 @@ body,
     letter-spacing: 0.01em;
     transition: color 200ms ease, background 200ms ease, transform 200ms ease;
     width: 100%;
+    /* Reset native <button> chrome so the Profile tab (a button that opens the
+       profile sheet) matches the three <a> tabs exactly — no grey UA box,
+       border or default font. */
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .h-mobile-tabs__btn:hover {
     color: var(--h-ink);
@@ -3321,5 +5354,401 @@ body,
   }
   .h-footer-cols {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* =============================================================================
+   City picker modal — appears on first visit or via the city pill in the
+   header. Glassmorphic card centered on a dim backdrop.
+   ============================================================================= */
+.h-city-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 5, 10, 0.62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 24px 16px;
+  animation: h-city-fade 0.18s ease both;
+}
+@keyframes h-city-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.h-city-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(720px, 86dvh);
+  padding: 20px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 24px;
+  animation: h-city-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes h-city-pop {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.h-city-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.h-city-modal-head h2 {
+  font-family: var(--h-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+.h-city-modal-head p {
+  font-size: 13px;
+  color: var(--h-ink-3);
+  margin: 0;
+}
+.h-city-close {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.h-city-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.h-city-locate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.h-city-locate:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+.h-city-locate:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.h-city-locate-ic {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+}
+.h-city-locate-error {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: #ff9b9b;
+}
+.h-city-search {
+  position: relative;
+}
+.h-city-search input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  font-size: 14px;
+  outline: none;
+}
+.h-city-search input::placeholder {
+  color: var(--h-ink-3);
+}
+.h-city-search input:focus {
+  border-color: rgba(255, 255, 255, 0.30);
+}
+.h-city-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 2px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+}
+.h-city-list::-webkit-scrollbar {
+  width: 6px;
+}
+.h-city-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.h-city-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--h-ink);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+.h-city-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.h-city-item--selected {
+  background: rgba(196, 255, 61, 0.10);
+  border-color: rgba(196, 255, 61, 0.34);
+}
+.h-city-item-name {
+  font-weight: 600;
+}
+.h-city-item-state {
+  font-size: 12px;
+  color: var(--h-ink-3);
+}
+.h-city-empty {
+  padding: 18px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--h-ink-3);
+}
+
+/* City pill in mobile/desktop chrome — opens the modal. */
+.h-city-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--h-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.h-city-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.h-city-pill-ic {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  color: var(--h-volt);
+}
+
+/* =============================================================================
+   MOBILE PERF + DENSITY PASS (≤ 720px)
+   ─────────────────────────────────────────────────────────────────────────────
+   The dark glass aesthetic uses ~40 `backdrop-filter` rules across the
+   stylesheet. On mobile GPUs that's the dominant cause of scroll jank
+   (every painted layer re-blurs the layer behind it on each frame).
+   This block:
+     1) kills `backdrop-filter` site-wide on phones and bumps the
+        underlying solid background opacity so surfaces still look
+        like glass without the compositor cost.
+     2) drops side padding to 0 so cards and rails are truly edge-to-
+        edge — the readable column is the viewport.
+     3) tightens vertical rhythm (page top padding, section + rail
+        head margins, card gaps) so multiple events fit per screen.
+   ============================================================================= */
+@media (max-width: 720px) {
+  /* Edge-to-edge: kill content side padding + indent. Page-level
+     sections that still need a tiny gutter add their own. */
+  :root {
+    --h-content-pad: 0px;
+    --h-content-indent: 0px;
+  }
+  .h-page {
+    padding-left: 0;
+    padding-right: 0;
+    /* Compensate for the floating bottom-tabs pill (height ~60px,
+       offset 18px) plus iOS safe area — otherwise the last row of
+       events / orders / artists hides permanently behind it on
+       mobile. 96px ≈ pill + offset + a comfortable breath. */
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    gap: 12px;
+  }
+  .h-page-head {
+    margin: 6px 12px 10px;
+  }
+  .h-page-head h1 {
+    font-size: clamp(26px, 7.5vw, 36px);
+  }
+
+  /* Rails — heading needs a tiny inset so text doesn't kiss the
+     edge, but the scroll container stays bleed-to-bleed. */
+  .h-rail-sec {
+    margin: 16px 0 4px;
+  }
+  .h-rail-head {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+  .h-rail-head h2 {
+    font-size: 18px;
+  }
+  .h-rail {
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-left: 0;
+    margin-right: 0;
+    scroll-padding-left: 12px;
+  }
+  .h-rail,
+  .h-rail-5,
+  .h-rail-6 {
+    grid-auto-columns: 158px;
+  }
+
+  /* Events page grid — 2 columns, tight gaps, edge-to-edge. */
+  .h-evt-grid {
+    gap: 8px;
+    padding: 0 8px;
+  }
+  .h-evt-count {
+    padding: 0 12px;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  /* Card densification — already shrunk under 640px; nudge a touch
+     more so a row of 2 leaves room for the next row above the fold. */
+  .h-tile {
+    border-radius: 12px;
+  }
+  .h-tile-info {
+    padding: 8px 10px 10px;
+  }
+  .h-tile-title {
+    font-size: 13.5px;
+    -webkit-line-clamp: 2;
+  }
+  .h-tile-date {
+    font-size: 10.5px;
+  }
+  .h-tile-venue {
+    font-size: 11px;
+  }
+  .h-tile-price {
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  /* GLOBAL BACKDROP-FILTER KILL. The selector matches everything;
+     the rules below restore solid translucent surfaces for the few
+     classes that depended on the blur for legibility. */
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Restore opacity on surfaces that used to look like floating glass —
+     without the blur, near-transparent backgrounds become unreadable
+     over busy backdrops. Each value below is the same hue used in
+     the original rule but bumped from ~0.04 to ~0.45+ so contrast
+     is preserved. */
+  .h-tile {
+    background: rgba(24, 24, 30, 0.94);
+  }
+  .h-tile-info {
+    background: rgba(20, 20, 26, 0.96);
+  }
+  .h-detail-body-card {
+    background: rgba(20, 20, 26, 0.92);
+  }
+  .h-detail-booking-card {
+    background: rgba(28, 28, 34, 0.96);
+  }
+  .h-cartbar-wrap > .glass-surface {
+    background: rgba(8, 8, 12, 0.92);
+  }
+  .h-mobile-tabs__row {
+    background: rgba(15, 15, 18, 0.94);
+  }
+  .h-auth-sheet,
+  .h-evt-sheet,
+  .h-auth-sheet-overlay,
+  .h-evt-sheet-overlay {
+    background-color: rgba(18, 18, 22, 0.98);
+  }
+  .h-evt-sheet-overlay,
+  .h-auth-sheet-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  /* City picker — desktop renders a centred glass card. On mobile the
+     site-wide backdrop-filter kill above stripped the blur, which left
+     the card with a 0.55-opacity bg over a busy home page — the host
+     called it "transparent and very much different from the actual."
+     Re-style it as a true bottom sheet: solid ink surface, full-width,
+     rounded top corners, slides up from the bottom edge. */
+  .h-city-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.72);
+  }
+  .h-city-modal {
+    width: 100%;
+    max-width: none;
+    max-height: 86dvh;
+    border-radius: 22px 22px 0 0;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom)) 16px;
+    background: rgba(14, 14, 18, 0.985);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: none;
+    box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.55);
+    animation: h-city-slide-up 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .h-city-modal::before {
+    content: "";
+    display: block;
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    margin: -4px auto 8px;
+  }
+  @keyframes h-city-slide-up {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  /* Locate button + search input + list items all read against the
+     solid bottom-sheet surface — re-tint slightly so they don't fade
+     into the new opaque background. */
+  .h-city-locate,
+  .h-city-search input {
+    background: rgba(255, 255, 255, 0.045);
+  }
+  .h-city-item:hover {
+    background: rgba(255, 255, 255, 0.055);
   }
 }

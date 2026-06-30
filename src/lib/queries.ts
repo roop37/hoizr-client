@@ -1,4 +1,9 @@
 // --- Public reads ---
+//
+// New queries should be added to src/graphql/*.graphql and consumed via
+// the typed SDK in `lib/sdk.ts` (`sdk.OperationName(...)`). The raw
+// strings below are kept for the modules that haven't been migrated yet
+// — both styles can coexist while the migration is in progress.
 
 export const PUBLIC_EVENT_LIST_QUERY = `
   query GetPublishedEvents($input: PublicEventFilterInput) {
@@ -10,12 +15,22 @@ export const PUBLIC_EVENT_LIST_QUERY = `
         description
         eventFlyer
         horizontalFlyer
+        videoSneakPeek
         eventType
         startDate
         endDate
         city
         cityId
+        multiCity
+        days {
+          title
+          location { city }
+        }
         genreTagIds
+        location {
+          city
+          coordinate { type coordinates }
+        }
         ticketingEnabled
         isHighDemand
         isComingSoon
@@ -47,9 +62,35 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
       description
       eventFlyer
       horizontalFlyer
+      videoSneakPeek
+      gallery {
+        url
+        type
+      }
       eventType
       startDate
       endDate
+      markSeparateDays
+      multiCity
+      days {
+        dayId
+        title
+        startDate
+        endDate
+        location {
+          addressLine1
+          addressLine2
+          city
+          state
+          pincode
+          formattedAddress
+          place {
+            placeId
+            displayName
+          }
+          coordinate { type coordinates }
+        }
+      }
       city
       cityId
       genreTagIds
@@ -60,13 +101,41 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
         state
         pincode
         formattedAddress
+        place {
+          placeId
+          displayName
+        }
+        coordinate { type coordinates }
       }
+      ticketingTerms
+      refundPolicy
+      cancellationPolicy
+      eventGuide {
+        languageIds
+        minimumEntryAge
+        paidEntryAge
+        venueLayout
+        seatingArrangement
+        kidFriendly
+        petFriendly
+        gatesOpenBeforeEvent
+        gatesOpenLeadHours
+        gatesOpenLeadMinutes
+        youtubeLink
+      }
+      faqs {
+        question
+        answer
+      }
+      eventInstructions
+      prohibitedItems
       ticketingEnabled
       isHighDemand
       tickets {
         _id
         ticketName
         ticketCategory
+        dayId
         ticketType
         ticketCapacity
         ticketSold
@@ -93,25 +162,85 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
   }
 `;
 
-// Minimal event-summary fetch used by the order-detail page to show
-// "Valid for: <title> · <date> · <venue>" next to the QR (AUDIT-031)
-// and to surface the host name for the §27 disclosure (AUDIT-034).
+/**
+ * Lineup + organizer + collaborators for the event detail page.
+ * Server resolves lineup → Artist (real) | PhantomArtist (stand-in) |
+ * free-text fallback, and stitches host + collaborator Host rows into
+ * an ordered list (primary host first, then collaborators).
+ */
+export const PUBLIC_EVENT_PEOPLE_QUERY = `
+  query GetPublicEventPeople($eventId: String!) {
+    getPublicEventPeople(eventId: $eventId) {
+      artists {
+        _id
+        name
+        picture
+        tagline
+        bio
+        slug
+        instagramLink
+        spotifyLink
+        youtubeLink
+        isPhantom
+      }
+      organizers {
+        _id
+        name
+        logo
+        description
+        city
+        isPrimary
+      }
+    }
+  }
+`;
+
+// Event-detail fetch used by the order-detail page. Originally a slim
+// summary for AUDIT-031 (title/date/venue beside QR) + AUDIT-034
+// disclosure, now expanded to power Lineup / When&Where / Things to
+// know cards alongside the ticket — the order page is the customer's
+// post-purchase reference, so it surfaces the same context they saw
+// when booking instead of just the title.
 export const PUBLIC_EVENT_SUMMARY_BY_ID_QUERY = `
   query GetPublicEventSummaryById($id: String!) {
     getPublicEventById(id: $id) {
       _id
       title
       slug
+      eventFlyer
+      horizontalFlyer
       startDate
       endDate
       city
+      description
       location {
         addressLine1
+        addressLine2
         city
         state
+        pincode
         formattedAddress
+        place {
+          placeId
+          displayName
+        }
+        coordinate { type coordinates }
       }
       refundPolicy
+      eventGuide {
+        languageIds
+        minimumEntryAge
+        paidEntryAge
+        venueLayout
+        seatingArrangement
+        kidFriendly
+        petFriendly
+        gatesOpenBeforeEvent
+        gatesOpenLeadHours
+        gatesOpenLeadMinutes
+      }
+      eventInstructions
+      prohibitedItems
     }
   }
 `;
@@ -123,6 +252,7 @@ export const ACTIVE_CITIES_QUERY = `
       value
       cityId
       city
+      district
       state
     }
   }
@@ -135,6 +265,7 @@ export const ACTIVE_CITIES_WITH_COORDS_QUERY = `
       value
       cityId
       city
+      district
       state
       latitude
       longitude
@@ -147,6 +278,27 @@ export const ACTIVE_GENRE_TAGS_QUERY = `
     getActiveGenreTags {
       _id
       value
+    }
+  }
+`;
+
+export const ACTIVE_LANGUAGES_QUERY = `
+  query ActiveLanguages {
+    getActiveLanguages {
+      _id
+      value
+      code
+      nativeName
+    }
+  }
+`;
+
+export const ACTIVE_PROHIBITED_ITEMS_QUERY = `
+  query ActiveProhibitedItems {
+    getActiveProhibitedItems {
+      _id
+      value
+      slug
     }
   }
 `;
@@ -166,6 +318,7 @@ export const REQUEST_OTP_MUTATION = `
   mutation CustomerRequestOtp($input: CustomerOtpRequestInput!) {
     customerRequestOtp(input: $input) {
       otpId
+      profileRequired
     }
   }
 `;
@@ -187,6 +340,7 @@ export const GOOGLE_START_MUTATION = `
       customerId
       accessToken
       refreshToken
+      uniqueId
       pendingToken
       prefill {
         email
@@ -205,6 +359,7 @@ export const APPLE_START_MUTATION = `
       customerId
       accessToken
       refreshToken
+      uniqueId
     }
   }
 `;
@@ -228,6 +383,7 @@ export const PENDING_SIGNUP_VERIFY_OTP_MUTATION = `
       customerId
       accessToken
       refreshToken
+      uniqueId
       primaryEmailMasked
       secondaryEmail
     }
@@ -254,6 +410,21 @@ export const MY_PROFILE_QUERY = `
       googleConnected
       appleConnected
       signupProvider
+      birthdate
+      gender
+      emailMarketingOptIn
+      smsMarketingOptIn
+      whatsappMarketingOptIn
+      pushNotificationMarketingOptIn
+      address {
+        addressLine1
+        addressLine2
+        city
+        state
+        pincode
+        formattedAddress
+        coordinate { type coordinates }
+      }
     }
   }
 `;
@@ -268,6 +439,21 @@ export const UPDATE_MY_PROFILE_MUTATION = `
       phone
       city
       profilePic
+      birthdate
+      gender
+      emailMarketingOptIn
+      smsMarketingOptIn
+      whatsappMarketingOptIn
+      pushNotificationMarketingOptIn
+      address {
+        addressLine1
+        addressLine2
+        city
+        state
+        pincode
+        formattedAddress
+        coordinate { type coordinates }
+      }
     }
   }
 `;
@@ -281,6 +467,113 @@ export const REGISTER_FCM_TOKEN_MUTATION = `
 export const UNREGISTER_FCM_TOKEN_MUTATION = `
   mutation UnregisterFcmToken($fcmToken: String!) {
     unregisterFcmToken(fcmToken: $fcmToken)
+  }
+`;
+
+// --- Address autocomplete (place search on /me/profile) ---
+// Both queries are authenticated + per-customer rate-limited on the
+// server (60 autocomplete + 20 detail calls per minute). See
+// customer-server/src/modules/customerPlaces.
+export const CUSTOMER_PLACES_AUTOCOMPLETE_QUERY = `
+  query CustomerPlacesAutocomplete($input: String!) {
+    customerPlacesAutocomplete(input: $input) {
+      placeId
+      displayName
+    }
+  }
+`;
+
+export const CUSTOMER_PLACE_DETAILS_QUERY = `
+  query CustomerPlaceDetails($placeId: String!) {
+    customerPlaceDetails(placeId: $placeId) {
+      latitude
+      longitude
+      addressLine1
+      addressLine2
+      city
+      state
+      pincode
+      formattedAddress
+    }
+  }
+`;
+
+// --- Instagram (customer connect + attendee row) ---
+// The schema lives in customer-server/src/modules/customerInstagram.
+// v1 ships against a stub fetcher; mutation/query shapes match the
+// real Meta-backed path so the swap is callsite-only.
+
+const INSTAGRAM_FIELDS = `
+  _id
+  customerId
+  connected
+  attendeeVisibility
+  handle
+  avatar
+  biography
+  followerCount
+  mediaCount
+  recentMedia {
+    id
+    caption
+    mediaUrl
+    thumbnailUrl
+    permalink
+    mediaType
+    takenAt
+  }
+  city
+  connectedAt
+  lastSyncedAt
+`;
+
+export const GET_MY_INSTAGRAM_QUERY = `
+  query GetMyInstagram {
+    getMyInstagram {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const CONNECT_INSTAGRAM_MUTATION = `
+  mutation ConnectInstagram($input: ConnectInstagramInput!) {
+    connectInstagram(input: $input) {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const DISCONNECT_INSTAGRAM_MUTATION = `
+  mutation DisconnectInstagram {
+    disconnectInstagram
+  }
+`;
+
+export const UPDATE_INSTAGRAM_VISIBILITY_MUTATION = `
+  mutation UpdateInstagramVisibility($input: UpdateInstagramVisibilityInput!) {
+    updateInstagramVisibility(input: $input) {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const SYNC_MY_INSTAGRAM_MUTATION = `
+  mutation SyncMyInstagram {
+    syncMyInstagram {
+      ${INSTAGRAM_FIELDS}
+    }
+  }
+`;
+
+export const GET_EVENT_ATTENDEES_WITH_INSTAGRAM_QUERY = `
+  query GetEventAttendeesWithInstagram($eventId: String!, $limit: Int) {
+    getEventAttendeesWithInstagram(eventId: $eventId, limit: $limit) {
+      customerId
+      firstName
+      handle
+      avatar
+      city
+    }
   }
 `;
 
@@ -319,6 +612,45 @@ export const GET_CART_QUERY = `
   query GetCart($eventId: String!) {
     getCart(eventId: $eventId) {
       ${CART_FIELDS}
+    }
+  }
+`;
+
+// Public, copyable promo codes the host chose to show on an event page.
+export const VISIBLE_COUPONS_QUERY = `
+  query VisibleCouponsForEvent($eventId: String!) {
+    visibleCouponsForEvent(eventId: $eventId) {
+      code
+      description
+      discountLabel
+      minCartValue
+      endDate
+    }
+  }
+`;
+
+// Validate a promo code at checkout and preview the discount + the full
+// DISCOUNTED price breakdown so the summary renders exact GST/fee lines.
+export const PREVIEW_COUPON_QUERY = `
+  query PreviewCoupon($input: PreviewCouponInput!) {
+    previewCoupon(input: $input) {
+      ok
+      code
+      reason
+      discountAmount
+      ticketsSubtotal
+      totalBefore
+      totalAfter
+      pricing {
+        grossAmount
+        discountAmount
+        applicationFee
+        applicationFeePercent
+        platformFeeGst
+        taxes
+        taxesPercent
+        totalAmount
+      }
     }
   }
 `;
@@ -441,6 +773,66 @@ export const MY_ORDER_BY_ID_QUERY = `
   query MyOrderById($orderId: String!) {
     getMyOrderById(orderId: $orderId) {
       ${ORDER_FIELDS}
+    }
+  }
+`;
+
+// Past + upcoming events linked to an artist or organiser — feeds the
+// lineup/organizer mini-profile modal on the event detail page.
+const PEOPLE_EVENTS_FIELDS = `
+  _id
+  title
+  slug
+  eventFlyer
+  horizontalFlyer
+  city
+  startDate
+`;
+
+export const ARTIST_PAST_UPCOMING_EVENTS_QUERY = `
+  query GetArtistPastUpcomingEvents($artistId: String!) {
+    getArtistPastUpcomingEvents(artistId: $artistId) {
+      upcoming { ${PEOPLE_EVENTS_FIELDS} }
+      past { ${PEOPLE_EVENTS_FIELDS} }
+    }
+  }
+`;
+
+export const ORGANIZER_PAST_UPCOMING_EVENTS_QUERY = `
+  query GetOrganizerPastUpcomingEvents($hostId: String!) {
+    getOrganizerPastUpcomingEvents(hostId: $hostId) {
+      upcoming { ${PEOPLE_EVENTS_FIELDS} }
+      past { ${PEOPLE_EVENTS_FIELDS} }
+    }
+  }
+`;
+
+export const MY_ORDER_INVOICE_QUERY = `
+  query GetMyOrderInvoice($orderId: String!) {
+    getMyOrderInvoice(orderId: $orderId) {
+      invoiceNumber
+      pdfUrl
+      expiresAt
+      dateOfIssue
+    }
+  }
+`;
+
+// Get-or-generate the tax invoice for a paid order. status is one of
+// "READY" | "GENERATING" | "NO_INVOICE_FREE_ORDER":
+//  - READY  → invoice carries a freshly signed pdfUrl, open it now.
+//  - GENERATING → a worker is producing it; poll getMyOrderInvoice.
+//  - NO_INVOICE_FREE_ORDER → free booking, there's no tax invoice.
+export const GENERATE_MY_ORDER_INVOICE_MUTATION = `
+  mutation GenerateMyOrderInvoice($orderId: String!) {
+    generateMyOrderInvoice(orderId: $orderId) {
+      status
+      invoice {
+        invoiceNumber
+        pdfUrl
+        expiresAt
+        dateOfIssue
+      }
     }
   }
 `;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Loader2, Minus, Plus, ShoppingCart, Zap } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -14,26 +14,44 @@ import {
   EmptyState,
   ErrorState,
 } from "@/components/ui/feedback";
-import { clearActiveCart, writeActiveCart } from "@/lib/active-cart";
+import {
+  activeCartFromCartResponse,
+  clearActiveCart,
+  readActiveCart,
+  writeActiveCart,
+  type ActiveCart,
+} from "@/lib/active-cart";
 import { rupee } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
 import {
   CONFIRM_PAYMENT_MUTATION,
   CREATE_ORDER_MUTATION,
   GET_CART_QUERY,
+  MY_ORDER_BY_ID_QUERY,
+  PREVIEW_COUPON_QUERY,
   REUSE_PENDING_ORDER_MUTATION,
   SET_CART_MUTATION,
+  VISIBLE_COUPONS_QUERY,
 } from "@/lib/queries";
 import { getStoredAttribution, track } from "@/lib/tracker";
 import { useAuthStore } from "@/store/auth";
 import type {
   CartResponse,
+  CouponPreview,
   CreateOrderResponse,
   CustomerOrderView,
 } from "@/types/order";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
 
 const RAZORPAY_SCRIPT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+type PublicCoupon = {
+  code: string;
+  description?: string | null;
+  discountLabel: string;
+  minCartValue?: number | null;
+  endDate: string;
+};
 
 const loadRazorpay = (): Promise<boolean> =>
   new Promise((resolve) => {
@@ -55,28 +73,15 @@ const loadRazorpay = (): Promise<boolean> =>
     document.head.appendChild(script);
   });
 
-const useCountdown = (expiresAt: string | null | undefined) => {
-  const [remaining, setRemaining] = useState<number>(0);
-
-  useEffect(() => {
-    if (!expiresAt) return;
-    const tick = () => {
-      const diff = new Date(expiresAt).getTime() - Date.now();
-      setRemaining(Math.max(0, Math.floor(diff / 1000)));
-    };
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [expiresAt]);
-
-  return remaining;
-};
-
 export const CheckoutClient = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventId = searchParams.get("eventId");
   const retryOrderId = searchParams.get("retryOrderId");
+  // Set when arriving from a host's offline payment link (/t/<code>): the
+  // logged-in customer pays the linked OfflineOrder through this same authed
+  // flow (guest checkout was removed — login is required for every order).
+  const offlineOrderId = searchParams.get("offlineOrderId");
 
   const profile = useAuthStore((s) => s.profile);
   const hydrate = useAuthStore((s) => s.hydrate);
@@ -97,7 +102,16 @@ export const CheckoutClient = () => {
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  const remainingSeconds = useCountdown(cart?.expiresAt ?? null);
+  // Promo code state. `appliedCoupon` holds the server-validated preview
+  // (the SAME evaluator + pricing engine the order path uses), so the
+  // summary it drives is exactly what the buyer is charged.
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponPreview | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  const [publicOffers, setPublicOffers] = useState<PublicCoupon[]>([]);
+  const [offersModalOpen, setOffersModalOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrated) hydrate();
@@ -139,6 +153,22 @@ export const CheckoutClient = () => {
     });
   }, [profile]);
 
+  const persistCart = useCallback((cartResponse: CartResponse) => {
+    const existing = readActiveCart();
+    const meta: Partial<
+      Pick<ActiveCart, "eventSlug" | "eventTitle" | "eventImage">
+    > =
+      existing?.eventId === cartResponse.eventId
+        ? {
+            eventSlug: existing.eventSlug,
+            eventTitle: existing.eventTitle,
+            eventImage: existing.eventImage,
+          }
+        : {};
+
+    writeActiveCart(activeCartFromCartResponse(cartResponse, meta));
+  }, []);
+
   const fetchCart = useCallback(async () => {
     if (!eventId) {
       setFatalError("Missing event reference");
@@ -156,15 +186,16 @@ export const CheckoutClient = () => {
       if (!data.getCart) {
         setFatalError("Your cart has expired. Please reselect your tickets.");
         clearActiveCart();
+      } else if (new Date(data.getCart.expiresAt).getTime() <= Date.now()) {
+        // AUDIT-036: the server can still return a cart whose TTL lapsed
+        // moments ago (clock skew, or the customer re-opened a left-open
+        // checkout tab). Surface the expired state up front instead of
+        // rendering a form that will only fail at the payment step.
+        setFatalError("Your cart has expired. Please reselect your tickets.");
+        clearActiveCart();
       } else {
         setCart(data.getCart);
-        if (data.getCart.expiresAt) {
-          writeActiveCart({
-            eventId,
-            totalAmount: Number(data.getCart.pricing?.totalAmount ?? 0),
-            expiresAt: data.getCart.expiresAt,
-          });
-        }
+        persistCart(data.getCart);
       }
     } catch (err: any) {
       setFatalError(
@@ -173,11 +204,78 @@ export const CheckoutClient = () => {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, persistCart]);
+
+  const restorePendingCartOrFetch = useCallback(async () => {
+    if (!eventId) {
+      setFatalError("Missing event reference");
+      setLoading(false);
+      return;
+    }
+
+    const pending = readActiveCart();
+    if (
+      pending?.pending &&
+      pending.eventId === eventId &&
+      (pending.tickets?.length ?? 0) > 0
+    ) {
+      setLoading(true);
+      setFatalError(null);
+      setActionError(null);
+      try {
+        const data = await gqlRequest<{ setCart: CartResponse }>(
+          SET_CART_MUTATION,
+          {
+            input: {
+              eventId,
+              tickets: pending.tickets ?? [],
+              extras: pending.extras ?? [],
+            },
+          }
+        );
+        setCart(data.setCart);
+        writeActiveCart(
+          activeCartFromCartResponse(data.setCart, {
+            eventSlug: pending.eventSlug,
+            eventTitle: pending.eventTitle,
+            eventImage: pending.eventImage,
+          })
+        );
+        track("cartCreated", {
+          eventId,
+          itemIds: (pending.tickets ?? []).map((line) => line.ticketId),
+          customerId: profile?._id,
+          metadata: { restoredAfterAuth: true },
+        });
+      } catch (err: any) {
+        clearActiveCart();
+        setFatalError(
+          err?.response?.errors?.[0]?.message ??
+            "Unable to restore your selected tickets. Please reselect your tickets."
+        );
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    await fetchCart();
+  }, [eventId, fetchCart]);
 
   useEffect(() => {
-    if (profile) fetchCart();
-  }, [profile, fetchCart]);
+    if (profile) restorePendingCartOrFetch();
+  }, [profile, restorePendingCartOrFetch]);
+
+  useEffect(() => {
+    if (!eventId) return;
+    gqlRequest<{ visibleCouponsForEvent: PublicCoupon[] }>(
+      VISIBLE_COUPONS_QUERY,
+      { eventId }
+    )
+      .then((d) => setPublicOffers(d.visibleCouponsForEvent ?? []))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
 
   const updateCartLine = async (
     kind: "ticket" | "extra",
@@ -194,18 +292,13 @@ export const CheckoutClient = () => {
         { input: buildAdjustedCartInput(cart, kind, lineId, delta) }
       );
       setCart(data.setCart);
-      if (data.setCart?.expiresAt) {
-        writeActiveCart({
-          eventId,
-          totalAmount: Number(data.setCart.pricing?.totalAmount ?? 0),
-          expiresAt: data.setCart.expiresAt,
-        });
+      persistCart(data.setCart);
+      // A changed cart invalidates any applied promo (quantities/eligibility
+      // shifted). Drop it so the buyer re-applies against the new total.
+      if (appliedCoupon) {
+        setAppliedCoupon(null);
+        setCouponError(null);
       }
-      track("cartUpdated", {
-        eventId,
-        itemIds: [lineId],
-        metadata: { kind, delta },
-      });
     } catch (err: any) {
       setActionError(
         err?.response?.errors?.[0]?.message ??
@@ -214,6 +307,44 @@ export const CheckoutClient = () => {
     } finally {
       setUpdatingLine(null);
     }
+  };
+
+  const applyPromo = async (explicitCode?: string) => {
+    if (!eventId || !cart) return;
+    const code = (explicitCode ?? promoInput).trim();
+    if (!code) return;
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      const tickets = cart.tickets
+        .filter((t) => t.quantity > 0)
+        .map((t) => ({ ticketId: t.ticketId, quantity: t.quantity }));
+      const data = await gqlRequest<{ previewCoupon: CouponPreview }>(
+        PREVIEW_COUPON_QUERY,
+        { input: { eventId, couponCode: code, tickets } }
+      );
+      const preview = data.previewCoupon;
+      if (!preview.ok) {
+        setAppliedCoupon(null);
+        setCouponError(preview.reason ?? "That promo code can't be applied.");
+        return;
+      }
+      setAppliedCoupon(preview);
+      setPromoInput(preview.code);
+    } catch (err: any) {
+      setAppliedCoupon(null);
+      setCouponError(
+        err?.response?.errors?.[0]?.message ?? "Unable to check this code."
+      );
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+    setPromoInput("");
   };
 
   const startPayment = async () => {
@@ -228,14 +359,6 @@ export const CheckoutClient = () => {
     // Read first-touch attribution from localStorage so the order
     // doc carries the campaign that brought this customer in.
     const attribution = getStoredAttribution();
-
-    track("checkoutStarted", {
-      eventId,
-      metadata: {
-        totalAmount: cart.pricing?.totalAmount,
-        ticketCount: cart.tickets?.length ?? 0,
-      },
-    });
 
     try {
       // AUDIT-030: resume the existing PaymentPending order if the
@@ -260,6 +383,9 @@ export const CheckoutClient = () => {
                   email: guestInfo.email?.trim(),
                   phone: guestInfo.phone?.trim() || profile.phone,
                 },
+                couponCode: appliedCoupon?.code,
+                // Link the order to the host's offline payment link when present.
+                ...(offlineOrderId ? { offlineOrderId } : {}),
                 utm: {
                   utmSource: attribution.utmSource,
                   utmMedium: attribution.utmMedium,
@@ -275,20 +401,14 @@ export const CheckoutClient = () => {
 
       const { checkout, order } = createRes.createOrder;
       if (!checkout) {
-        track("checkoutCompleted", {
-          eventId,
-          orderId: order._id,
-          metadata: { totalAmount: order.totalAmount, freeOrder: true },
-        });
+        // Free order — finalized server-side, which emits the canonical
+        // `orderPlaced` analytics event. Nothing to track here. Release the
+        // local active-cart pointer (mirrors the paid path's handler) so the
+        // bottom cart bar disappears the moment the booking is confirmed.
+        clearActiveCart();
         router.push(`/orders/${order._id}?just_paid=1`);
         return;
       }
-
-      track("checkoutPaymentInit", {
-        eventId,
-        orderId: order._id,
-        metadata: { totalAmount: order.totalAmount },
-      });
 
       const ready = await loadRazorpay();
       if (!ready) throw new Error("Unable to load Razorpay. Please retry.");
@@ -306,8 +426,23 @@ export const CheckoutClient = () => {
             email: profile.email,
             contact: profile.phone,
           },
-          theme: { color: "#1F62E8" },
+          theme: { color: "#0F8842" },
           handler: async (response: RazorpayPaymentResponse) => {
+            // The Razorpay handler firing means the customer's payment is
+            // in flight on Razorpay's side — money may already be debited.
+            // Always release the local cart and hand off to the order
+            // detail page; that page polls getMyOrderById waiting for the
+            // webhook-driven finaliser, then either shows the QR or the
+            // "payment didn't confirm — refund coming" banner.
+            //
+            // We still try the inline confirmOrderPayment fast-path for a
+            // snappy "QR shown immediately" UX, but if it throws (Razorpay
+            // fetchPayment timeout, mongo transaction conflict, server
+            // restart mid-request, etc.) we MUST NOT block the redirect —
+            // doing so would push the user back to the checkout button and
+            // a retry there would mint a fresh Razorpay order and charge
+            // them again while the first capture is still being reconciled.
+            clearActiveCart();
             try {
               await gqlRequest<{ confirmOrderPayment: CustomerOrderView }>(
                 CONFIRM_PAYMENT_MUTATION,
@@ -317,36 +452,60 @@ export const CheckoutClient = () => {
                   razorpaySignature: response.razorpay_signature,
                 }
               );
-              track("checkoutCompleted", {
-                eventId,
-                orderId: order._id,
-                metadata: { totalAmount: order.totalAmount },
-              });
-              clearActiveCart();
-              router.push(`/orders/${order._id}?just_paid=1`);
-              resolve();
-            } catch (err: any) {
-              track("checkoutPaymentFailed", {
-                eventId,
-                orderId: order._id,
-                metadata: {
-                  stage: "confirm",
-                  reason: err?.message ?? "unknown",
-                },
-              });
-              reject(err);
+            } catch {
+              // Fast-path confirm failed — swallow and hand off to the order
+              // detail page, which polls for the webhook-driven finaliser.
+              // Conversion is recorded server-side as `orderPlaced`, so there's
+              // nothing to track here either way. NEVER block the redirect.
             }
+            router.push(`/orders/${order._id}?just_paid=1`);
+            resolve();
           },
           modal: {
             ondismiss: () => {
-              track("checkoutPaymentFailed", {
-                eventId,
+              // Funnel: buyer opened the payment sheet then dismissed it
+              // without completing — the payment-stage drop-off signal.
+              track("paymentFailed", {
+                eventId: eventId ?? undefined,
                 orderId: order._id,
-                metadata: { stage: "razorpay-modal", reason: "cancelled" },
               });
               reject(new Error("Payment cancelled"));
             },
           },
+        });
+        // A failed attempt (e.g. UPI declined) normally leaves the Razorpay
+        // sheet open to retry — that's correct. BUT if an EARLIER attempt
+        // actually succeeded (the order is already paid; the webhook confirmed
+        // it) Razorpay rejects the retry with "order already completed", which
+        // would otherwise strand the buyer on a scary error for a paid order.
+        // On any failure, check the order: if it's already paid, hand off to
+        // the confirmation instead of letting them keep retrying.
+        rp.on("payment.failed", async () => {
+          try {
+            const data = await gqlRequest<{
+              getMyOrderById: CustomerOrderView | null;
+            }>(MY_ORDER_BY_ID_QUERY, { orderId: order._id });
+            const st = data.getMyOrderById?.orderStatus;
+            if (st === "PAYMENT_SUCCESS" || st === "CHECKED_IN") {
+              clearActiveCart();
+              try {
+                rp.close();
+              } catch {
+                /* modal may already be closing */
+              }
+              router.push(`/orders/${order._id}?just_paid=1`);
+              resolve();
+            }
+            // Otherwise: genuine failure — leave the sheet open for a retry.
+          } catch {
+            // Status check failed — don't interfere with Razorpay's retry UI.
+          }
+        });
+        // Funnel: payment sheet is opening — a payment-stage step that
+        // route-based pageView tracking can't see. Fire-and-forget.
+        track("paymentStarted", {
+          eventId: eventId ?? undefined,
+          orderId: order._id,
         });
         rp.open();
       });
@@ -401,12 +560,18 @@ export const CheckoutClient = () => {
   }
 
   if (fatalError) {
+    const activeCart = readActiveCart();
+    const backHref = activeCart?.eventSlug
+      ? `/events/${activeCart.eventSlug}`
+      : eventId
+        ? `/events?highlight=${eventId}`
+        : "/events";
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-10">
         <ErrorState
           title="Cart unavailable"
           message={fatalError}
-          onRetry={() => router.push("/events")}
+          onRetry={() => router.push(backHref)}
         />
       </div>
     );
@@ -429,39 +594,151 @@ export const CheckoutClient = () => {
     );
   }
 
-  const minutes = Math.floor(remainingSeconds / 60);
-  const seconds = remainingSeconds % 60;
   const guestInfoReady = isGuestInfoComplete(guestInfo);
 
+  const inputClass =
+    "mt-1 h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none transition focus:border-[#c5ff3d]/60 focus:bg-white/[0.06] placeholder:text-white/40";
+  const stepperBtn =
+    "inline-flex h-8 w-8 items-center justify-center rounded-full text-white disabled:opacity-30 hover:bg-white/[0.08]";
+
+  // A free / RSVP cart (nothing to pay) hides the price breakdown + the promo
+  // box entirely — there's no money to discount or itemise — and the CTA reads
+  // "Get in" instead of "Pay ₹0".
+  const isFreeCart = (cart.pricing?.totalAmount ?? 0) <= 0;
+
+  // The amount actually charged: when a valid promo is applied, the server's
+  // recomputed (discounted) total — the SAME value the breakdown shows as
+  // "Total payable". The Pay button must use this, not cart.pricing.totalAmount,
+  // which is the PRE-discount total (the button used to show e.g. ₹5,188 while
+  // the breakdown said ₹2,329 after applying a promo).
+  const payableTotal =
+    (appliedCoupon?.ok ? appliedCoupon.pricing?.totalAmount : null) ??
+    cart.pricing?.totalAmount ??
+    0;
+
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-10 md:py-12">
-      <h1 className="text-2xl font-semibold md:text-3xl">Review your order</h1>
-      <p className="mt-1 text-sm text-muted">
-        Lock expires in{" "}
-        <span className="font-semibold text-ink">
-          {minutes}:{seconds.toString().padStart(2, "0")}
-        </span>
+    <div className="mx-auto w-full max-w-2xl px-4 py-10 text-white md:py-12">
+      <h1 className="text-2xl font-semibold text-white md:text-3xl">
+        Review your order
+      </h1>
+      <p className="mt-1 text-sm text-white/60">
+        Confirm your tickets and payment details.
       </p>
 
       <div className="mt-6 space-y-4">
-        <div className="rounded-2xl border border-border bg-cream">
-          <div className="border-b border-border px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
+        {/* When the customer is already signed in, their name/email/phone are
+            taken straight from their profile — there's nothing to confirm, so
+            we render no identity strip at all. Only guests (no profile) see the
+            editable details form below. */}
+        {profile ? null : (
+        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="font-semibold text-white">Your details</div>
+              <p className="mt-1 text-xs text-white/60">
+                These details appear on the booking and payment receipt.
+              </p>
+            </div>
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${
+                guestInfoReady
+                  ? "bg-emerald-400/15 text-emerald-200 ring-emerald-400/40"
+                  : "bg-amber-400/15 text-amber-200 ring-amber-400/40"
+              }`}
+            >
+              {guestInfoReady ? "Ready" : "Needed"}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                First name
+              </span>
+              <input
+                value={guestInfo.firstName ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    firstName: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="given-name"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Last name
+              </span>
+              <input
+                value={guestInfo.lastName ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    lastName: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="family-name"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Email
+              </span>
+              <input
+                type="email"
+                value={guestInfo.email ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    email: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="email"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+                Phone
+              </span>
+              <input
+                value={guestInfo.phone ?? ""}
+                onChange={(e) =>
+                  setGuestInfo((current) => ({
+                    ...current,
+                    phone: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                autoComplete="tel"
+              />
+            </label>
+          </div>
+        </div>
+        )}
+
+        <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.04] text-white backdrop-blur-xl">
+          <div className="border-b border-white/[0.06] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
             Tickets
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-white/[0.06]">
             {cart.tickets.map((line) => (
               <div
                 key={line.ticketId}
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
-                <div>
-                  <div className="font-semibold">{line.ticketName}</div>
-                  <div className="text-xs text-muted">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-white">
+                    {line.ticketName}
+                  </div>
+                  <div className="text-xs text-white/55">
                     {rupee(line.unitPrice)} each
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-1">
                     <button
                       type="button"
                       aria-label={`Remove one ${line.ticketName}`}
@@ -471,11 +748,11 @@ export const CheckoutClient = () => {
                         line.quantity <= 1
                       }
                       onClick={() => updateCartLine("ticket", line.ticketId, -1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="min-w-[1.5rem] text-center text-sm font-semibold">
+                    <span className="min-w-[1.5rem] text-center text-sm font-semibold text-white">
                       {updatingLine === `ticket:${line.ticketId}` ? (
                         <Loader2 size={13} className="mx-auto animate-spin" />
                       ) : (
@@ -487,19 +764,19 @@ export const CheckoutClient = () => {
                       aria-label={`Add one ${line.ticketName}`}
                       disabled={paying || updatingLine === `ticket:${line.ticketId}`}
                       onClick={() => updateCartLine("ticket", line.ticketId, 1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Plus size={14} />
                     </button>
                   </div>
-                  <div className="min-w-[5rem] text-right font-semibold">
+                  <div className="min-w-[5rem] text-right font-semibold text-white">
                     {rupee(line.totalPrice)}
                   </div>
                 </div>
               </div>
             ))}
             {cart.extras.length ? (
-              <div className="border-t border-border px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted">
+              <div className="border-t border-white/[0.06] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
                 Add-ons
               </div>
             ) : null}
@@ -508,24 +785,26 @@ export const CheckoutClient = () => {
                 key={line.extraId}
                 className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
               >
-                <div>
-                  <div className="font-semibold">{line.extraName}</div>
-                  <div className="text-xs text-muted">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-white">
+                    {line.extraName}
+                  </div>
+                  <div className="text-xs text-white/55">
                     {rupee(line.unitPrice)} each
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-1">
                     <button
                       type="button"
                       aria-label={`Remove one ${line.extraName}`}
                       disabled={paying || updatingLine === `extra:${line.extraId}`}
                       onClick={() => updateCartLine("extra", line.extraId, -1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="min-w-[1.5rem] text-center text-sm font-semibold">
+                    <span className="min-w-[1.5rem] text-center text-sm font-semibold text-white">
                       {updatingLine === `extra:${line.extraId}` ? (
                         <Loader2 size={13} className="mx-auto animate-spin" />
                       ) : (
@@ -537,12 +816,12 @@ export const CheckoutClient = () => {
                       aria-label={`Add one ${line.extraName}`}
                       disabled={paying || updatingLine === `extra:${line.extraId}`}
                       onClick={() => updateCartLine("extra", line.extraId, 1)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink disabled:opacity-30"
+                      className={stepperBtn}
                     >
                       <Plus size={14} />
                     </button>
                   </div>
-                  <div className="min-w-[5rem] text-right font-semibold">
+                  <div className="min-w-[5rem] text-right font-semibold text-white">
                     {rupee(line.totalPrice)}
                   </div>
                 </div>
@@ -551,115 +830,149 @@ export const CheckoutClient = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-cream p-5 text-sm">
-          <div className="flex justify-between py-1">
-            <span className="text-muted">Subtotal</span>
-            <span className="font-medium">{rupee(cart.pricing.grossAmount)}</span>
-          </div>
-          {cart.pricing.taxes > 0 ? (
-            <div className="flex justify-between py-1">
-              <span className="text-muted">
-                Ticket GST ({cart.pricing.taxesPercent}%)
-              </span>
-              <span className="font-medium">{rupee(cart.pricing.taxes)}</span>
+        {/* Promo code. Hidden for a free/RSVP cart — there's nothing to
+            discount. Drives the summary below from a server-validated preview,
+            so the discount shown is the discount charged. */}
+        {!isFreeCart ? (
+        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
+          {appliedCoupon?.ok ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-semibold text-[#9CCB3B]">
+                  {appliedCoupon.code} applied
+                </div>
+                <div className="text-xs text-white/55">
+                  You save {rupee(appliedCoupon.discountAmount)}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={removePromo}
+                disabled={paying}
+                className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/[0.06]"
+              >
+                Remove
+              </button>
             </div>
-          ) : null}
-          <div className="flex justify-between py-1">
-            <span className="text-muted">
-              Platform fee ({cart.pricing.applicationFeePercent}%)
-            </span>
-            <span className="font-medium">{rupee(cart.pricing.applicationFee)}</span>
-          </div>
-          {cart.pricing.platformFeeGst > 0 ? (
-            <div className="flex justify-between py-1">
-              <span className="text-muted">GST on platform fee (18%)</span>
-              <span className="font-medium">{rupee(cart.pricing.platformFeeGst)}</span>
-            </div>
-          ) : null}
-          <div className="mt-2 flex justify-between border-t border-border pt-2 text-base">
-            <span className="font-semibold">Total payable</span>
-            <span className="font-semibold">{rupee(cart.pricing.totalAmount)}</span>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyPromo();
+                    }
+                  }}
+                  placeholder="Promo code"
+                  disabled={couponBusy || paying}
+                  className="min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm uppercase tracking-wide text-white placeholder:normal-case placeholder:tracking-normal placeholder:text-white/40 focus:border-[#9CCB3B]/60 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => applyPromo()}
+                  disabled={couponBusy || paying || !promoInput.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#c5ff3d] px-4 py-2 text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
+                >
+                  {couponBusy ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </button>
+              </div>
+              {couponError ? (
+                <p className="mt-2 text-xs text-red-300">{couponError}</p>
+              ) : null}
+              {publicOffers.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setOffersModalOpen(true)}
+                  className="mt-2 text-xs text-white/50 underline underline-offset-2 transition hover:text-white/70"
+                >
+                  View all offers
+                </button>
+              ) : null}
+            </>
+          )}
         </div>
+        ) : null}
 
-        <div className="rounded-2xl border border-border bg-cream p-5 text-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="font-semibold">Your details</div>
-              <p className="mt-1 text-xs text-muted">
-                These details appear on the booking and payment receipt.
-              </p>
+        {/* Price breakdown — hidden entirely for a free/RSVP cart. */}
+        {!isFreeCart ? (() => {
+          const applied = appliedCoupon?.ok ? appliedCoupon : null;
+          const pr = applied?.pricing ?? cart.pricing;
+          // `pr.grossAmount` is the taxable base AFTER any discount (incl.
+          // add-ons). The full item total BEFORE discount is therefore
+          // grossAmount + discountAmount — show that as the top line, then the
+          // discount, then the discounted subtotal. This reconciles cleanly:
+          // gross − discount + fees = total payable.
+          const discount = applied ? pr.discountAmount ?? 0 : 0;
+          const grossSubtotal = pr.grossAmount + discount;
+          const netSubtotal = pr.grossAmount;
+          return (
+            <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-5 text-sm text-white backdrop-blur-xl">
+              <div className="flex justify-between py-1">
+                <span className="text-white/55">Subtotal</span>
+                <span className="font-medium text-white">
+                  {rupee(grossSubtotal)}
+                </span>
+              </div>
+              {applied ? (
+                <>
+                  <div className="flex justify-between py-1">
+                    <span className="text-[#9CCB3B]">
+                      Discount ({applied.code})
+                    </span>
+                    <span className="font-medium text-[#9CCB3B]">
+                      −{rupee(discount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-white/55">Subtotal after discount</span>
+                    <span className="font-medium text-white">
+                      {rupee(netSubtotal)}
+                    </span>
+                  </div>
+                </>
+              ) : null}
+              {pr.taxes > 0 ? (
+                <div className="flex justify-between py-1">
+                  <span className="text-white/55">
+                    Ticket GST ({pr.taxesPercent}%)
+                  </span>
+                  <span className="font-medium text-white">
+                    {rupee(pr.taxes)}
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex justify-between py-1">
+                <span className="text-white/55">
+                  Platform fee ({pr.applicationFeePercent}%)
+                </span>
+                <span className="font-medium text-white">
+                  {rupee(pr.applicationFee)}
+                </span>
+              </div>
+              {pr.platformFeeGst > 0 ? (
+                <div className="flex justify-between py-1">
+                  <span className="text-white/55">GST on platform fee (18%)</span>
+                  <span className="font-medium text-white">
+                    {rupee(pr.platformFeeGst)}
+                  </span>
+                </div>
+              ) : null}
+              <div className="mt-2 flex justify-between border-t border-white/[0.08] pt-2 text-base">
+                <span className="font-semibold text-white">Total payable</span>
+                <span className="font-semibold text-white">
+                  {rupee(pr.totalAmount)}
+                </span>
+              </div>
             </div>
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                guestInfoReady
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700"
-              }`}
-            >
-              {guestInfoReady ? "Ready" : "Needed"}
-            </span>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-semibold text-muted">First name</span>
-              <input
-                value={guestInfo.firstName ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    firstName: e.target.value,
-                  }))
-                }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
-                autoComplete="given-name"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-muted">Last name</span>
-              <input
-                value={guestInfo.lastName ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    lastName: e.target.value,
-                  }))
-                }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
-                autoComplete="family-name"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-semibold text-muted">Email</span>
-              <input
-                type="email"
-                value={guestInfo.email ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    email: e.target.value,
-                  }))
-                }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
-                autoComplete="email"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-semibold text-muted">Phone</span>
-              <input
-                value={guestInfo.phone ?? ""}
-                onChange={(e) =>
-                  setGuestInfo((current) => ({
-                    ...current,
-                    phone: e.target.value,
-                  }))
-                }
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent"
-                autoComplete="tel"
-              />
-            </label>
-          </div>
-        </div>
+          );
+        })() : null}
 
         {actionError ? (
           <ErrorState
@@ -670,33 +983,89 @@ export const CheckoutClient = () => {
 
         <button
           type="button"
-          disabled={paying || updatingLine !== null || remainingSeconds <= 0}
+          disabled={paying || updatingLine !== null}
           onClick={startPayment}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-50"
         >
           {paying ? (
             <Loader2 size={16} className="animate-spin" />
-          ) : remainingSeconds <= 0 ? (
-            "Cart expired"
-          ) : cart.pricing.totalAmount <= 0 ? (
-            "Confirm booking"
+          ) : isFreeCart ? (
+            <>
+              <Zap size={16} />
+              Get in
+            </>
           ) : (
-            `Pay ${rupee(cart.pricing.totalAmount)}`
+            `Pay ${rupee(payableTotal)}`
           )}
         </button>
-        <p className="text-center text-xs text-muted">
-          {cart.pricing.totalAmount <= 0
-            ? "No payment is needed for this booking."
+        <p className="text-center text-xs text-white/55">
+          {isFreeCart
+            ? "This is a free booking — no payment needed."
             : "Secured by Razorpay. Cards, UPI, net-banking, and wallets supported."}
         </p>
 
-        {/* AUDIT-034: SoT §27 disclosure on point of sale. Hoizr is the
-            ticketing platform — the organiser owns and runs the event. */}
-        <p className="text-center text-xs text-muted">
+        {/* AUDIT-034: SoT §27 disclosure on point of sale. */}
+        <p className="text-center text-xs text-white/50">
           Ticketing by Hoizr. The event itself is run by the organiser —
           Hoizr is not the event organiser.
         </p>
       </div>
+
+      {/* Offers modal — lists public coupons for this event. Clicking one
+          auto-applies it via the normal promo flow. */}
+      {offersModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+          onClick={() => setOffersModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-white/[0.08] bg-[#0a0a0e] p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div className="text-sm font-semibold text-white">Available offers</div>
+              <button
+                type="button"
+                onClick={() => setOffersModalOpen(false)}
+                className="text-xs text-white/40 hover:text-white/70"
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-2">
+              {publicOffers.map((offer) => (
+                <button
+                  key={offer.code}
+                  type="button"
+                  onClick={() => {
+                    setPromoInput(offer.code);
+                    setOffersModalOpen(false);
+                    applyPromo(offer.code);
+                  }}
+                  className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.07]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-mono text-sm font-semibold tracking-widest text-[#9CCB3B]">
+                      {offer.code}
+                    </div>
+                    <div className="shrink-0 text-xs font-semibold text-white">
+                      {offer.discountLabel}
+                    </div>
+                  </div>
+                  {offer.description ? (
+                    <p className="mt-1 text-xs text-white/55">{offer.description}</p>
+                  ) : null}
+                  {offer.minCartValue ? (
+                    <p className="mt-0.5 text-[11px] text-white/40">
+                      Min. cart: {rupee(offer.minCartValue)}
+                    </p>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

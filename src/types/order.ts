@@ -16,12 +16,26 @@ export type CartExtraLine = {
 
 export type CartPricing = {
   grossAmount: number;
+  /** Coupon discount on the ticket subtotal (₹; 0/absent when none). */
+  discountAmount?: number;
   applicationFee: number;
   applicationFeePercent: number;
   platformFeeGst: number;
   taxes: number;
   taxesPercent: number;
   totalAmount: number;
+};
+
+/** Result of validating a promo code at checkout (previewCoupon query). */
+export type CouponPreview = {
+  ok: boolean;
+  code: string;
+  reason?: string | null;
+  discountAmount: number;
+  ticketsSubtotal: number;
+  totalBefore: number;
+  totalAfter: number;
+  pricing?: CartPricing | null;
 };
 
 export type CartResponse = {
@@ -49,14 +63,24 @@ export type OrderExtraItem = {
   totalPrice: number;
 };
 
+/**
+ * Runtime values match what the GraphQL schema emits — TypeGraphQL
+ * serialises the enum *key* (not the TS-side value), so the customer-
+ * server sends `"PAYMENT_SUCCESS"` over the wire even though the
+ * hoizr-shared enum has `PAYMENT_SUCCESS = "PaymentSuccess"` in its
+ * declaration. This used to be PascalCase here, which made every
+ * status comparison silently false (QR never showed, badge label fell
+ * through to default). Keep this union in sync with the codegen enum
+ * in generated/graphql.ts.
+ */
 export type OrderStatus =
-  | "PaymentPending"
-  | "PaymentSuccess"
-  | "PaymentFailed"
-  | "CheckedIn"
-  | "Cancelled"
-  | "Refunded"
-  | "Superseded";
+  | "PAYMENT_PENDING"
+  | "PAYMENT_SUCCESS"
+  | "PAYMENT_FAILED"
+  | "CHECKED_IN"
+  | "CANCELLED"
+  | "REFUNDED"
+  | "SUPERSEDED";
 
 export type CustomerOrderView = {
   _id: string;
@@ -96,12 +120,12 @@ export type CreateOrderResponse = {
 };
 
 export type ArtistMerchOrderStatus =
-  | "PaymentPending"
-  | "PaymentSuccess"
-  | "PaymentFailed"
-  | "Cancelled"
-  | "Refunded"
-  | "Fulfilled";
+  | "PAYMENT_PENDING"
+  | "PAYMENT_SUCCESS"
+  | "PAYMENT_FAILED"
+  | "CANCELLED"
+  | "REFUNDED"
+  | "FULFILLED";
 
 export type CustomerMerchOrderView = {
   _id: string;

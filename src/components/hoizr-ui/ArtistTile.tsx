@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getArtistDisplayName } from "@/lib/artist-name";
 import type { PublicArtistListItem } from "@/types/artist";
 
 type Props = {
@@ -6,7 +7,7 @@ type Props = {
 };
 
 export const ArtistTile = ({ artist }: Props) => {
-  const name = `${artist.firstName} ${artist.lastName}`.trim();
+  const name = getArtistDisplayName(artist);
   const href = artist.slug ? `/artist/${artist.slug}` : `/artist?id=${artist._id}`;
   const tag = artist.tagline ?? artist.genres?.[0] ?? artist.city ?? "Artist";
   return (

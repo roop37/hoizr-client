@@ -1,5 +1,6 @@
 export type PublicArtistProfile = {
   _id: string;
+  stageName?: string | null;
   firstName: string;
   lastName: string;
   bio?: string | null;
@@ -21,6 +22,7 @@ export type PublicArtistProfile = {
 
 export type PublicArtistListItem = {
   _id: string;
+  stageName?: string | null;
   firstName: string;
   lastName: string;
   slug?: string | null;
@@ -93,4 +95,17 @@ export type FollowedArtist = {
 export type ArtistFollowerCounts = {
   totalFollowers: number;
   isFollowing: boolean;
+};
+
+export type PublicArtistGuestlist = {
+  guestlistId: string;
+  code: string;
+  eventId: string;
+  eventTitle: string;
+  eventCity?: string | null;
+  eventFlyer?: string | null;
+  startDate?: string | null;
+  isHighlighted: boolean;
+  cap?: number | null;
+  acceptedCount: number;
 };

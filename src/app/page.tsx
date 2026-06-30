@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HHero } from "@/components/hoizr-ui/HHero";
 import { RailHead } from "@/components/hoizr-ui/RailHead";
 import { GenreCollectionCard } from "@/components/hoizr-ui/GenreCollectionCard";
-import { EventTile } from "@/components/hoizr-ui/EventTile";
+import { EventCard } from "@/components/hoizr-ui/EventCard";
 import { HTicker } from "@/components/hoizr-ui/HTicker";
 import { DomeGallery } from "@/components/hoizr-ui/DomeGallery";
-import { FeaturedHorizontalRail } from "@/components/hoizr-ui/FeaturedHorizontalRail";
+import { HHero } from "@/components/hoizr-ui/HHero";
 import { CollectionPageJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
+import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 
@@ -22,31 +22,16 @@ export const metadata: Metadata = {
 };
 // HFooter is now rendered once at the layout level so it can pin to the
 // bottom of short pages. Page-level renders removed.
-// import {
-//   fetchCustomerMasters,
-//   fetchPublicArtists,
-//   fetchPublishedEvents,
-// } from "@/lib/home-data";
-// import { toDisplayEvent } from "@/lib/event-display";
+import {
+  fetchCustomerMasters,
+  fetchEventHostName,
+  fetchPublicArtists,
+  fetchPublishedEvents,
+} from "@/lib/home-data";
+import { toDisplayEvent } from "@/lib/event-display";
 import type { DisplayEvent } from "@/lib/event-display";
-import type { PublicArtistListResponse } from "@/types/artist";
-import type { GenreTagMaster, IndianCityMaster } from "@/types/master";
 
 export const dynamic = "force-dynamic";
-
-const EMPTY_ARTISTS: PublicArtistListResponse = {
-  artists: [],
-  total: 0,
-  page: 1,
-  pageSize: 0,
-};
-const EMPTY_MASTERS: {
-  cities: IndianCityMaster[];
-  genres: GenreTagMaster[];
-} = {
-  cities: [],
-  genres: [],
-};
 
 const COMING_SOON_EVENT_EXAMPLES = [
   {
@@ -66,27 +51,27 @@ const COMING_SOON_EVENT_EXAMPLES = [
   {
     title: "Warehouse Social",
     meta: "Party · Colaba",
-    price: "Guestlist live",
+    price: "RSVP live",
     image:
       "/eventflyers/ChatGPT%20Image%20May%2024%2C%202026%2C%2010_49_09%20PM%20(3).png",
   },
 ] as const;
 
 export default async function HomePage() {
-  // API wiring paused for pre-launch. Restore this block when public
-  // events are ready; the `all.length === 0` branch below will still
-  // render the coming-soon card if the API returns no events.
-  //
-  // const [eventsRes, artistsRes, masters] = await Promise.all([
-  //   fetchPublishedEvents({ pageSize: 24 }),
-  //   fetchPublicArtists(32),
-  //   fetchCustomerMasters(),
-  // ]);
-  // const all = eventsRes.events.map(toDisplayEvent);
-
-  const all: DisplayEvent[] = [];
-  const artistsRes = EMPTY_ARTISTS;
-  const masters = EMPTY_MASTERS;
+  const [eventsRes, artistsRes, masters] = await Promise.all([
+    fetchPublishedEvents({ pageSize: 24 }),
+    fetchPublicArtists(32),
+    fetchCustomerMasters(),
+  ]);
+  // Home feed shows ONLY events that ship with a landscape flyer.
+  // The new home design (Apple-Music-style hero + landscape tile rails)
+  // composes around the 16:9 asset; portrait-only events look broken in
+  // both the hero scrim and the rail cards, so we drop them at the
+  // source rather than render letterboxed fallbacks. Hosts opt in by
+  // uploading a landscape image on the event-journey "Additional" step.
+  const all: DisplayEvent[] = eventsRes.events
+    .map(toDisplayEvent)
+    .filter((e) => Boolean(e.horizontalImage));
 
   if (all.length === 0) {
     return (
@@ -158,23 +143,24 @@ export default async function HomePage() {
     );
   }
 
-  // Featured rail picks only events with a horizontalFlyer asset. The host
-  // explicitly opts in by uploading one on the Additional step — without
-  // it, the regular 4:5 grid below already covers the event.
-  const featuredHorizontal = all.filter((e) => Boolean(e.horizontalImage)).slice(0, 6);
-
-  // Hero picks the strongest signal we have. If a featured horizontal
-  // event exists, prefer that; else the first high-demand; else the first.
-  const heroEvent =
-    featuredHorizontal[0] ?? all.find((e) => e.isHighDemand) ?? all[0];
+  // `all` is already filtered to landscape-only above, so any event in
+  // the pool is a valid hero candidate. Prefer the first high-demand
+  // one; fall back to the first overall so the home always opens with
+  // something on top.
+  const heroEvent = all.find((e) => e.isHighDemand) ?? all[0];
   const others = all.filter((e) => e.id !== heroEvent.id);
 
-  // Genres collection rail — only show genres that have at least one live
-  // event right now so we never link customers to an empty filter result.
-  const eventGenreIds = new Set(all.flatMap((e) => e.genreTagIds));
-  const liveGenres = masters.genres
-    .filter((g) => eventGenreIds.has(g._id))
-    .slice(0, 8);
+  // Label the hero with the organizing account's name (falls back to the
+  // event's series tag inside HHero when unavailable).
+  const heroHostName = await fetchEventHostName(heroEvent.id);
+
+  // Genres collection rail — surface the full active genre catalogue
+  // (same list the event-journey "Genre" picker uses on business-client)
+  // so the home page reads as a complete map of vibes, not just the
+  // ones with live inventory tonight. The rail is horizontally
+  // scrollable; the `h-bleed` modifier lets it scroll UNDER the
+  // sidebar on the left.
+  const liveGenres = masters.genres;
 
   const ticker = all
     .slice(0, 6)
@@ -187,6 +173,7 @@ export default async function HomePage() {
 
   return (
     <div className="h-page">
+      <FreshnessRevalidate />
       <CollectionPageJsonLd
         name="Hoizr — Live music, comedy, club nights & festivals across India"
         description="Discover and book tickets for concerts, festivals, club nights, comedy, and live music across India on Hoizr."
@@ -196,11 +183,12 @@ export default async function HomePage() {
           name: e.title,
         }))}
       />
-      {featuredHorizontal.length > 0 ? (
-        <FeaturedHorizontalRail events={featuredHorizontal} />
-      ) : null}
-
-      <HHero event={heroEvent} />
+      {/* Compact "SELLING NOW" single-card hero. Reverted to HHero from
+          the previously-shipped FeaturedHorizontalRail because the
+          rail version rendered each card at full landscape size and
+          dominated the viewport. HHero is one card with built-in
+          progression through the landscape-flyer pool. */}
+      <HHero event={heroEvent} hostName={heroHostName} />
 
       {liveGenres.length > 0 ? (
         <div className="h-rail-sec">
@@ -217,7 +205,7 @@ export default async function HomePage() {
         <RailHead title="Tonight" seeAllHref="/events" />
         <div className="h-rail h-rail-5">
           {others.slice(0, 8).map((e) => (
-            <EventTile key={e.id} event={e} />
+            <EventCard key={e.id} event={e} />
           ))}
         </div>
       </div>
@@ -232,7 +220,7 @@ export default async function HomePage() {
               .reverse()
               .slice(0, 8)
               .map((e) => (
-                <EventTile key={e.id} event={e} />
+                <EventCard key={e.id} event={e} />
               ))}
           </div>
         </div>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearActiveCart, readActiveCart, type ActiveCart } from "@/lib/active-cart";
 import { rupee } from "@/lib/format";
+import { track } from "@/lib/tracker";
 import { GlassSurface } from "./GlassSurface";
 import { HICONS } from "./icons";
 
@@ -17,7 +18,6 @@ import { HICONS } from "./icons";
 export const HCartBar = () => {
   const pathname = usePathname();
   const [cart, setCart] = useState<ActiveCart | null>(null);
-  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const sync = () => setCart(readActiveCart());
@@ -27,7 +27,7 @@ export const HCartBar = () => {
     };
     window.addEventListener("hoizr:active-cart-changed", sync);
     window.addEventListener("storage", onStorage);
-    const tick = window.setInterval(() => setNow(Date.now()), 30 * 1000);
+    const tick = window.setInterval(sync, 30 * 1000);
     return () => {
       window.removeEventListener("hoizr:active-cart-changed", sync);
       window.removeEventListener("storage", onStorage);
@@ -46,15 +46,9 @@ export const HCartBar = () => {
     return null;
   }
 
-  const expiresAt = new Date(cart.expiresAt).getTime();
-  const msLeft = expiresAt - now;
-  if (msLeft <= 0) {
-    clearActiveCart();
-    return null;
-  }
-  const mins = Math.max(0, Math.floor(msLeft / 60000));
-  const secs = Math.max(0, Math.floor((msLeft % 60000) / 1000));
-  const timeLabel = mins > 0 ? `${mins}m ${String(secs).padStart(2, "0")}s` : `${secs}s`;
+  // A free / RSVP cart carries a zero total — the CTA reads "Get in" instead
+  // of "Continue to payment" (ActiveCart already carries totalAmount).
+  const isFree = (cart.totalAmount ?? 0) <= 0;
 
   return (
     <div className="h-cartbar-wrap" role="status" aria-live="polite">
@@ -62,11 +56,11 @@ export const HCartBar = () => {
         width="100%"
         height="100%"
         borderRadius={16}
-        backgroundOpacity={0.6}
-        saturation={1.4}
-        blur={14}
-        opacity={0.92}
-        brightness={48}
+        backgroundOpacity={0.88}
+        saturation={1.18}
+        blur={18}
+        opacity={0.98}
+        brightness={24}
       >
         <div className="h-cartbar">
           <div className="h-cartbar__cover">
@@ -83,7 +77,7 @@ export const HCartBar = () => {
               {cart.eventTitle ?? "Continue your order"}
             </div>
             <div className="h-cartbar__meta">
-              {rupee(cart.totalAmount)} · Holds for {timeLabel}
+              {rupee(cart.totalAmount)} · Ready for checkout
             </div>
           </div>
           <div className="h-cartbar__actions">
@@ -93,6 +87,12 @@ export const HCartBar = () => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                // User explicitly discarded the cart — the one place we fire
+                // cartDestroyed (NOT on checkout success / error cleanup).
+                track("cartDestroyed", {
+                  eventId: cart.eventId,
+                  metadata: { reason: "dismissed" },
+                });
                 clearActiveCart();
               }}
               aria-label="Dismiss"
@@ -104,7 +104,10 @@ export const HCartBar = () => {
               href={`/checkout?eventId=${cart.eventId}`}
               className="h-cartbar__cta"
             >
-              <span>Continue to payment</span>
+              {/* A free/RSVP cart has nothing to pay — the CTA reads "Get in"
+                  (consistent with the checkout button) while keeping the same
+                  /checkout destination. */}
+              <span>{isFree ? "Get in" : "Continue to payment"}</span>
               <span style={{ display: "inline-flex" }}>{HICONS.arrowR}</span>
             </Link>
           </div>

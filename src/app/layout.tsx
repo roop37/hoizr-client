@@ -1,22 +1,27 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { Suspense } from "react";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { PostHogAnalytics } from "@/components/analytics/PostHogProvider";
-import { WebPushPrompt } from "@/components/notifications/WebPushPrompt";
 import { GlassFilter } from "@/components/hoizr-ui/GlassFilter";
-import { HSide } from "@/components/hoizr-ui/HSide";
-// Pre-launch: floating auth chip + sign-in modal hidden until accounts
-// reopen. The cart bar stays — checkout is gated separately.
-// import { HFloatingAuth } from "@/components/hoizr-ui/HFloatingAuth";
-import { HCartBar } from "@/components/hoizr-ui/HCartBar";
-// import { SignInModal } from "@/components/hoizr-ui/SignInModal";
-import { HFooter } from "@/components/hoizr-ui/HFooter";
-import { HMobileTabs } from "@/components/hoizr-ui/HMobileTabs";
-import { HMobileTopBar } from "@/components/hoizr-ui/HMobileTopBar";
+import { StorefrontShell } from "@/components/hoizr-ui/StorefrontShell";
 import Noise from "@/components/hoizr-ui/Noise";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { fetchCustomerMasters } from "@/lib/home-data";
 import "./globals.css";
+
+// Bundle SF Pro Display (local) so every platform — not just Apple — gets the
+// real Hoizr consumer typeface. Exposed as --font-sf-pro and consumed first in
+// the --h-font-* stacks (globals.css).
+const sfPro = localFont({
+  src: [
+    { path: "../fonts/SFProDisplay-Regular.otf", weight: "400", style: "normal" },
+    { path: "../fonts/SFProDisplay-Medium.otf", weight: "500", style: "normal" },
+    { path: "../fonts/SFProDisplay-Bold.otf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-sf-pro",
+  display: "swap",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 
@@ -108,7 +113,7 @@ export default async function RootLayout({
   const masters = await fetchCustomerMasters();
 
   return (
-    <html lang="en">
+    <html lang="en" className={sfPro.variable}>
       <body>
         <PostHogAnalytics>
           <OrganizationJsonLd />
@@ -124,21 +129,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
-          <HMobileTopBar />
-          <div className="h-shell">
-            <HSide cities={masters.cities} />
-            <div className="h-content">
-              <div className="h-content-grow">{children}</div>
-              <HFooter />
-            </div>
-          </div>
-          {/* Pre-launch: floating auth + sign-in modal hidden.
-          <HFloatingAuth />
-          <SignInModal />
-          */}
-          <HCartBar />
-          <HMobileTabs />
-          <WebPushPrompt />
+          <StorefrontShell cities={masters.cities}>{children}</StorefrontShell>
         </PostHogAnalytics>
       </body>
     </html>

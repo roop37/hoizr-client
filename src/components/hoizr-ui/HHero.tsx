@@ -8,9 +8,12 @@ import { HICONS } from "./icons";
 
 type Props = {
   event: DisplayEvent;
+  /** Organizing account name — shown as the hero eyebrow instead of the
+   *  generic series tag when available. */
+  hostName?: string | null;
 };
 
-export const HHero = ({ event }: Props) => {
+export const HHero = ({ event, hostName }: Props) => {
   const router = useRouter();
   const href = `/events/${event.slug}`;
   return (
@@ -27,8 +30,16 @@ export const HHero = ({ event }: Props) => {
       }}
       aria-label={`Open ${event.title}`}
     >
-      {event.image ? (
-        <img className="bg" src={event.image} alt={event.title} />
+      {/* Hero uses the landscape flyer directly. Home page filters the
+          feed to landscape-only events before reaching here, so the
+          portrait fallback is never hit on the live site; the gradient
+          stub remains as a defensive no-image branch. */}
+      {event.horizontalImage ? (
+        <img
+          className="bg"
+          src={event.horizontalImage}
+          alt={event.title}
+        />
       ) : (
         <div
           style={{
@@ -42,11 +53,11 @@ export const HHero = ({ event }: Props) => {
       <div className="scrim" />
       <div className="h-hero-tag">
         <i />
-        SELLING NOW
+        TRENDING NOW
       </div>
       <div className="h-hero-body">
         <div>
-          <div className="eye">{event.series}</div>
+          <div className="eye">{hostName || event.series}</div>
           <h1>{event.title}</h1>
           {event.sub ? <p>{event.sub}</p> : null}
         </div>

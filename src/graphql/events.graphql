@@ -1,0 +1,163 @@
+query GetPublishedEvents($input: PublicEventFilterInput) {
+  getPublishedEvents(input: $input) {
+    events {
+      _id
+      title
+      slug
+      description
+      eventFlyer
+      horizontalFlyer
+      videoSneakPeek
+      eventType
+      startDate
+      endDate
+      city
+      cityId
+      genreTagIds
+      ticketingEnabled
+      isHighDemand
+      isComingSoon
+      tickets {
+        _id
+        ticketName
+        ticketCategory
+        ticketCapacity
+        ticketSold
+        ticketPrice
+        markAsComingSoon
+        markAsOnGroundOnly
+        ticketVisible
+      }
+    }
+    total
+    page
+    pageSize
+  }
+}
+
+query GetPublicEventBySlug($slug: String!) {
+  getPublicEventBySlug(slug: $slug) {
+    _id
+    title
+    slug
+    description
+    eventFlyer
+    horizontalFlyer
+    videoSneakPeek
+    gallery {
+      url
+      type
+    }
+    eventType
+    startDate
+    endDate
+    city
+    cityId
+    genreTagIds
+    location {
+      addressLine1
+      addressLine2
+      city
+      state
+      pincode
+      formattedAddress
+      place {
+        placeId
+        displayName
+      }
+    }
+    ticketingTerms
+    refundPolicy
+    cancellationPolicy
+    eventGuide {
+      languageIds
+      minimumEntryAge
+      paidEntryAge
+      venueLayout
+      seatingArrangement
+      kidFriendly
+      petFriendly
+      gatesOpenBeforeEvent
+      gatesOpenLeadHours
+      gatesOpenLeadMinutes
+      youtubeLink
+    }
+    faqs {
+      question
+      answer
+    }
+    eventInstructions
+    prohibitedItems
+    ticketingEnabled
+    isHighDemand
+    tickets {
+      _id
+      ticketName
+      ticketCategory
+      ticketType
+      ticketCapacity
+      ticketSold
+      ticketPrice
+      ticketInfo
+      maxTicketPerUser
+      ticketGST
+      gstRate
+      markAsComingSoon
+      markAsOnGroundOnly
+      ticketVisible
+    }
+    extras {
+      _id
+      name
+      description
+      price
+      quantity
+      sold
+      image
+      type
+    }
+  }
+}
+
+query GetPublicEventPeople($eventId: String!) {
+  getPublicEventPeople(eventId: $eventId) {
+    artists {
+      _id
+      name
+      picture
+      tagline
+      bio
+      slug
+      instagramLink
+      spotifyLink
+      youtubeLink
+      isPhantom
+    }
+    organizers {
+      _id
+      name
+      logo
+      description
+      city
+      isPrimary
+    }
+  }
+}
+
+query GetPublicEventSummaryById($id: String!) {
+  getPublicEventById(id: $id) {
+    _id
+    title
+    slug
+    startDate
+    endDate
+    city
+    location {
+      addressLine1
+      city
+      state
+      formattedAddress
+    }
+    refundPolicy
+  }
+}

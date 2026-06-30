@@ -3,14 +3,7 @@
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { ArrowLeft, ArrowRight, Loader2, Phone, ShieldCheck } from "lucide-react";
 import { useCallback, useState } from "react";
-import { gqlRequest } from "@/lib/graphql";
-import {
-  GOOGLE_START_MUTATION,
-  PENDING_SIGNUP_REQUEST_OTP_MUTATION,
-  PENDING_SIGNUP_VERIFY_OTP_MUTATION,
-  REQUEST_OTP_MUTATION,
-  VERIFY_OTP_MUTATION,
-} from "@/lib/queries";
+import { sdk } from "@/lib/sdk";
 import { CustomerAuthErrorCode } from "@/types/auth";
 import type {
   CustomerGoogleStartResponse,
@@ -30,7 +23,21 @@ type AuthPanelProps = {
   // /login page leaves it default.
   headline?: string;
   subheadline?: string;
+  // Prefill for contextual sign-in (e.g. an offline payment link already knows
+  // the customer's phone/name/email). When initialPhone is supplied the panel
+  // opens straight on the phone step with it filled in. All stay EDITABLE — the
+  // customer may sign in with a different identity; the order is still
+  // attributed to the link via offlineOrderId.
+  initialPhone?: string;
+  initialFirstName?: string;
+  initialLastName?: string;
+  initialEmail?: string;
 };
+
+// The phone input holds the local 10-digit form (a separate "+91" prefix is
+// shown in the UI). Strip any country code from a prefilled E.164 number.
+const toLocalPhone = (e164?: string) =>
+  e164 ? e164.replace(/\D/g, "").slice(-10) : "";
 
 const GOOGLE_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
@@ -67,14 +74,19 @@ const AuthPanelInner = ({
   onAuthenticated,
   headline,
   subheadline,
+  initialPhone,
+  initialFirstName,
+  initialLastName,
+  initialEmail,
 }: AuthPanelProps) => {
-  const [step, setStep] = useState<Step>("choose");
-  const [phoneInput, setPhoneInput] = useState("");
+  const [step, setStep] = useState<Step>(initialPhone ? "phone" : "choose");
+  const [phoneInput, setPhoneInput] = useState(toLocalPhone(initialPhone));
   const [otp, setOtp] = useState("");
   const [otpId, setOtpId] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState(initialFirstName ?? "");
+  const [lastName, setLastName] = useState(initialLastName ?? "");
+  const [email, setEmail] = useState(initialEmail ?? "");
+  const [profileRequired, setProfileRequired] = useState(false);
   const [pendingToken, setPendingToken] = useState<string>("");
   const [pendingPicture, setPendingPicture] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
@@ -98,10 +110,8 @@ const AuthPanelInner = ({
     setError(null);
     setLoading(true);
     try {
-      const data = await gqlRequest<{
-        customerGoogleStart: CustomerGoogleStartResponse;
-      }>(GOOGLE_START_MUTATION, { input: { idToken: credential } });
-      const res = data.customerGoogleStart;
+      const data = await sdk.CustomerGoogleStart({ input: { idToken: credential } });
+      const res = data.customerGoogleStart as CustomerGoogleStartResponse;
 
       if (res.outcome === "LOGGED_IN") {
         await onAuthenticated();
@@ -144,11 +154,15 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      const data = await gqlRequest<{ customerRequestOtp: { otpId: string } }>(
-        REQUEST_OTP_MUTATION,
-        { input: { phone } }
-      );
+      const data = await sdk.CustomerRequestOtp({ input: { phone } });
       setOtpId(data.customerRequestOtp.otpId);
+      setProfileRequired(Boolean(data.customerRequestOtp.profileRequired));
+      setOtp("");
+      if (!data.customerRequestOtp.profileRequired) {
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+      }
       setStep("phone-otp");
     } catch (err) {
       setError(errorMessageFrom(err, "Unable to send OTP"));
@@ -163,16 +177,23 @@ const AuthPanelInner = ({
       setError("Enter the 6-digit OTP we just sent you");
       return;
     }
+    if (
+      profileRequired &&
+      (!firstName.trim() || !lastName.trim() || !email.trim())
+    ) {
+      setError("Please add your name and email to create your account.");
+      return;
+    }
     setLoading(true);
     try {
-      await gqlRequest(VERIFY_OTP_MUTATION, {
+      await sdk.CustomerVerifyOtp({
         input: {
           phone,
           otpId,
           otp,
-          firstName: firstName.trim() || undefined,
-          lastName: lastName.trim() || undefined,
-          email: email.trim() || undefined,
+          firstName: profileRequired ? firstName.trim() : undefined,
+          lastName: profileRequired ? lastName.trim() : undefined,
+          email: profileRequired ? email.trim() : undefined,
         },
       });
       await onAuthenticated();
@@ -196,9 +217,7 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      const data = await gqlRequest<{
-        customerPendingSignupRequestOtp: { otpId: string };
-      }>(PENDING_SIGNUP_REQUEST_OTP_MUTATION, {
+      const data = await sdk.CustomerPendingSignupRequestOtp({
         input: { pendingToken, phone },
       });
       setOtpId(data.customerPendingSignupRequestOtp.otpId);
@@ -228,9 +247,7 @@ const AuthPanelInner = ({
     }
     setLoading(true);
     try {
-      const data = await gqlRequest<{
-        customerPendingSignupVerifyOtp: CustomerPendingSignupVerifyResponse;
-      }>(PENDING_SIGNUP_VERIFY_OTP_MUTATION, {
+      const data = await sdk.CustomerPendingSignupVerifyOtp({
         input: {
           pendingToken,
           otp,
@@ -239,7 +256,7 @@ const AuthPanelInner = ({
           email: email.trim(),
         },
       });
-      const res = data.customerPendingSignupVerifyOtp;
+      const res = data.customerPendingSignupVerifyOtp as CustomerPendingSignupVerifyResponse;
       if (res.outcome === "NEW_ACCOUNT") {
         await onAuthenticated();
         return;
@@ -281,9 +298,31 @@ const AuthPanelInner = ({
   const renderStep = () => {
     if (step === "choose") {
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => setStep("phone")}
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e]"
+          >
+            <Phone size={16} /> Continue with phone OTP
+          </button>
+
+          {/* ── GOOGLE SIGN-IN SWITCH (hidden) ────────────────────────────
+              Google sign-in isn't working in this environment, so the whole
+              affordance (button + "not configured" fallback) is hidden for
+              now — leaving phone OTP as the only choice. Re-enable by
+              uncommenting the block below. */}
+          {/*
           {GOOGLE_CLIENT_ID ? (
-            <div className="flex justify-center">
+            <>
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-white/15" />
+                <span className="text-xs font-medium uppercase tracking-wider text-white/45">
+                  or
+                </span>
+                <span className="h-px flex-1 bg-white/15" />
+              </div>
+              <div className="h-auth-google flex justify-center overflow-hidden rounded-xl">
               <GoogleLogin
                 onSuccess={(credentialResponse) => {
                   const credential = credentialResponse.credential;
@@ -294,77 +333,88 @@ const AuthPanelInner = ({
                   }
                 }}
                 onError={() => {
-                  setError("Google sign-in failed. Try again.");
+                  const origin =
+                    typeof window !== "undefined"
+                      ? window.location.origin
+                      : "this origin";
+                  setError(
+                    `Google sign-in is blocked for ${origin}. Use phone OTP, or add this origin to Authorized JavaScript origins in Google Cloud Console.`
+                  );
                 }}
                 useOneTap={false}
-                width="320"
+                theme="filled_black"
+                width="300"
+                containerProps={{ className: "h-auth-google__container" }}
               />
-            </div>
+              </div>
+            </>
           ) : (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
               Google sign-in isn't configured for this environment. Use phone
               OTP below.
             </div>
           )}
+          */}
 
-          <button
-            type="button"
-            disabled
-            title="Apple sign-in is coming soon"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-cream text-sm font-semibold text-muted opacity-60"
-          >
-            Continue with Apple — coming soon
-          </button>
-
-          <div className="flex items-center gap-3 py-1">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-xs font-medium uppercase tracking-wider text-muted">
-              or
-            </span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setStep("phone")}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95"
-          >
-            <Phone size={16} /> Continue with phone OTP
-          </button>
+          {/* Phone OTP creates a new customer account on first verify,
+              so this isn't a separate auth path — just a discoverability
+              affordance for users who don't realise the OTP button
+              doubles as sign-up. Routes to the same phone step. */}
+          <p className="pt-1 text-center text-xs text-white/55">
+            New to Hoizr?{" "}
+            <button
+              type="button"
+              onClick={() => setStep("phone")}
+              className="font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              Sign up
+            </button>
+          </p>
         </div>
       );
     }
 
     if (step === "phone") {
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <button
             type="button"
             onClick={() => setStep("choose")}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-white/55 hover:text-white"
           >
             <ArrowLeft size={14} /> Back to all options
           </button>
-          <label className="block text-sm font-medium">
-            Phone number
-            <input
-              autoFocus
-              type="tel"
-              autoComplete="tel"
-              placeholder="+91 9876543210"
-              value={phoneInput}
-              onChange={(e) => setPhoneInput(e.target.value)}
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-accent"
-            />
+          <label className="block text-sm font-medium text-white/85">
+            <span className="text-xs uppercase tracking-[0.14em] text-white/55">
+              Phone number
+            </span>
+            <div className="mt-2 flex h-11 w-full items-center rounded-xl border border-white/12 bg-white/[0.06] px-4 transition focus-within:border-accent focus-within:bg-white/[0.08]">
+              <span className="mr-2 select-none text-sm font-medium text-white/70">
+                +91
+              </span>
+              <input
+                autoFocus
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={10}
+                placeholder="9876543210"
+                value={phoneInput}
+                onChange={(e) =>
+                  setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 10))
+                }
+                className="h-full w-full bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+              />
+            </div>
           </label>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-white/50">
             We'll send a 6-digit OTP to verify your number.
           </p>
           <button
             type="button"
             disabled={loading}
             onClick={requestPhoneOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -380,16 +430,18 @@ const AuthPanelInner = ({
 
     if (step === "phone-otp") {
       return (
-        <div className="space-y-3">
-          <label className="block text-sm font-medium">
-            6-digit OTP sent to {phone}
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-white/85">
+            <span className="text-xs uppercase tracking-[0.14em] text-white/55">
+              6-digit OTP sent to {phone}
+            </span>
             <input
               autoFocus
               inputMode="numeric"
               maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-center text-lg tracking-[0.4em] outline-none focus:border-accent"
+              className="mt-2 h-12 w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 text-center text-lg tracking-[0.4em] text-white outline-none transition focus:border-accent focus:bg-white/[0.08]"
             />
           </label>
           <button
@@ -400,41 +452,43 @@ const AuthPanelInner = ({
             Change number
           </button>
 
-          <div className="rounded-xl border border-border bg-background px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-              New here? Tell us a bit about yourself
-            </p>
-            <p className="mt-1 text-[11px] text-muted">
-              Required for first-time accounts. We won't ask again on next sign-in.
-            </p>
-            <div className="mt-3 grid gap-2">
-              <input
-                placeholder="First name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
-              />
-              <input
-                placeholder="Last name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
-              />
-              <input
-                type="email"
-                placeholder="Email (for ticket delivery)"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
-              />
+          {profileRequired ? (
+            <div className="rounded-2xl bg-white/[0.04] px-4 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                New here? Tell us a bit about yourself
+              </p>
+              <p className="mt-1 text-[11.5px] leading-relaxed text-white/45">
+                Required for first-time accounts. We won't ask again on next sign-in.
+              </p>
+              <div className="mt-3 grid gap-2.5">
+                <input
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-12 rounded-xl border border-white/10 bg-black/25 px-3.5 text-sm text-white outline-none transition focus:border-accent focus:bg-black/30"
+                />
+                <input
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-12 rounded-xl border border-white/10 bg-black/25 px-3.5 text-sm text-white outline-none transition focus:border-accent focus:bg-black/30"
+                />
+                <input
+                  type="email"
+                  placeholder="Email (for ticket delivery)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 rounded-xl border border-white/10 bg-black/25 px-3.5 text-sm text-white outline-none transition focus:border-accent focus:bg-black/30"
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <button
             type="button"
             disabled={loading}
             onClick={verifyPhoneOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -451,7 +505,7 @@ const AuthPanelInner = ({
     if (step === "pending-phone") {
       return (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2">
+          <div className="flex items-center gap-3 rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2">
             {pendingPicture ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -460,18 +514,18 @@ const AuthPanelInner = ({
                 className="h-10 w-10 rounded-full object-cover"
               />
             ) : null}
-            <div className="text-sm">
+            <div className="text-sm text-white">
               <div className="font-semibold">
                 {firstName} {lastName}
               </div>
-              <div className="text-xs text-muted">{email}</div>
+              <div className="text-xs text-white/50">{email}</div>
             </div>
           </div>
-          <div className="rounded-xl border border-border bg-amber-50/50 px-3 py-2 text-xs text-ink">
+          <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
             <ShieldCheck className="inline -mt-0.5 mr-1" size={14} /> Almost
             there — add your phone number so we can deliver tickets and OTPs.
           </div>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-white/85">
             Phone number
             <input
               autoFocus
@@ -480,14 +534,14 @@ const AuthPanelInner = ({
               placeholder="+91 9876543210"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-accent"
+              className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-sm text-white outline-none focus:border-accent"
             />
           </label>
           <button
             type="button"
             disabled={loading}
             onClick={requestPendingOtp}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -504,7 +558,7 @@ const AuthPanelInner = ({
     // pending-otp
     return (
       <div className="space-y-3">
-        <label className="block text-sm font-medium">
+        <label className="block text-sm font-medium text-white/85">
           6-digit OTP sent to {phone}
           <input
             autoFocus
@@ -512,7 +566,7 @@ const AuthPanelInner = ({
             maxLength={6}
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-            className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-4 text-center text-lg tracking-[0.4em] outline-none focus:border-accent"
+            className="mt-1 h-11 w-full rounded-xl border border-white/12 bg-white/[0.06] px-4 text-center text-lg tracking-[0.4em] text-white outline-none focus:border-accent"
           />
         </label>
         <button
@@ -528,20 +582,20 @@ const AuthPanelInner = ({
             placeholder="First name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
+            className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
           />
           <input
             placeholder="Last name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
+            className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
           />
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-10 rounded-lg border border-border bg-cream px-3 text-sm outline-none focus:border-accent"
+            className="h-10 rounded-lg border border-white/12 bg-black/20 px-3 text-sm text-white outline-none focus:border-accent"
           />
         </div>
 
@@ -549,7 +603,7 @@ const AuthPanelInner = ({
           type="button"
           disabled={loading}
           onClick={verifyPendingOtp}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-dark text-sm font-semibold text-cream transition hover:opacity-95 disabled:opacity-60"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c5ff3d] text-sm font-semibold text-[#0a0a0e] transition hover:bg-[#d9ff6e] disabled:opacity-60"
         >
           {loading ? (
             <Loader2 size={16} className="animate-spin" />
@@ -564,18 +618,22 @@ const AuthPanelInner = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="h-auth-panel space-y-4">
       {headline ? (
-        <div>
-          <h2 className="text-lg font-semibold text-ink">{headline}</h2>
+        <div className="pr-10">
+          <h2 className="text-[19px] font-bold leading-tight tracking-[-0.01em] text-white">
+            {headline}
+          </h2>
           {subheadline ? (
-            <p className="mt-1 text-xs text-muted">{subheadline}</p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+              {subheadline}
+            </p>
           ) : null}
         </div>
       ) : null}
       {renderStep()}
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-lg border border-red-300/25 bg-red-500/10 px-3 py-2 text-sm text-red-100">
           {error}
         </div>
       ) : null}

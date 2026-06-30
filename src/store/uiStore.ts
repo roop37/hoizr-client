@@ -9,9 +9,12 @@ type UIUser = {
 type UIState = {
   signInOpen: boolean;
   mobileSidebarOpen: boolean;
+  profileSheetOpen: boolean;
   user: UIUser;
   city: string;
   cityId?: string;
+  cityHydrated: boolean;
+  cityPickerOpen: boolean;
   dockPlaying: boolean;
   showDock: boolean;
   openSignIn: () => void;
@@ -19,9 +22,14 @@ type UIState = {
   openMobileSidebar: () => void;
   closeMobileSidebar: () => void;
   toggleMobileSidebar: () => void;
+  openProfileSheet: () => void;
+  closeProfileSheet: () => void;
   signIn: (name?: string) => void;
   signOut: () => void;
   setCity: (city: string, cityId?: string) => void;
+  setCityHydrated: (v: boolean) => void;
+  openCityPicker: () => void;
+  closeCityPicker: () => void;
   toggleDockPlay: () => void;
   setShowDock: (v: boolean) => void;
 };
@@ -37,9 +45,12 @@ const initialsFrom = (name: string) =>
 export const useUIStore = create<UIState>((set) => ({
   signInOpen: false,
   mobileSidebarOpen: false,
+  profileSheetOpen: false,
   user: { signedIn: false, name: "Guest", initials: "G" },
   city: "All cities",
   cityId: undefined,
+  cityHydrated: false,
+  cityPickerOpen: false,
   dockPlaying: true,
   showDock: true,
   openSignIn: () => set({ signInOpen: true }),
@@ -48,6 +59,8 @@ export const useUIStore = create<UIState>((set) => ({
   closeMobileSidebar: () => set({ mobileSidebarOpen: false }),
   toggleMobileSidebar: () =>
     set((s) => ({ mobileSidebarOpen: !s.mobileSidebarOpen })),
+  openProfileSheet: () => set({ profileSheetOpen: true }),
+  closeProfileSheet: () => set({ profileSheetOpen: false }),
   signIn: (name = "Rohan Sharma") =>
     set({
       user: { signedIn: true, name, initials: initialsFrom(name) },
@@ -55,6 +68,9 @@ export const useUIStore = create<UIState>((set) => ({
     }),
   signOut: () => set({ user: { signedIn: false, name: "Guest", initials: "G" } }),
   setCity: (city, cityId) => set({ city, cityId }),
+  setCityHydrated: (v) => set({ cityHydrated: v }),
+  openCityPicker: () => set({ cityPickerOpen: true }),
+  closeCityPicker: () => set({ cityPickerOpen: false }),
   toggleDockPlay: () => set((s) => ({ dockPlaying: !s.dockPlaying })),
   setShowDock: (v: boolean) => set({ showDock: v }),
 }));

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/uiStore";
 import type { IndianCityMaster } from "@/types/master";
 import { GlassSurface } from "./GlassSurface";
@@ -97,7 +100,10 @@ type Props = {
 
 export const HSide = ({ cities }: Props) => {
   const pathname = usePathname();
-  const user = useUIStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
+  const authHydrated = useAuthStore((s) => s.hydrated);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
+  const logout = useAuthStore((s) => s.logout);
   const city = useUIStore((s) => s.city);
   const setCity = useUIStore((s) => s.setCity);
   const openSignIn = useUIStore((s) => s.openSignIn);
@@ -105,6 +111,24 @@ export const HSide = ({ cities }: Props) => {
   const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
   const cityMenuRef = useRef<HTMLDivElement | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const userMenuPopRef = useRef<HTMLDivElement | null>(null);
+  const [userMenuRect, setUserMenuRect] = useState<DOMRect | null>(null);
+
+  const signedIn = Boolean(profile);
+  const displayName =
+    [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") ||
+    profile?.email ||
+    "Hoizr customer";
+  const initials =
+    [profile?.firstName, profile?.lastName]
+      .filter((part): part is string => Boolean(part))
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") ||
+    profile?.email?.[0]?.toUpperCase() ||
+    "H";
 
   const sortedCities = useMemo(
     () =>
@@ -127,8 +151,32 @@ export const HSide = ({ cities }: Props) => {
   }, []);
 
   useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      // The menu is portaled to <body> (outside userMenuRef), so without
+      // also excluding the popup itself this handler closed the menu on
+      // pointerdown BEFORE the click could navigate — that's why "View
+      // profile" never opened.
+      if (
+        !userMenuRef.current?.contains(target) &&
+        !userMenuPopRef.current?.contains(target)
+      ) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  useEffect(() => {
     closeMobileSidebar();
   }, [closeMobileSidebar, pathname]);
+
+  useEffect(() => {
+    if (!authHydrated) {
+      void hydrateAuth();
+    }
+  }, [authHydrated, hydrateAuth]);
 
   useEffect(() => {
     if (!mobileSidebarOpen) return;
@@ -249,6 +297,17 @@ export const HSide = ({ cities }: Props) => {
             >
               {HICONS.close}
             </button>
+            <button
+              type="button"
+              className="h-city-pill"
+              onClick={() => useUIStore.getState().openCityPicker()}
+              title="Change city"
+              aria-label={`Current city: ${city}. Tap to change.`}
+            >
+              <span className="h-city-pill-ic">{HICONS.pin}</span>
+              <span>{city || "Pick city"}</span>
+              <span style={{ display: "inline-flex" }}>{HICONS.chevDown}</span>
+            </button>
             {/* Pre-launch: city picker hidden entirely. Restore the
                 block below when cities reopen.
             <div className="h-city-picker" ref={cityMenuRef}>
@@ -301,7 +360,7 @@ export const HSide = ({ cities }: Props) => {
               ))}
             </div>
 
-            {user.signedIn ? (
+            {signedIn ? (
               <div className="h-side-group">
                 <h4>Your Library</h4>
                 {LIBRARY_NAV.map((n) => (
@@ -310,11 +369,22 @@ export const HSide = ({ cities }: Props) => {
                     <span>{n.label}</span>
                   </Link>
                 ))}
-                <button type="button" className="h-side-item" disabled style={{ opacity: 0.55 }}>
-                  <span className="ic">{HICONS.globe}</span>
-                  <span>Hoizr Local</span>
-                  <span className="right-meta">SOON</span>
-                </button>
+                <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#c5ff3d]/15 text-[#c5ff3d]">
+                    {HICONS.globe}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-[13px] font-semibold text-white">
+                      Hoizr Local
+                      <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/55">
+                        Soon
+                      </span>
+                    </div>
+                    <div className="text-[11px] leading-snug text-white/55">
+                      Crazy houseparties &amp; foodspots near you.
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : null}
 
@@ -342,11 +412,10 @@ export const HSide = ({ cities }: Props) => {
               rel="noreferrer"
               className="h-side-biz__card"
             >
-              <span className="h-side-biz__kicker">For venues &amp; organizers</span>
+              <span className="h-side-biz__kicker">For organizers</span>
               <span className="h-side-biz__hed">
                 Own the room. <span className="h-side-biz__hed-accent">Own the repeat.</span>
               </span>
-              <span className="h-side-biz__sub">Tickets, door, fans, payouts. Built for serious nights.</span>
               <span className="h-side-biz__cta">
                 List on Hoizr
                 <span className="h-side-biz__arrow" aria-hidden>
@@ -369,36 +438,125 @@ export const HSide = ({ cities }: Props) => {
             </div>
           </div>
 
-          {/* Pre-launch: sign-in entry hidden until accounts reopen.
-          {!user.signedIn ? (
+          {!signedIn ? (
+            // ── SIGN-IN SWITCH (sidebar foot hidden) ────────────────────────
+            // The sidebar "Sign in" button is hidden for now: OTP delivery is
+            // gated on WhatsApp, which isn't integrated yet (and SMS is
+            // disabled). Re-enable by replacing `null` with the commented
+            // block below.
+            null
+            /*
             <div className="h-side-foot">
               <button
                 type="button"
                 className="h-btn h-btn-outline"
                 style={{ width: "100%", justifyContent: "center", padding: "9px 14px" }}
-                onClick={openSignIn}
+                onClick={() => {
+                  openSignIn();
+                  closeMobileSidebar();
+                }}
               >
                 Sign in
               </button>
             </div>
+            */
           ) : (
-            <div className="h-side-foot">
-              <div className="avatar">{user.initials}</div>
-              <div className="who">{user.name}</div>
+            <div
+              className="h-side-foot"
+              ref={userMenuRef}
+            >
+              {/* Render outside the glass-surface (which has overflow:hidden + SVG filter)
+                  so the popup background and border are fully visible. */}
+              {userMenuOpen && userMenuRect
+                ? createPortal(
+                    <div
+                      role="menu"
+                      ref={userMenuPopRef}
+                      style={{
+                        position: "fixed",
+                        left: userMenuRect.left,
+                        bottom: window.innerHeight - userMenuRect.top + 8,
+                        width: userMenuRect.width,
+                        zIndex: 9999,
+                      }}
+                      className="rounded-2xl border border-white/15 bg-[#1a1a25] p-1 shadow-2xl"
+                    >
+                      <Link
+                        href="/me"
+                        role="menuitem"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          closeMobileSidebar();
+                        }}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/85 transition hover:bg-white/10"
+                      >
+                        <span className="ic">{HICONS.user}</span>
+                        View profile
+                      </Link>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          closeMobileSidebar();
+                          void logout();
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-500/10"
+                      >
+                        <LogOut size={16} />
+                        Log out
+                      </button>
+                    </div>,
+                    document.body
+                  )
+                : null}
+              <button
+                type="button"
+                onClick={() => {
+                  const rect = userMenuRef.current?.getBoundingClientRect() ?? null;
+                  setUserMenuRect(rect);
+                  setUserMenuOpen((open) => !open);
+                }}
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "100%",
+                  textAlign: "left",
+                }}
+              >
+                <div className="avatar">
+                  {profile?.profilePic ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.profilePic}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: "inherit",
+                      }}
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <div className="who">{displayName}</div>
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    display: "inline-flex",
+                    opacity: 0.6,
+                  }}
+                >
+                  {HICONS.chevDown}
+                </span>
+              </button>
             </div>
           )}
-          */}
-          <div className="h-side-foot">
-            <button
-              type="button"
-              className="h-btn h-btn-outline"
-              style={{ width: "100%", justifyContent: "center", padding: "9px 14px", opacity: 0.65, cursor: "not-allowed" }}
-              disabled
-              aria-label="Sign-in coming soon"
-            >
-              Sign in · coming soon
-            </button>
-          </div>
         </div>
       </GlassSurface>
       </aside>

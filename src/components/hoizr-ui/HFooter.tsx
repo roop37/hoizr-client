@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HICONS } from "./icons";
 import { HoizrLogo } from "./HoizrLogo";
+import { SEO_CITIES, citySlug } from "@/lib/city-slug";
 
 /**
  * Pre-launch footer. Rendered once at the layout level so it can pin
@@ -50,6 +51,14 @@ export const HFooter = () => (
           <Link href="/events?vertical=fest">Festivals</Link>
         </div>
         <div>
+          <h4>Events by city</h4>
+          {SEO_CITIES.map((c) => (
+            <Link key={c} href={`/events-in/${citySlug(c)}`}>
+              Events in {c}
+            </Link>
+          ))}
+        </div>
+        <div>
           <h4>For organisers</h4>
           <a href={BUSINESS_URL} target="_blank" rel="noreferrer">
             List an event ↗
@@ -97,7 +106,7 @@ export const HFooter = () => (
       </div>
     </div>
     <div className="h-footer-base">
-      <div>© 2026 Hoizr Technologies Pvt. Ltd. · Made in Mumbai</div>
+      <div>© 2026 Hoizr Technologies Pvt. Ltd.</div>
       <div style={{ opacity: 0.7 }}>iOS app · Android app · coming soon</div>
     </div>
     <div className="h-footer-family">

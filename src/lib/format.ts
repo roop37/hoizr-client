@@ -1,8 +1,11 @@
+// Always 2dp so totals, fees and partials line up cleanly across cards
+// — "₹999.00" / "₹49.95" / "₹2.50" rather than mixed "₹999 / ₹49.95".
 export const rupee = (value: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value || 0);
 
 export const formatEventDate = (value?: string) => {
@@ -10,6 +13,7 @@ export const formatEventDate = (value?: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Date pending";
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "short",
     day: "2-digit",
     month: "short",

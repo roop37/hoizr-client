@@ -27,6 +27,11 @@ export type RazorpayOptions = {
 
 declare global {
   interface Window {
-    Razorpay?: new (options: RazorpayOptions) => { open: () => void };
+    Razorpay?: new (options: RazorpayOptions) => {
+      open: () => void;
+      close: () => void;
+      // Razorpay Checkout event hook — e.g. on("payment.failed", handler).
+      on: (event: string, handler: (response: unknown) => void) => void;
+    };
   }
 }
