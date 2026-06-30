@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "@/store/auth";
 
-const SUPPORT_EMAIL = "support@hoizr.in";
+const SUPPORT_EMAIL = "contact@hoizr.com";
 const SUPPORT_PHONE = "+91 83695 72945";
 const SUPPORT_WHATSAPP = "918369572945";
 const TICKET_STORAGE_KEY = "hoizr:support-tickets";
