@@ -41,6 +41,14 @@ export async function generateMetadata({
   const { name: cityName } = resolveCityFromSlug(params.city, masters.cities);
   const areaName = resolveAreaFromSlug(params.city, params.area);
   const path = `/events-in/${params.city}/${params.area}`;
+  // Only index a neighbourhood page once it actually has upcoming events.
+  // Empty location pages are near-duplicate doorway pages, so we noindex
+  // them (still follow, so link equity flows to the city page) until they
+  // hold real inventory. They also drop out of the sitemap (see sitemap.ts).
+  const list = await fetchPublishedEvents({ city: cityName, pageSize: 200 });
+  const eventCount = (list.events ?? []).filter((e) =>
+    addressMatchesArea(addressText(e), areaName)
+  ).length;
   const title = `Events in ${areaName}, ${cityName} — gigs, club nights & comedy`;
   const description = `What's on in ${areaName}, ${cityName} — concerts, club nights, gigs and comedy near you. Instant QR tickets with UPI on Hoizr.`;
 
@@ -75,7 +83,7 @@ export async function generateMetadata({
         },
       ],
     },
-    robots: { index: true, follow: true },
+    robots: { index: eventCount > 0, follow: true },
   };
 }
 

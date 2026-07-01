@@ -124,7 +124,7 @@ export default async function EventDetailPage({
   return (
     <>
       <FreshnessRevalidate />
-      <EventJsonLd event={event} />
+      <EventJsonLd event={event} artists={people.artists} />
       <BreadcrumbJsonLd
         items={[
           { name: "Hoizr", href: "/" },

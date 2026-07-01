@@ -23,6 +23,10 @@ export async function generateMetadata({
   const masters = await fetchCustomerMasters();
   const { name } = resolveCityFromSlug(params.city, masters.cities);
   const path = `/events-in/${params.city}`;
+  // Noindex city pages with zero upcoming events (empty listings are thin);
+  // they flip back to indexable automatically once inventory exists.
+  const list = await fetchPublishedEvents({ city: name, pageSize: 96 });
+  const hasEvents = (list.events?.length ?? 0) > 0;
   const title = `Events in ${name} — concerts, club nights, gigs & comedy`;
   const description = `Discover and book the best events in ${name} — concerts, club nights, festivals, comedy and live music. Instant QR tickets and UPI checkout on Hoizr.`;
 
@@ -60,7 +64,7 @@ export async function generateMetadata({
         },
       ],
     },
-    robots: { index: true, follow: true },
+    robots: { index: hasEvents, follow: true },
   };
 }
 

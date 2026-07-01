@@ -78,6 +78,15 @@ body {
 html {
   background: var(--h-bg);
   color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+/* Respect users who prefer reduced motion (WCAG 2.3.3). The custom
+   drag-scroller keeps its own `scroll-behavior: auto`. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 body {
   background:
