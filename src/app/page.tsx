@@ -76,6 +76,10 @@ export default async function HomePage() {
   if (all.length === 0) {
     return (
       <div className="h-page">
+        <h1 className="sr-only">
+          Discover and book live events across India — concerts, club nights,
+          comedy and festivals
+        </h1>
         <CollectionPageJsonLd
           name="Hoizr — Live music, comedy, club nights & festivals across India"
           description="Hoizr is in pre-launch — onboarding India's clubs, comedy rooms, party crews, festivals, and venues. Tickets land here the moment they go on sale."
@@ -173,6 +177,10 @@ export default async function HomePage() {
 
   return (
     <div className="h-page">
+      <h1 className="sr-only">
+        Discover and book live events across India — concerts, club nights,
+        comedy and festivals
+      </h1>
       <FreshnessRevalidate />
       <CollectionPageJsonLd
         name="Hoizr — Live music, comedy, club nights & festivals across India"

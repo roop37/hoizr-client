@@ -1,4 +1,4 @@
-import type { PublicEvent } from "@/types/event";
+import type { PublicEvent, PublicEventArtistEntry } from "@/types/event";
 import type { PublicArtistEvent, PublicArtistProfile } from "@/types/artist";
 import { getArtistDisplayName } from "@/lib/artist-name";
 
@@ -95,7 +95,13 @@ export const BreadcrumbJsonLd = ({
     })),
   });
 
-export const EventJsonLd = ({ event }: { event: PublicEvent }) => {
+export const EventJsonLd = ({
+  event,
+  artists,
+}: {
+  event: PublicEvent;
+  artists?: PublicEventArtistEntry[];
+}) => {
   const locationLine =
     event.location?.formattedAddress ?? event.location?.addressLine1 ?? event.city ?? "India";
   const offers = (event.tickets ?? [])
@@ -111,6 +117,22 @@ export const EventJsonLd = ({ event }: { event: PublicEvent }) => {
           ? "https://schema.org/SoldOut"
           : "https://schema.org/InStock",
     }));
+
+  // Lineup → schema.org performers. PerformingGroup covers DJs, bands, and
+  // comedy acts alike; link to the artist page + socials when available.
+  const performers = (artists ?? [])
+    .filter((a) => a.name)
+    .map((a) => {
+      const socials = [a.instagramLink, a.spotifyLink, a.youtubeLink].filter(
+        Boolean
+      );
+      return {
+        "@type": "PerformingGroup",
+        name: a.name,
+        ...(a.slug ? { url: `${SITE_URL}/artist/${a.slug}` } : {}),
+        ...(socials.length ? { sameAs: socials } : {}),
+      };
+    });
 
   return ldScript(`hoizr-event-${event._id}-jsonld`, {
     "@context": "https://schema.org",
@@ -135,6 +157,7 @@ export const EventJsonLd = ({ event }: { event: PublicEvent }) => {
       },
     },
     organizer: { "@type": "Organization", name: ORG_NAME, url: SITE_URL },
+    performer: performers.length ? performers : undefined,
     offers: offers.length ? offers : undefined,
     inLanguage: "en-IN",
   });

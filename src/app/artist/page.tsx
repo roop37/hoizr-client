@@ -19,8 +19,16 @@ type SearchParams = {
 };
 
 export const metadata: Metadata = {
-  title: "Discover artists",
-  description: "Browse artists, DJs, and performers on Hoizr.",
+  title: "Search artists — DJs, comedians, bands & live performers",
+  description:
+    "Search and browse artists on Hoizr — DJs, comedians, bands, and live performers across India. Filter by city and follow your favourites.",
+  // /artist is the searchable directory; /artists is the canonical artists
+  // hub. Point every /artist state (incl. ?city / ?page filters) at /artists
+  // to consolidate ranking signals and keep filtered variants out of the index.
+  alternates: {
+    canonical: "/artists",
+    languages: { "en-IN": "/artists", "x-default": "/artists" },
+  },
 };
 
 export const dynamic = "force-dynamic";
