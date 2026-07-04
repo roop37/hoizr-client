@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { gqlRequest } from "@/lib/graphql";
+import { VenueCoupons } from "@/components/hoizr-ui/VenueCoupons";
 import {
   GET_ORGANIZER_EVENTS_QUERY,
   GET_PUBLIC_VENUE_BY_ID_QUERY,
@@ -217,6 +218,8 @@ export function VenueDetailClient({ id }: { id: string }) {
           </a>
         ) : null}
       </div>
+
+      <VenueCoupons hostId={id} />
 
       {events.length > 0 ? (
         <div className="mt-8">
