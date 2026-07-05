@@ -264,12 +264,16 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
     ? new Date(event.startDate).getTime()
     : null;
   const eventEnded = endsAtMs != null && endsAtMs < nowMs;
+  // Show the waitlist when: it's a waitlist-only gate, we're in the pre-sale
+  // window, OR there's simply nothing sellable right now — that last case
+  // covers both a sold-out event (overflow) AND a pure demand-sensing event
+  // with no tickets configured at all (the "just gauge interest" use).
   const showWaitlist =
     !eventEnded &&
     !!event.waitlistEnabled &&
     (event.waitlistOnly ||
       inPreSaleWindow ||
-      (!inPreSaleWindow && tickets.length > 0 && !anyTicketAvailable));
+      (!inPreSaleWindow && !anyTicketAvailable));
   if (showWaitlist) {
     return <EventWaitlistPanel event={event} />;
   }
