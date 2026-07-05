@@ -106,6 +106,10 @@ export type PublicEvent = {
   tickets?: PublicTicket[];
   extras?: PublicExtra[];
   ticketingEnabled?: boolean;
+  waitlistEnabled?: boolean;
+  waitlistOnly?: boolean;
+  waitlistCollectSocials?: boolean;
+  waitlistExpiry?: string;
   isHighDemand?: boolean;
   isComingSoon?: boolean;
   ticketingTerms?: string;

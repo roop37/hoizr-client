@@ -23,6 +23,7 @@ import { useAuthStore } from "@/store/auth";
 import type { PublicEvent, PublicExtra, PublicTicket } from "@/types/event";
 import type { CartResponse } from "@/types/order";
 import { AuthSheet } from "@/components/auth/AuthSheet";
+import { EventWaitlistPanel } from "./EventWaitlistPanel";
 
 type Selection = Record<string, number>;
 type LineSel = { tickets: { ticketId: string; quantity: number }[]; extras: { extraId: string; quantity: number }[] };
@@ -243,6 +244,35 @@ export const EventBookingPanel = ({ event }: { event: PublicEvent }) => {
       setLoading(false);
     }
   };
+
+  // Waitlist gating — evaluated BEFORE the ticketing guard so an organizer can
+  // run a pure demand-sensing waitlist with no tickets configured. Precedence
+  // mirrors docs/WAITLIST_SPEC.md §5.2.
+  const nowMs = now.getTime();
+  const wlExpiryMs = event.waitlistExpiry
+    ? new Date(event.waitlistExpiry).getTime()
+    : null;
+  const inPreSaleWindow =
+    !!event.waitlistEnabled &&
+    !event.waitlistOnly &&
+    wlExpiryMs != null &&
+    nowMs < wlExpiryMs;
+  const anyTicketAvailable = tickets.some((t) => isTicketAvailable(t));
+  const endsAtMs = event.endDate
+    ? new Date(event.endDate).getTime()
+    : event.startDate
+    ? new Date(event.startDate).getTime()
+    : null;
+  const eventEnded = endsAtMs != null && endsAtMs < nowMs;
+  const showWaitlist =
+    !eventEnded &&
+    !!event.waitlistEnabled &&
+    (event.waitlistOnly ||
+      inPreSaleWindow ||
+      (!inPreSaleWindow && tickets.length > 0 && !anyTicketAvailable));
+  if (showWaitlist) {
+    return <EventWaitlistPanel event={event} />;
+  }
 
   if (!event.ticketingEnabled) {
     return (
