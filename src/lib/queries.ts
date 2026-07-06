@@ -130,6 +130,10 @@ export const PUBLIC_EVENT_BY_SLUG_QUERY = `
       eventInstructions
       prohibitedItems
       ticketingEnabled
+      waitlistEnabled
+      waitlistOnly
+      waitlistCollectSocials
+      waitlistExpiry
       isHighDemand
       tickets {
         _id
@@ -416,6 +420,9 @@ export const MY_PROFILE_QUERY = `
       smsMarketingOptIn
       whatsappMarketingOptIn
       pushNotificationMarketingOptIn
+      instagramHandle
+      facebookHandle
+      xHandle
       address {
         addressLine1
         addressLine2
@@ -445,6 +452,9 @@ export const UPDATE_MY_PROFILE_MUTATION = `
       smsMarketingOptIn
       whatsappMarketingOptIn
       pushNotificationMarketingOptIn
+      instagramHandle
+      facebookHandle
+      xHandle
       address {
         addressLine1
         addressLine2
@@ -454,6 +464,26 @@ export const UPDATE_MY_PROFILE_MUTATION = `
         formattedAddress
         coordinate { type coordinates }
       }
+    }
+  }
+`;
+
+export const MY_WAITLIST_STATUS_QUERY = `
+  query MyWaitlistStatus($eventId: String!) {
+    myWaitlistStatus(eventId: $eventId) {
+      _id
+      status
+      partySize
+    }
+  }
+`;
+
+export const JOIN_WAITLIST_MUTATION = `
+  mutation JoinWaitlist($input: JoinWaitlistInput!) {
+    joinWaitlist(input: $input) {
+      _id
+      status
+      partySize
     }
   }
 `;

@@ -70,14 +70,19 @@ const ticketStatusBadge = (status: OrderStatus) => {
     case "SUPERSEDED":
       return {
         Icon: XCircle,
-        text: status === "SUPERSEDED" ? "Replaced" : "CANCELLED",
+        text:
+          status === "SUPERSEDED"
+            ? "Replaced"
+            : status === "PAYMENT_FAILED"
+            ? "Payment failed"
+            : "Cancelled",
         className:
           "bg-white/10 text-white/70 ring-1 ring-inset ring-white/15",
       };
     case "REFUNDED":
       return {
         Icon: XCircle,
-        text: "REFUNDED",
+        text: "Refunded",
         className:
           "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/40",
       };
@@ -118,14 +123,14 @@ const merchStatusBadge = (status: ArtistMerchOrderStatus) => {
     case "CANCELLED":
       return {
         Icon: XCircle,
-        text: status === "CANCELLED" ? "CANCELLED" : "Payment failed",
+        text: status === "CANCELLED" ? "Cancelled" : "Payment failed",
         className:
           "bg-white/10 text-white/70 ring-1 ring-inset ring-white/15",
       };
     case "REFUNDED":
       return {
         Icon: XCircle,
-        text: "REFUNDED",
+        text: "Refunded",
         className:
           "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/40",
       };
