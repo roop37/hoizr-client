@@ -23,6 +23,7 @@ import { EventInstagramAttendees } from "./EventInstagramAttendees";
 import { EventPromoCodes } from "./EventPromoCodes";
 import { HICONS, THING_ICONS } from "./icons";
 import Link from "next/link";
+import { DineNearbyLink } from "@/components/dineout/DineNearbyLink";
 // HFooter rendered once at the layout level.
 // The inline booking panel was removed when ticket selection moved to
 // its own /events/[slug]/tickets route — the event detail page now
@@ -629,6 +630,13 @@ export const EventDetailClient = ({
                 )}
               </p>
             )}
+            <div className="mt-3">
+              <DineNearbyLink
+                lat={display.coordinate?.lat}
+                lng={display.coordinate?.lng}
+                startDate={event.startDate}
+              />
+            </div>
           </div>
 
           {thingsToKnow.length > 0 ? (

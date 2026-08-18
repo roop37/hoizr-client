@@ -21,7 +21,7 @@ import {
   writeActiveCart,
   type ActiveCart,
 } from "@/lib/active-cart";
-import { rupee } from "@/lib/format";
+import { rupee, rupeeOrFree } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
 import {
   CONFIRM_PAYMENT_MUTATION,
@@ -734,7 +734,7 @@ export const CheckoutClient = () => {
                     {line.ticketName}
                   </div>
                   <div className="text-xs text-white/55">
-                    {rupee(line.unitPrice)} each
+                    {line.unitPrice > 0 ? `${rupee(line.unitPrice)} each` : "Free"}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -770,7 +770,7 @@ export const CheckoutClient = () => {
                     </button>
                   </div>
                   <div className="min-w-[5rem] text-right font-semibold text-white">
-                    {rupee(line.totalPrice)}
+                    {rupeeOrFree(line.totalPrice)}
                   </div>
                 </div>
               </div>
@@ -790,7 +790,7 @@ export const CheckoutClient = () => {
                     {line.extraName}
                   </div>
                   <div className="text-xs text-white/55">
-                    {rupee(line.unitPrice)} each
+                    {line.unitPrice > 0 ? `${rupee(line.unitPrice)} each` : "Free"}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -822,7 +822,7 @@ export const CheckoutClient = () => {
                     </button>
                   </div>
                   <div className="min-w-[5rem] text-right font-semibold text-white">
-                    {rupee(line.totalPrice)}
+                    {rupeeOrFree(line.totalPrice)}
                   </div>
                 </div>
               </div>

@@ -25,6 +25,7 @@ import {
   type CapturedAddress,
 } from "@/components/hoizr-ui/AddressSearchCard";
 import { InstagramConnectCard } from "@/components/hoizr-ui/InstagramConnectCard";
+import { SwiggyConnectCard } from "@/components/dineout/SwiggyConnectCard";
 import { gqlRequest } from "@/lib/graphql";
 import {
   MY_PROFILE_QUERY,
@@ -708,6 +709,9 @@ export const ProfileClient = () => {
           </>
         )}
       </div>
+
+      {/* Dineout connection — feature-gated inside the card. */}
+      <SwiggyConnectCard />
 
       {/* Instagram connect — own card so the embedded media grid +
           visibility toggle has room and stays distinct from the

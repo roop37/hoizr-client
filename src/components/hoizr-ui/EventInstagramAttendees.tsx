@@ -48,7 +48,15 @@ const cleanHandle = (h?: string | null) => (h ? h.replace(/^@/, "") : "");
  * A blurred copy of the event flyer sits behind a translucent overlay so the
  * card reflects the event's colours without any IG-branded chrome.
  */
-export const EventInstagramAttendees = ({ eventId, flyerUrl, minAttendees = 0 }: Props) => {
+// Instagram/Meta feature flag: hide the "who's going" card entirely unless
+// NEXT_PUBLIC_INSTA_ENABLED=true (Meta app verification pending). Wrapper —
+// not an early return — so the inner component's hooks stay unconditional.
+const INSTA_ENABLED = process.env.NEXT_PUBLIC_INSTA_ENABLED === "true";
+
+export const EventInstagramAttendees = (props: Props) =>
+  INSTA_ENABLED ? <EventInstagramAttendeesInner {...props} /> : null;
+
+const EventInstagramAttendeesInner = ({ eventId, flyerUrl, minAttendees = 0 }: Props) => {
   const profile = useAuthStore((s) => s.profile);
   const hydrated = useAuthStore((s) => s.hydrated);
   const pathname = usePathname();

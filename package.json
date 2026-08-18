@@ -9,6 +9,7 @@
     "lint": "next lint",
     "codegen": "graphql-codegen --config codegen.yml",
     "test:artist-stage-name-display": "node scripts/artist-stage-name-display.test.js",
+    "test:free-order-money-display": "node scripts/free-order-money-display.test.js",
     "blurhash": "node scripts/generate-blurhashes.mjs",
     "prebuild": "node scripts/generate-blurhashes.mjs",
     "predev": "node scripts/generate-blurhashes.mjs"

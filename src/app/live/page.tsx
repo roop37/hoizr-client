@@ -8,6 +8,7 @@ import {
   CollectionPageJsonLd,
 } from "@/components/hoizr-ui/seo/JsonLd";
 import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
+import { DineoutTonightRail } from "@/components/dineout/DineoutTonightRail";
 import {
   fetchCustomerMasters,
   fetchPublishedEvents,
@@ -176,6 +177,8 @@ export default async function LivePage() {
         // reduced-motion safe). Small lists stay a static horizontal row.
         <MarqueeRow title="Live now" events={liveToday} />
       )}
+
+      <DineoutTonightRail />
 
       {genreRows.map((row) => (
         <MarqueeRow

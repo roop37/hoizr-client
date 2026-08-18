@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { gqlRequest } from "@/lib/graphql";
+import { sanitizeRichText } from "@/lib/sanitize";
 import { VenueCoupons } from "@/components/hoizr-ui/VenueCoupons";
 import {
   GET_ORGANIZER_EVENTS_QUERY,
@@ -49,6 +50,69 @@ const formatEventDay = (iso?: string | null): string => {
 };
 
 type VenueEvent = PublicEventSummary & { isPast: boolean };
+
+// One venue-event card, shared by the Happening now / Upcoming / Past
+// sections. Shows the FULL portrait flyer (3:4) like the listing card;
+// falls back to the landscape asset only when no portrait exists.
+const renderVenueEventCard = (ev: VenueEvent, kind: string) => {
+  const cover = ev.eventFlyer || ev.horizontalFlyer || null;
+  const badge =
+    kind === "live" ? (
+      <span className="shrink-0 rounded-full bg-[#c5ff3d] px-2.5 py-1 text-[11px] font-bold text-[#0a0a0e]">
+        Live now
+      </span>
+    ) : kind === "past" ? (
+      <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/50">
+        Past
+      </span>
+    ) : (
+      <span className="shrink-0 rounded-full bg-[#c5ff3d]/15 px-2.5 py-1 text-[11px] font-semibold text-[#c5ff3d]">
+        Upcoming
+      </span>
+    );
+  const card = (
+    <>
+      <div className="aspect-[3/4] w-full overflow-hidden bg-white/5">
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover}
+            alt={ev.title ?? "Event"}
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
+        ) : null}
+      </div>
+      <div className="flex items-start justify-between gap-2 p-3">
+        <div className="min-w-0">
+          <div className="truncate text-[14px] font-semibold text-white">
+            {ev.title ?? "Event"}
+          </div>
+          <div className="truncate text-[12px] text-white/55">
+            {[formatEventDay(ev.startDate), ev.city].filter(Boolean).join(" · ")}
+          </div>
+        </div>
+        {badge}
+      </div>
+    </>
+  );
+  return ev.slug ? (
+    <Link
+      key={ev._id}
+      href={`/events/${ev.slug}`}
+      className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] transition hover:border-[#c5ff3d]/40"
+    >
+      {card}
+    </Link>
+  ) : (
+    <div
+      key={ev._id}
+      className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
+    >
+      {card}
+    </div>
+  );
+};
 
 export function VenueDetailClient({ id }: { id: string }) {
   const [venue, setVenue] = useState<PublicVenue | null>(null);
@@ -183,10 +247,16 @@ export function VenueDetailClient({ id }: { id: string }) {
         </div>
       </div>
 
+      {/* Venue description is authored in business-client's RichTextEditor, so
+          it arrives as HTML — render it (sanitized) instead of printing the
+          raw tags, same as the event "About" block. */}
       {venue.description ? (
-        <p className="mt-5 whitespace-pre-line text-[14px] leading-6 text-white/75">
-          {venue.description}
-        </p>
+        <div
+          className="h-richtext mt-5"
+          dangerouslySetInnerHTML={{
+            __html: sanitizeRichText(venue.description),
+          }}
+        />
       ) : null}
 
       <div className="mt-5 flex flex-col gap-2 text-[13px]">
@@ -222,69 +292,45 @@ export function VenueDetailClient({ id }: { id: string }) {
       <VenueCoupons hostId={id} />
 
       {events.length > 0 ? (
-        <div className="mt-8">
-          <h2 className="mb-3 text-[15px] font-semibold text-white">Events</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {events.map((ev) => {
-              // Match the listing card: show the FULL portrait flyer (3:4),
-              // not a cropped 16:9 band. Prefer the portrait asset; fall back
-              // to the landscape only when no portrait exists.
-              const cover = ev.eventFlyer || ev.horizontalFlyer || null;
-              const card = (
-                <>
-                  <div className="aspect-[3/4] w-full overflow-hidden bg-white/5">
-                    {cover ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={cover}
-                        alt={ev.title ?? "Event"}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="flex items-start justify-between gap-2 p-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-[14px] font-semibold text-white">
-                        {ev.title ?? "Event"}
-                      </div>
-                      <div className="truncate text-[12px] text-white/55">
-                        {[formatEventDay(ev.startDate), ev.city]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </div>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                        ev.isPast
-                          ? "bg-white/10 text-white/50"
-                          : "bg-[#c5ff3d]/15 text-[#c5ff3d]"
-                      }`}
-                    >
-                      {ev.isPast ? "Past" : "Upcoming"}
+        (() => {
+          // Bucket the merged list: the server's "upcoming" bucket includes
+          // ongoing events (it keeps events until they END), so an upcoming
+          // event whose startDate has passed is happening RIGHT NOW.
+          const now = Date.now();
+          const started = (ev: VenueEvent) =>
+            ev.startDate ? new Date(ev.startDate).getTime() <= now : false;
+          const live = events.filter((ev) => !ev.isPast && started(ev));
+          const upcoming = events
+            .filter((ev) => !ev.isPast && !started(ev))
+            .sort(
+              (a, b) =>
+                +new Date(a.startDate ?? 0) - +new Date(b.startDate ?? 0)
+            ); // soonest first
+          const past = events.filter((ev) => ev.isPast); // latest first already
+          const sections: [string, VenueEvent[], string][] = [
+            ["Happening now", live, "live"],
+            ["Upcoming", upcoming, "upcoming"],
+            ["Past events", past, "past"],
+          ];
+          return sections
+            .filter(([, list]) => list.length > 0)
+            .map(([title, list, kind]) => (
+              <div className="mt-8" key={kind}>
+                <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-white">
+                  {kind === "live" && (
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#c5ff3d] opacity-60" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#c5ff3d]" />
                     </span>
-                  </div>
-                </>
-              );
-              return ev.slug ? (
-                <Link
-                  key={ev._id}
-                  href={`/events/${ev.slug}`}
-                  className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] transition hover:border-[#c5ff3d]/40"
-                >
-                  {card}
-                </Link>
-              ) : (
-                <div
-                  key={ev._id}
-                  className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
-                >
-                  {card}
+                  )}
+                  {title}
+                </h2>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {list.map((ev) => renderVenueEventCard(ev, kind))}
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              </div>
+            ));
+        })()
       ) : null}
 
       {guestlists.length > 0 ? (
