@@ -3,53 +3,49 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { gqlRequest } from "@/lib/graphql";
+import { sdk } from "@/lib/sdk";
+import { useAuthStore } from "@/store/auth";
+import { useUIStore } from "@/store/uiStore";
+import { SwiggyVenuesGrid } from "@/components/dineout/SwiggyVenuesGrid";
 import {
   GET_PUBLIC_VENUES_QUERY,
   type PublicVenue,
   type PublicVenuePage,
 } from "@/lib/venue-queries";
 
+const SWIGGY_ON = process.env.NEXT_PUBLIC_SWIGGY_DINEOUT_ENABLED === "true";
+
 const cityOf = (v: PublicVenue): string =>
   v.address?.city || v.address?.formattedAddress || "";
-
-type Orient = "portrait" | "landscape" | "square";
-
-// Classify a cover image by its natural aspect ratio so the bento tile can be
-// SIZED TO THE IMAGE instead of cropping an arbitrary poster into a fixed cell.
-const orientOf = (ratio?: number): Orient => {
-  if (!ratio || !Number.isFinite(ratio)) return "square";
-  if (ratio >= 1.25) return "landscape"; // wide flyer / room shot
-  if (ratio <= 0.8) return "portrait"; // tall poster
-  return "square";
-};
-
-// Bento span driven by the image's real orientation once measured. Before the
-// cover loads we fall back to a deterministic 6-tile rhythm (so the grid never
-// renders empty), then settle into an orientation-matched span — portrait →
-// tall, landscape → wide, with the occasional square hero to anchor the mosaic.
-// `grid-flow-dense` backfills the gaps the varied spans leave behind.
-const bentoSpan = (i: number, orient?: Orient): string => {
-  if (orient === "portrait") return "row-span-2";
-  if (orient === "landscape") return "sm:col-span-2";
-  if (orient === "square") return i % 6 === 0 ? "col-span-2 row-span-2" : "";
-  // Not measured yet — deterministic fallback rhythm.
-  switch (i % 6) {
-    case 0:
-      return "col-span-2 row-span-2";
-    case 2:
-      return "row-span-2";
-    case 4:
-      return "sm:col-span-2";
-    default:
-      return "";
-  }
-};
 
 export function VenuesListClient() {
   const [venues, setVenues] = useState<PublicVenue[]>([]);
   const [loading, setLoading] = useState(true);
-  // venueId → measured cover orientation (set on image load).
-  const [orients, setOrients] = useState<Record<string, Orient>>({});
+
+  // Swiggy branch: when the signed-in customer has Swiggy connected, the page
+  // defaults to reservable Dineout venues (city-aware); a tab flips back to
+  // Hoizr's own rooms. Signed-out / unconnected users see the Hoizr grid.
+  const profile = useAuthStore((s) => s.profile);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
+  const city = useUIStore((s) => s.city);
+  const [swiggyConnected, setSwiggyConnected] = useState<boolean | null>(null);
+  const [tab, setTab] = useState<"dineout" | "hoizr">("dineout");
+
+  useEffect(() => {
+    if (!hydrated) hydrateAuth();
+  }, [hydrated, hydrateAuth]);
+
+  useEffect(() => {
+    if (!SWIGGY_ON || !hydrated || !profile) {
+      if (hydrated && !profile) setSwiggyConnected(false);
+      return;
+    }
+    sdk
+      .SwiggyDineoutStatus()
+      .then((r) => setSwiggyConnected(Boolean(r.swiggyDineoutStatus?.connected)))
+      .catch(() => setSwiggyConnected(false));
+  }, [hydrated, profile]);
 
   useEffect(() => {
     (async () => {
@@ -68,16 +64,53 @@ export function VenuesListClient() {
     })();
   }, []);
 
+  const showSwiggy = SWIGGY_ON && swiggyConnected === true;
+
+  // City-aware Hoizr list: filter to the selected city when it matches at
+  // least one venue; otherwise show everything (a tiny catalog shouldn't
+  // vanish behind a city with no venues yet).
+  const cityVenues = city
+    ? venues.filter((v) => cityOf(v).toLowerCase().includes(city.toLowerCase()))
+    : venues;
+  const visibleVenues = cityVenues.length > 0 ? cityVenues : venues;
+
+  const tabs = showSwiggy ? (
+    <div className="mb-4 flex gap-2">
+      {(
+        [
+          ["dineout", "Reserve a table"],
+          ["hoizr", "Hoizr venues"],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => setTab(key)}
+          className={`h-chip ${tab === key ? "active" : ""}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
+  if (showSwiggy && tab === "dineout") {
+    return (
+      <>
+        {tabs}
+        <SwiggyVenuesGrid city={city || undefined} />
+      </>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="grid grid-flow-dense grid-cols-2 gap-3 [grid-auto-rows:8.5rem] sm:grid-cols-4 sm:gap-4 sm:[grid-auto-rows:10.5rem]">
-        {Array.from({ length: 9 }).map((_, i) => (
-          <div
-            key={i}
-            className={`animate-pulse rounded-2xl border border-white/5 bg-white/5 ${bentoSpan(
-              i
-            )}`}
-          />
+      <div className="h-evt-grid">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="h-tile animate-pulse">
+            <div className="h-tile-flyer" />
+            <div className="h-tile-info" />
+          </div>
         ))}
       </div>
     );
@@ -101,67 +134,42 @@ export function VenuesListClient() {
   }
 
   return (
-    <div className="grid grid-flow-dense grid-cols-2 gap-3 [grid-auto-rows:8.5rem] sm:grid-cols-4 sm:gap-4 sm:[grid-auto-rows:10.5rem]">
-      {venues.map((v, i) => {
-        const gallery = (v.gallery ?? []).filter(Boolean);
-        const cover = gallery[0] || v.logo || null;
-        const city = cityOf(v);
-        const meta = [v.venueType, city].filter(Boolean).join(" · ") || "Venue";
-        return (
-          <Link
-            key={v._id}
-            href={`/venues/${v._id}`}
-            className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-[#c5ff3d]/40 ${bentoSpan(
-              i,
-              orients[v._id]
-            )}`}
-          >
-            {cover ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={cover}
-                alt={v.name ?? "Venue"}
-                loading="lazy"
-                onLoad={(e) => {
-                  const img = e.currentTarget;
-                  if (!img.naturalWidth || !img.naturalHeight) return;
-                  const next = orientOf(img.naturalWidth / img.naturalHeight);
-                  setOrients((prev) =>
-                    prev[v._id] === next ? prev : { ...prev, [v._id]: next }
-                  );
-                }}
-                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/10 to-white/[0.02] text-4xl font-bold text-white/25">
-                {(v.name ?? "V").charAt(0).toUpperCase()}
+    <>
+      {tabs}
+      {/* Same grid + tile as the events listing (`.h-evt-grid` / `.h-tile`):
+          every venue gets an identical 3:4 cover frame and info footer, so
+          rows are uniform and the page scans in one rhythm. */}
+      <div className="h-evt-grid">
+        {visibleVenues.map((v) => {
+          const cover = (v.gallery ?? []).filter(Boolean)[0] || v.logo || null;
+          const meta =
+            [v.venueType, cityOf(v)].filter(Boolean).join(" · ") || "Venue";
+          return (
+            <Link key={v._id} href={`/venues/${v._id}`} className="h-tile">
+              <div className="h-tile-flyer">
+                {cover ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={cover}
+                    alt={v.name ?? "Venue"}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="h-tile-flyer-fallback flex items-center justify-center bg-gradient-to-br from-white/10 to-white/[0.02] text-4xl font-bold text-white/25">
+                    {(v.name ?? "V").charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Bottom scrim so the venue name stays legible over any photo. */}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent p-3 pt-10">
-              <div className="truncate text-[14px] font-semibold text-white drop-shadow">
-                {v.name ?? "Venue"}
+              <div className="h-tile-info">
+                <h3 className="h-tile-title">{v.name ?? "Venue"}</h3>
+                <p className="h-tile-venue">{meta}</p>
               </div>
-              <div className="mt-0.5 truncate text-[11px] text-white/70">
-                {meta}
-              </div>
-            </div>
-
-            {/* Logo chip when the cover isn't already the logo. */}
-            {v.logo && cover !== v.logo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={v.logo}
-                alt=""
-                loading="lazy"
-                className="absolute left-2 top-2 h-8 w-8 rounded-lg border border-white/20 object-cover shadow-lg"
-              />
-            ) : null}
-          </Link>
-        );
-      })}
-    </div>
+            </Link>
+          );
+        })}
+      </div>
+    </>
   );
 }
 

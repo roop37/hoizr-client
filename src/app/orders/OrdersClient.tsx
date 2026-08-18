@@ -6,13 +6,14 @@ import {
   Package,
   Sparkles,
   TicketCheck,
+  UtensilsCrossed,
   X,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { rupee } from "@/lib/format";
+import { rupee, rupeeOrFree } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
 import {
   MY_ARTIST_MERCH_ORDERS_QUERY,
@@ -36,8 +37,16 @@ import {
   type GuestlistTicketView,
 } from "@/lib/guestlist";
 import { GoldenTicket } from "@/components/hoizr-ui/GoldenTicket";
+import { YourNight } from "@/components/dineout/YourNight";
+import { PoweredBySwiggy } from "@/components/dineout/PoweredBySwiggy";
+import { sdk } from "@/lib/sdk";
+import { formatDateIST } from "@/lib/dineout";
+import { useSwiggyConnected } from "@/lib/use-swiggy-connected";
+import type { MyDineoutBookingsQuery } from "@/generated/graphql";
 
-type Tab = "tickets" | "merch" | "passes";
+type Tab = "tickets" | "merch" | "passes" | "reservations";
+
+type Reservation = MyDineoutBookingsQuery["myDineoutBookings"][number];
 
 // Tones picked to read clearly on the dark glass cards below. Each
 // badge is a translucent fill + 1px inset ring + a high-contrast text
@@ -144,6 +153,34 @@ const merchStatusBadge = (status: ArtistMerchOrderStatus) => {
   }
 };
 
+// Swiggy returns the reservation status as a free-form string (not an enum we
+// own), so match on substrings and fall back to showing whatever they sent —
+// an unknown status must still be readable, never blank.
+const reservationStatusBadge = (status: string) => {
+  const s = status.toLowerCase();
+  if (s.includes("confirm") || s.includes("book") || s.includes("success"))
+    return {
+      Icon: CheckCircle2,
+      className:
+        "bg-emerald-400/15 text-emerald-200 ring-1 ring-inset ring-emerald-400/40",
+    };
+  if (s.includes("pend") || s.includes("progress") || s.includes("await"))
+    return {
+      Icon: Clock,
+      className:
+        "bg-amber-400/15 text-amber-200 ring-1 ring-inset ring-amber-400/40",
+    };
+  if (s.includes("cancel") || s.includes("fail") || s.includes("reject"))
+    return {
+      Icon: XCircle,
+      className: "bg-white/10 text-white/70 ring-1 ring-inset ring-white/15",
+    };
+  return {
+    Icon: Clock,
+    className: "bg-white/10 text-white/70 ring-1 ring-inset ring-white/15",
+  };
+};
+
 const formatDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("en-IN", {
@@ -164,15 +201,41 @@ export const OrdersClient = () => {
   const [orders, setOrders] = useState<CustomerOrderView[]>([]);
   const [merchOrders, setMerchOrders] = useState<CustomerMerchOrderView[]>([]);
   const [passes, setPasses] = useState<GuestlistTicketView[]>([]);
+  // null = not loaded yet, so the tab label can omit its count instead of
+  // flashing "· 0" before the fetch lands.
+  const [reservations, setReservations] = useState<Reservation[] | null>(null);
   const [selectedPass, setSelectedPass] = useState<GuestlistTicketView | null>(
     null
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Table reservations are a Swiggy-connected-only surface, so they load on
+  // their own timeline (the status round-trip resolves after hydrate) rather
+  // than gating the whole page behind a Swiggy call for every customer.
+  const { connected } = useSwiggyConnected();
+
   useEffect(() => {
     if (!hydrated) hydrate();
   }, [hydrated, hydrate]);
+
+  useEffect(() => {
+    if (connected !== true) return;
+    let alive = true;
+    sdk
+      .MyDineoutBookings()
+      .then((r) => alive && setReservations(r.myDineoutBookings))
+      .catch(() => alive && setReservations([]));
+    return () => {
+      alive = false;
+    };
+  }, [connected]);
+
+  // Disconnecting Swiggy elsewhere removes the tab; drop the customer back to
+  // Tickets so the active tab can't point at a surface that no longer exists.
+  useEffect(() => {
+    if (connected === false) setTab((t) => (t === "reservations" ? "tickets" : t));
+  }, [connected]);
 
   useEffect(() => {
     if (hydrated && !profile) {
@@ -220,6 +283,21 @@ export const OrdersClient = () => {
       ).length,
     [merchOrders]
   );
+
+  // Upcoming tables first (soonest at the top — that's the one you're about to
+  // walk into), then past ones latest-first. Server order is insertion order,
+  // which would float last month's dinner above tonight's.
+  const sortedReservations = useMemo(() => {
+    if (!reservations) return [];
+    const now = Date.now();
+    const at = (r: Reservation) => new Date(r.reservationTime).getTime();
+    return [...reservations].sort((a, b) => {
+      const [ta, tb] = [at(a), at(b)];
+      const [upcomingA, upcomingB] = [ta >= now, tb >= now];
+      if (upcomingA !== upcomingB) return upcomingA ? -1 : 1;
+      return upcomingA ? ta - tb : tb - ta;
+    });
+  }, [reservations]);
 
   if (!hydrated || loading) {
     return (
@@ -282,7 +360,27 @@ export const OrdersClient = () => {
         >
           Merch · {merchCount}
         </button>
+        {connected === true ? (
+          <button
+            type="button"
+            onClick={() => setTab("reservations")}
+            className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition ${
+              tab === "reservations"
+                ? "border-[#c5ff3d] text-white"
+                : "border-transparent text-white/55 hover:text-white"
+            }`}
+          >
+            Reservations
+            {reservations ? ` · ${reservations.length}` : ""}
+          </button>
+        ) : null}
       </div>
+
+      {tab === "tickets" ? (
+        <div className="mt-6">
+          <YourNight />
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mt-6">
@@ -333,7 +431,7 @@ export const OrdersClient = () => {
                       {formatDate(order.createdAt)}
                     </span>
                     <span className="font-semibold text-white">
-                      {rupee(order.totalAmount)}
+                      {rupeeOrFree(order.totalAmount)}
                     </span>
                   </div>
                 </Link>
@@ -415,6 +513,69 @@ export const OrdersClient = () => {
               actionHref="/artist"
             />
           )
+        ) : tab === "reservations" && connected === true ? (
+          <>
+            {/* Swiggy co-branding is required on every dineout surface. */}
+            <div className="flex justify-end">
+              <PoweredBySwiggy />
+            </div>
+            {!reservations ? (
+              <>
+                <CardSkeleton />
+                <CardSkeleton />
+              </>
+            ) : sortedReservations.length ? (
+              sortedReservations.map((r) => {
+                const badge = reservationStatusBadge(r.status);
+                const Icon = badge.Icon;
+                return (
+                  <Link
+                    key={r.swiggyOrderId}
+                    href="/dineout/bookings"
+                    className="block rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4 text-white backdrop-blur-xl transition hover:bg-white/[0.07]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-mono text-[11px] tracking-[0.18em] text-white/55">
+                          #{r.swiggyOrderId.slice(-6).toUpperCase()}
+                        </div>
+                        <div className="mt-1 truncate font-semibold text-white">
+                          {r.restaurantName}
+                        </div>
+                        {r.restaurantAddress ? (
+                          <div className="mt-0.5 truncate text-xs text-white/55">
+                            {r.restaurantAddress}
+                          </div>
+                        ) : null}
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badge.className}`}
+                      >
+                        <Icon size={12} />
+                        {r.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-sm">
+                      <span className="text-white/55">
+                        {formatDateIST(r.reservationTime)}
+                      </span>
+                      <span className="font-semibold text-white">
+                        {r.guestCount} {r.guestCount === 1 ? "guest" : "guests"}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <EmptyState
+                icon={<UtensilsCrossed size={28} />}
+                title="No table reservations yet"
+                description="Book a free table before doors and your reservations will show up here."
+                actionLabel="Find a table"
+                actionHref="/dineout"
+              />
+            )}
+          </>
         ) : passes.length ? (
           passes.map((p) => (
             <button

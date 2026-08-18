@@ -439,13 +439,9 @@ export const HSide = ({ cities }: Props) => {
           </div>
 
           {!signedIn ? (
-            // ── SIGN-IN SWITCH (sidebar foot hidden) ────────────────────────
-            // The sidebar "Sign in" button is hidden for now: OTP delivery is
-            // gated on WhatsApp, which isn't integrated yet (and SMS is
-            // disabled). Re-enable by replacing `null` with the commented
-            // block below.
-            null
-            /*
+            // ── SIGN-IN (sidebar foot) ──────────────────────────────────────
+            // Re-enabled 2026-07-18 (Hoizr live): OTP delivers via MSG91
+            // WhatsApp+SMS in prod; dev accepts 000000 (SERVER_ENV bypass).
             <div className="h-side-foot">
               <button
                 type="button"
@@ -459,7 +455,6 @@ export const HSide = ({ cities }: Props) => {
                 Sign in
               </button>
             </div>
-            */
           ) : (
             <div
               className="h-side-foot"

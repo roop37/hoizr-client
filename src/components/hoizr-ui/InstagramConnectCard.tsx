@@ -23,7 +23,15 @@ import type { CustomerInstagram } from "@/types/instagram";
 const isSafeNext = (v: string | null): v is string =>
   !!v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\");
 
-export const InstagramConnectCard = () => {
+// Instagram/Meta feature flag: hide the connect card entirely unless
+// NEXT_PUBLIC_INSTA_ENABLED=true (Meta app verification pending). Wrapper —
+// not an early return — so the inner component's hooks stay unconditional.
+const INSTA_ENABLED = process.env.NEXT_PUBLIC_INSTA_ENABLED === "true";
+
+export const InstagramConnectCard = () =>
+  INSTA_ENABLED ? <InstagramConnectCardInner /> : null;
+
+const InstagramConnectCardInner = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<CustomerInstagram | null>(null);

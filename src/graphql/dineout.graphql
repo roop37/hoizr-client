@@ -1,0 +1,149 @@
+query SwiggyDineoutStatus {
+  swiggyDineoutStatus {
+    connected
+    status
+    expiresAt
+  }
+}
+
+mutation DisconnectSwiggy {
+  disconnectSwiggy
+}
+
+fragment DineoutRestaurantFields on DineoutRestaurant {
+  restaurantId
+  name
+  cuisines
+  rating
+  ratingCount
+  costForTwo
+  distance
+  address
+  highlights
+  offers
+  source
+  imageUrl
+  mastheadImages
+}
+
+query SearchDineoutRestaurants($input: DineoutSearchInput!) {
+  searchDineoutRestaurants(input: $input) {
+    needsSwiggyAuth
+    error
+    restaurants {
+      ...DineoutRestaurantFields
+    }
+  }
+}
+
+query DineoutRestaurantDetails($input: DineoutRestaurantDetailsInput!) {
+  dineoutRestaurantDetails(input: $input) {
+    needsSwiggyAuth
+    error
+    restaurant {
+      ...DineoutRestaurantFields
+    }
+  }
+}
+
+query DineoutAvailableSlots($input: DineoutSlotsInput!) {
+  dineoutAvailableSlots(input: $input) {
+    needsSwiggyAuth
+    error
+    slotGroups {
+      name
+      slots {
+        slotId
+        reservationTime
+        itemId
+        displayTime
+        deals {
+          title
+          itemId
+          slotId
+          bookingPrice
+          displayFee
+          discountPercentage
+          isFree
+        }
+      }
+    }
+  }
+}
+
+query DineoutSavedLocations {
+  dineoutSavedLocations {
+    needsSwiggyAuth
+    error
+    locations {
+      id
+      addressLine
+      latitude
+      longitude
+    }
+  }
+}
+
+mutation BookDineoutTable($input: BookDineoutTableInput!) {
+  bookDineoutTable(input: $input) {
+    needsSwiggyAuth
+    error
+    confirming
+    booking {
+      orderId
+      restaurantName
+      restaurantAddress
+      reservationTime
+      guestCount
+      dealTitle
+      status
+    }
+  }
+}
+
+query DineoutBookingStatus($orderId: String!) {
+  dineoutBookingStatus(orderId: $orderId) {
+    needsSwiggyAuth
+    error
+    booking {
+      orderId
+      restaurantName
+      restaurantAddress
+      reservationTime
+      guestCount
+      dealTitle
+      status
+    }
+  }
+}
+
+query MyDineoutBookings {
+  myDineoutBookings {
+    swiggyOrderId
+    restaurantName
+    restaurantAddress
+    reservationTime
+    guestCount
+    status
+    createdAt
+  }
+}
+
+mutation ReportDineoutError($input: ReportDineoutErrorInput!) {
+  reportDineoutError(input: $input) {
+    needsSwiggyAuth
+    error
+    reportLink
+    message
+  }
+}
+
+query DineoutTonightRail($input: DineoutTonightRailInput!) {
+  dineoutTonightRail(input: $input) {
+    needsSwiggyAuth
+    error
+    restaurants {
+      ...DineoutRestaurantFields
+    }
+  }
+}
