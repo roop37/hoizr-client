@@ -14,7 +14,7 @@ The fan-facing storefront for Hoizr: discover live events across India, book tic
 
 </div>
 
-<img src="docs/assets/customer-home.jpg" alt="Hoizr storefront home page in a dark glass interface, with a featured event hero, a genre rail and rails of upcoming events" width="100%">
+<img src="docs/assets/customer-home.jpg" alt="Screenshot of the fan storefront home in its pre-launch state: dark glass sidebar, a 'The first nights drop here' hero and three sample event cards" width="100%">
 
 <!-- SCREENSHOT: customer-eticket | Order detail page for a paid order: QR e-ticket, event summary, invoice and share buttons -->
 <!-- SCREENSHOT: customer-checkout | Checkout page with a locked cart, promo code field, price breakdown and the Razorpay pay button -->
