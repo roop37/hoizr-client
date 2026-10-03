@@ -53,8 +53,8 @@
   --h-volt: #c5ff3d;
 
   --h-font-serif: "Bodoni Moda", "Didot", Georgia, serif;
-  --h-font-display: var(--font-sf-pro), -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
-  --h-font-body: var(--font-sf-pro), -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --h-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), system-ui, sans-serif;
+  --h-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), system-ui, sans-serif;
   --h-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
   --h-sidebar: 256px;
