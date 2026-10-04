@@ -37,6 +37,9 @@ export type CustomerProfile = {
   smsMarketingOptIn?: boolean;
   whatsappMarketingOptIn?: boolean;
   pushNotificationMarketingOptIn?: boolean;
+  instagramHandle?: string | null;
+  facebookHandle?: string | null;
+  xHandle?: string | null;
   /** Optional saved address powering distance badges + nearby sort. */
   address?: CustomerAddress | null;
 };

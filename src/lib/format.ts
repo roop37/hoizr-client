@@ -8,6 +8,12 @@ export const rupee = (value: number) =>
     maximumFractionDigits: 2,
   }).format(value || 0);
 
+// Order/line-item amounts only: a ₹0 order is a free RSVP or a fully
+// discounted ticket, and "Free" is what the customer expects to read.
+// Fee/tax/subtotal rows keep `rupee` — a ₹0 GST line saying "Free" is wrong.
+export const rupeeOrFree = (value: number) =>
+  Number(value) > 0 ? rupee(value) : "Free";
+
 export const formatEventDate = (value?: string) => {
   if (!value) return "Date pending";
   const date = new Date(value);

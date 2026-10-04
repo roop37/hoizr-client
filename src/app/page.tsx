@@ -8,6 +8,7 @@ import { DomeGallery } from "@/components/hoizr-ui/DomeGallery";
 import { HHero } from "@/components/hoizr-ui/HHero";
 import { CollectionPageJsonLd } from "@/components/hoizr-ui/seo/JsonLd";
 import { FreshnessRevalidate } from "@/components/hoizr-ui/FreshnessRevalidate";
+import { DineoutTonightRail } from "@/components/dineout/DineoutTonightRail";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoizr.com";
 
@@ -217,6 +218,8 @@ export default async function HomePage() {
           ))}
         </div>
       </div>
+
+      <DineoutTonightRail />
 
       {ticker.length > 0 ? <HTicker lines={ticker} /> : null}
 

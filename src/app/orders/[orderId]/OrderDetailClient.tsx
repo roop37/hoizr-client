@@ -21,7 +21,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { rupee } from "@/lib/format";
+import { rupee, rupeeOrFree } from "@/lib/format";
 import { gqlRequest } from "@/lib/graphql";
 import { mapsSearchHref } from "@/lib/maps";
 import { sanitizeRichText } from "@/lib/sanitize";
@@ -46,6 +46,7 @@ import { CenteredLoader, ErrorState } from "@/components/ui/feedback";
 import { OrderFeedbackCard } from "@/components/hoizr-ui/OrderFeedbackCard";
 import { EventInstagramAttendees } from "@/components/hoizr-ui/EventInstagramAttendees";
 import { TicketShareModal } from "@/components/hoizr-ui/TicketShareModal";
+import { DinnerBeforeDoors } from "@/components/dineout/DinnerBeforeDoors";
 
 type OrderEventSummary = Pick<
   PublicEvent,
@@ -1084,7 +1085,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                           {t.ticketName}
                         </span>
                         <span className="font-semibold">
-                          {rupee(t.totalPrice)}
+                          {rupeeOrFree(t.totalPrice)}
                         </span>
                       </li>
                     ))}
@@ -1096,7 +1097,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                         <span className="truncate">
                           {e.quantity}× {e.extraName}
                         </span>
-                        <span>{rupee(e.totalPrice)}</span>
+                        <span>{rupeeOrFree(e.totalPrice)}</span>
                       </li>
                     ))}
                   </ul>
@@ -1105,7 +1106,7 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                       Total paid
                     </span>
                     <span className="text-lg font-semibold text-ink">
-                      {rupee(order.totalAmount)}
+                      {rupeeOrFree(order.totalAmount)}
                     </span>
                   </div>
                   <details className="mt-3 text-xs text-muted">
@@ -1308,6 +1309,13 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                   page: signed-in-but-not-connected → "Connect Instagram"
                   (returns here after connect); connected → other attendees'
                   faces for this event. Hide entirely if < 10 attendees. */}
+              {/* Dinner before doors — Swiggy-connected customers only. */}
+              <DinnerBeforeDoors
+                startDateISO={eventSummary?.startDate}
+                coordinate={eventSummary?.location?.coordinate}
+                eventTitle={eventSummary?.title}
+              />
+
               {order.eventId ? (
                 <EventInstagramAttendees
                   eventId={order.eventId}
@@ -1641,7 +1649,9 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                     <span className="font-semibold">{t.quantity}×</span>{" "}
                     {t.ticketName}
                   </span>
-                  <span className="font-semibold">{rupee(t.totalPrice)}</span>
+                  <span className="font-semibold">
+                    {rupeeOrFree(t.totalPrice)}
+                  </span>
                 </div>
               ))}
               {order.extras?.map((e) => (
@@ -1652,14 +1662,16 @@ export const OrderDetailClient = ({ orderId }: { orderId: string }) => {
                   <span className="truncate">
                     {e.quantity}× {e.extraName}
                   </span>
-                  <span>{rupee(e.totalPrice)}</span>
+                  <span>{rupeeOrFree(e.totalPrice)}</span>
                 </div>
               ))}
               <div className="mt-2 flex items-baseline justify-between border-t border-dashed border-border pt-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
                   Total paid
                 </span>
-                <span className="font-semibold">{rupee(order.totalAmount)}</span>
+                <span className="font-semibold">
+                  {rupeeOrFree(order.totalAmount)}
+                </span>
               </div>
             </div>
           </div>

@@ -209,6 +209,18 @@ export enum AudienceAvailability {
   Public = 'PUBLIC'
 }
 
+export type BookDineoutTableInput = {
+  guestCount: Scalars['Int']['input'];
+  itemId: Scalars['String']['input'];
+  latitude: Scalars['Float']['input'];
+  longitude: Scalars['Float']['input'];
+  reservationTime: Scalars['Float']['input'];
+  restaurantAddress?: InputMaybe<Scalars['String']['input']>;
+  restaurantId: Scalars['String']['input'];
+  restaurantName?: InputMaybe<Scalars['String']['input']>;
+  slotId: Scalars['Int']['input'];
+};
+
 export type CartExtraLine = {
   __typename?: 'CartExtraLine';
   extraId: Scalars['String']['output'];
@@ -257,6 +269,12 @@ export type CartTicketLine = {
 export type CartTicketLineInput = {
   quantity: Scalars['Int']['input'];
   ticketId: Scalars['String']['input'];
+};
+
+export type ClaimRewardResult = {
+  __typename?: 'ClaimRewardResult';
+  code: Scalars['String']['output'];
+  expiresAt: Scalars['DateTimeISO']['output'];
 };
 
 export type ConfirmArtistMerchPaymentInput = {
@@ -349,6 +367,7 @@ export type Customer = {
   createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   email: Scalars['String']['output'];
   emailMarketingOptIn: Scalars['Boolean']['output'];
+  facebookHandle?: Maybe<Scalars['String']['output']>;
   fcmTokens?: Maybe<Array<Scalars['String']['output']>>;
   firstName: Scalars['String']['output'];
   followingArtist?: Maybe<Array<FollowEntry>>;
@@ -359,6 +378,7 @@ export type Customer = {
   genrePreferences?: Maybe<Array<Genre>>;
   googleConnected: Scalars['Boolean']['output'];
   googleData?: Maybe<GoogleAuthData>;
+  instagramHandle?: Maybe<Scalars['String']['output']>;
   isDeleted: Scalars['Boolean']['output'];
   lastName: Scalars['String']['output'];
   phone: Scalars['String']['output'];
@@ -370,6 +390,7 @@ export type Customer = {
   smsMarketingOptIn: Scalars['Boolean']['output'];
   updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   whatsappMarketingOptIn: Scalars['Boolean']['output'];
+  xHandle?: Maybe<Scalars['String']['output']>;
 };
 
 export type CustomerAppleStartInput = {
@@ -539,6 +560,156 @@ export type CustomerTokenRefreshResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type DineoutBookingConfirmation = {
+  __typename?: 'DineoutBookingConfirmation';
+  dealTitle?: Maybe<Scalars['String']['output']>;
+  guestCount?: Maybe<Scalars['Int']['output']>;
+  orderId: Scalars['String']['output'];
+  reservationTime?: Maybe<Scalars['Float']['output']>;
+  restaurantAddress?: Maybe<Scalars['String']['output']>;
+  restaurantName?: Maybe<Scalars['String']['output']>;
+  status?: Maybe<Scalars['String']['output']>;
+};
+
+export type DineoutBookingRecord = {
+  __typename?: 'DineoutBookingRecord';
+  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  guestCount: Scalars['Int']['output'];
+  reservationTime: Scalars['DateTimeISO']['output'];
+  restaurantAddress?: Maybe<Scalars['String']['output']>;
+  restaurantName: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  swiggyOrderId: Scalars['String']['output'];
+};
+
+export type DineoutBookingResult = {
+  __typename?: 'DineoutBookingResult';
+  booking?: Maybe<DineoutBookingConfirmation>;
+  confirming: Scalars['Boolean']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+};
+
+export type DineoutBookingStatusResult = {
+  __typename?: 'DineoutBookingStatusResult';
+  booking?: Maybe<DineoutBookingConfirmation>;
+  error?: Maybe<Scalars['String']['output']>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+};
+
+export type DineoutDeal = {
+  __typename?: 'DineoutDeal';
+  bookingPrice?: Maybe<Scalars['Float']['output']>;
+  discountPercentage?: Maybe<Scalars['Float']['output']>;
+  displayFee?: Maybe<Scalars['String']['output']>;
+  isFree: Scalars['Boolean']['output'];
+  itemId?: Maybe<Scalars['String']['output']>;
+  slotId?: Maybe<Scalars['Int']['output']>;
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type DineoutDetailsResult = {
+  __typename?: 'DineoutDetailsResult';
+  error?: Maybe<Scalars['String']['output']>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+  restaurant?: Maybe<DineoutRestaurant>;
+};
+
+export type DineoutRestaurant = {
+  __typename?: 'DineoutRestaurant';
+  address?: Maybe<Scalars['String']['output']>;
+  costForTwo?: Maybe<Scalars['String']['output']>;
+  cuisines: Array<Scalars['String']['output']>;
+  distance?: Maybe<Scalars['String']['output']>;
+  highlights: Array<Scalars['String']['output']>;
+  imageUrl?: Maybe<Scalars['String']['output']>;
+  mastheadImages: Array<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  offers: Array<Scalars['String']['output']>;
+  rating?: Maybe<Scalars['Float']['output']>;
+  ratingCount?: Maybe<Scalars['Int']['output']>;
+  restaurantId: Scalars['String']['output'];
+  source?: Maybe<Scalars['String']['output']>;
+};
+
+export type DineoutRestaurantDetailsInput = {
+  latitude: Scalars['Float']['input'];
+  longitude: Scalars['Float']['input'];
+  restaurantId: Scalars['String']['input'];
+};
+
+export type DineoutSavedLocation = {
+  __typename?: 'DineoutSavedLocation';
+  addressLine?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  latitude?: Maybe<Scalars['Float']['output']>;
+  longitude?: Maybe<Scalars['Float']['output']>;
+};
+
+export type DineoutSavedLocationsResult = {
+  __typename?: 'DineoutSavedLocationsResult';
+  error?: Maybe<Scalars['String']['output']>;
+  locations: Array<DineoutSavedLocation>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+};
+
+export type DineoutSearchInput = {
+  addressId?: InputMaybe<Scalars['String']['input']>;
+  entityType?: InputMaybe<Scalars['String']['input']>;
+  latitude?: InputMaybe<Scalars['Float']['input']>;
+  longitude?: InputMaybe<Scalars['Float']['input']>;
+  query: Scalars['String']['input'];
+};
+
+export type DineoutSearchResult = {
+  __typename?: 'DineoutSearchResult';
+  error?: Maybe<Scalars['String']['output']>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+  restaurants: Array<DineoutRestaurant>;
+};
+
+export type DineoutSlot = {
+  __typename?: 'DineoutSlot';
+  deals: Array<DineoutDeal>;
+  displayTime?: Maybe<Scalars['String']['output']>;
+  itemId?: Maybe<Scalars['String']['output']>;
+  reservationTime?: Maybe<Scalars['Float']['output']>;
+  slotId: Scalars['Int']['output'];
+};
+
+export type DineoutSlotGroup = {
+  __typename?: 'DineoutSlotGroup';
+  name: Scalars['String']['output'];
+  slots: Array<DineoutSlot>;
+};
+
+export type DineoutSlotsInput = {
+  date: Scalars['String']['input'];
+  latitude: Scalars['Float']['input'];
+  longitude: Scalars['Float']['input'];
+  restaurantId: Scalars['String']['input'];
+};
+
+export type DineoutSlotsResult = {
+  __typename?: 'DineoutSlotsResult';
+  error?: Maybe<Scalars['String']['output']>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+  slotGroups: Array<DineoutSlotGroup>;
+};
+
+export type DineoutTonightRailInput = {
+  city: Scalars['String']['input'];
+  latitude: Scalars['Float']['input'];
+  longitude: Scalars['Float']['input'];
+};
+
+export type DineoutTonightRailResult = {
+  __typename?: 'DineoutTonightRailResult';
+  error?: Maybe<Scalars['String']['output']>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+  restaurants: Array<DineoutRestaurant>;
+};
+
 export enum EntryAgeBand {
   Age_13Plus = 'AGE_13_PLUS',
   Age_16Plus = 'AGE_16_PLUS',
@@ -553,18 +724,9 @@ export type Event = {
   _id: Scalars['ID']['output'];
   adminPaused?: Maybe<Scalars['Boolean']['output']>;
   adminRating?: Maybe<Scalars['Float']['output']>;
-  aiBoostFeePaidAt?: Maybe<Scalars['DateTimeISO']['output']>;
-  aiBoostRazorpayOrderId?: Maybe<Scalars['String']['output']>;
-  aiBoostRazorpayPaymentId?: Maybe<Scalars['String']['output']>;
   aiEvalAdminSummary?: Maybe<Scalars['String']['output']>;
   aiEvalRanAt?: Maybe<Scalars['DateTimeISO']['output']>;
   aiEvalSnapshot?: Maybe<Scalars['String']['output']>;
-  aiPricingOptions?: Maybe<Array<EventPricingSnapshot>>;
-  aiSelectedCommissionPct?: Maybe<Scalars['Float']['output']>;
-  aiSelectedExtraAmount?: Maybe<Scalars['Float']['output']>;
-  aiSelectedMarketingCreditAmount?: Maybe<Scalars['Float']['output']>;
-  aiSelectedMarketingCreditDiscountPct?: Maybe<Scalars['Float']['output']>;
-  aiSelectedUpfrontTriggerSellThroughPct?: Maybe<Scalars['Float']['output']>;
   aiShortSummary?: Maybe<Scalars['String']['output']>;
   allowWalkIns?: Maybe<Scalars['Boolean']['output']>;
   artistRequirements?: Maybe<ArtistRequirements>;
@@ -576,6 +738,7 @@ export type Event = {
   city?: Maybe<Scalars['String']['output']>;
   cityId?: Maybe<Scalars['String']['output']>;
   collaboratorToBeAnnounced?: Maybe<Scalars['Boolean']['output']>;
+  commissionRate?: Maybe<Scalars['Float']['output']>;
   contactForQueriesTables?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
   createdBy?: Maybe<Scalars['String']['output']>;
@@ -592,10 +755,8 @@ export type Event = {
   eventScore?: Maybe<Scalars['Float']['output']>;
   eventType?: Maybe<Array<EventType>>;
   expectedAudience?: Maybe<Scalars['Float']['output']>;
-  expectedEventsDoneTillNow?: Maybe<Scalars['Float']['output']>;
   extras?: Maybe<Array<HoizrExtra>>;
   faqs?: Maybe<Array<EventFaq>>;
-  feeSettlementMode?: Maybe<EventFeeSettlementMode>;
   firstSaleAt?: Maybe<Scalars['DateTimeISO']['output']>;
   firstStepCompleted: Scalars['Boolean']['output'];
   gallery?: Maybe<Array<EventGalleryItem>>;
@@ -627,15 +788,10 @@ export type Event = {
   payoutProfile?: Maybe<Scalars['String']['output']>;
   payoutProfileId?: Maybe<Scalars['String']['output']>;
   popularityRating?: Maybe<Scalars['Float']['output']>;
-  pricingSelectedAt?: Maybe<Scalars['DateTimeISO']['output']>;
-  pricingSnapshot?: Maybe<EventPricingSnapshot>;
   prohibitedItems?: Maybe<Array<Scalars['String']['output']>>;
   publishedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   refundPolicy?: Maybe<Scalars['String']['output']>;
   requiresIDVerification?: Maybe<Scalars['Boolean']['output']>;
-  selectedAiBoostCode?: Maybe<Scalars['String']['output']>;
-  selectedAiBoostGenerationId?: Maybe<Scalars['String']['output']>;
-  selectedPricingPlan?: Maybe<EventPricingPlan>;
   seoSuggestions?: Maybe<Array<EventSeoSuggestion>>;
   showOffer?: Maybe<Scalars['Boolean']['output']>;
   slug?: Maybe<Scalars['String']['output']>;
@@ -652,6 +808,11 @@ export type Event = {
   updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
   verticalVideo?: Maybe<Scalars['String']['output']>;
   videoSneakPeek?: Maybe<Scalars['String']['output']>;
+  waitlistCollectSocials?: Maybe<Scalars['Boolean']['output']>;
+  waitlistEnabled?: Maybe<Scalars['Boolean']['output']>;
+  waitlistExpiry?: Maybe<Scalars['DateTimeISO']['output']>;
+  waitlistOnly?: Maybe<Scalars['Boolean']['output']>;
+  waitlistOpenNotifiedAt?: Maybe<Scalars['DateTimeISO']['output']>;
 };
 
 export type EventAttendeeWithInstagram = {
@@ -716,11 +877,6 @@ export type EventFaq = {
   question: Scalars['String']['output'];
 };
 
-export enum EventFeeSettlementMode {
-  DeductFromPayout = 'DEDUCT_FROM_PAYOUT',
-  PayAfterEvent = 'PAY_AFTER_EVENT'
-}
-
 export type EventGalleryItem = {
   __typename?: 'EventGalleryItem';
   type: EventGalleryItemType;
@@ -765,46 +921,6 @@ export enum EventLineupArtistStatus {
   Pending = 'PENDING',
   Rejected = 'REJECTED'
 }
-
-export enum EventOrganizerSegment {
-  New = 'NEW',
-  PowerHost = 'POWER_HOST',
-  Regular = 'REGULAR'
-}
-
-export enum EventPricingPlan {
-  HighRoller = 'HIGH_ROLLER',
-  Saver = 'SAVER',
-  ZeroUpfront = 'ZERO_UPFRONT'
-}
-
-export enum EventPricingRiskTier {
-  High = 'HIGH',
-  Low = 'LOW',
-  Medium = 'MEDIUM'
-}
-
-export type EventPricingSnapshot = {
-  __typename?: 'EventPricingSnapshot';
-  badge: Scalars['String']['output'];
-  commissionRate: Scalars['Float']['output'];
-  customerPlatformFeeRate: Scalars['Float']['output'];
-  expectedGrossSales: Scalars['Float']['output'];
-  expectedPaidTickets: Scalars['Float']['output'];
-  hoizrGrossRevenue: Scalars['Float']['output'];
-  hoizrNetContribution: Scalars['Float']['output'];
-  hostPayout: Scalars['Float']['output'];
-  label: Scalars['String']['output'];
-  opsBuffer: Scalars['Float']['output'];
-  optionId: Scalars['String']['output'];
-  organizerSegment: EventOrganizerSegment;
-  paymentGatewayCost: Scalars['Float']['output'];
-  payoutCycleDaysMax: Scalars['Float']['output'];
-  payoutCycleDaysMin: Scalars['Float']['output'];
-  plan: EventPricingPlan;
-  riskTier: EventPricingRiskTier;
-  upfrontFee: Scalars['Float']['output'];
-};
 
 export type EventSeoSuggestion = {
   __typename?: 'EventSeoSuggestion';
@@ -1061,6 +1177,15 @@ export type IndianCity = {
   value: Scalars['String']['output'];
 };
 
+export type JoinWaitlistInput = {
+  eventId: Scalars['String']['input'];
+  facebookHandle?: InputMaybe<Scalars['String']['input']>;
+  instagramHandle?: InputMaybe<Scalars['String']['input']>;
+  note?: InputMaybe<Scalars['String']['input']>;
+  partySize?: InputMaybe<Scalars['Int']['input']>;
+  xHandle?: InputMaybe<Scalars['String']['input']>;
+};
+
 export enum KidFriendlyPolicy {
   KidsNotAllowed = 'KIDS_NOT_ALLOWED',
   KidsWelcome = 'KIDS_WELCOME',
@@ -1089,6 +1214,8 @@ export enum MerchCurrency {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  bookDineoutTable: DineoutBookingResult;
+  claimLoyaltyReward: ClaimRewardResult;
   clearCart: Scalars['Boolean']['output'];
   confirmArtistMerchPayment: ArtistMerchOrder;
   confirmOrderPayment: CustomerOrderView;
@@ -1104,10 +1231,13 @@ export type Mutation = {
   customerTokenRefresh: CustomerTokenRefreshResponse;
   customerVerifyOtp: CustomerAuthResponse;
   disconnectInstagram: Scalars['Boolean']['output'];
+  disconnectSwiggy: Scalars['Boolean']['output'];
   followArtist: ArtistFollow;
   generateMyOrderInvoice: GenerateInvoiceResult;
   joinGuestlist: GuestlistTicketView;
+  joinWaitlist: WaitlistEntry;
   registerFcmToken: Scalars['Boolean']['output'];
+  reportDineoutError: ReportDineoutErrorResult;
   requestOrderRefund: CustomerOrderView;
   reusePendingOrder: CreateOrderResponse;
   scanTicket: ScanTicketResponse;
@@ -1121,6 +1251,16 @@ export type Mutation = {
   unregisterFcmToken: Scalars['Boolean']['output'];
   updateInstagramVisibility: CustomerInstagram;
   updateMyProfile: Customer;
+};
+
+
+export type MutationBookDineoutTableArgs = {
+  input: BookDineoutTableInput;
+};
+
+
+export type MutationClaimLoyaltyRewardArgs = {
+  rewardId: Scalars['String']['input'];
 };
 
 
@@ -1201,8 +1341,18 @@ export type MutationJoinGuestlistArgs = {
 };
 
 
+export type MutationJoinWaitlistArgs = {
+  input: JoinWaitlistInput;
+};
+
+
 export type MutationRegisterFcmTokenArgs = {
   fcmToken: Scalars['String']['input'];
+};
+
+
+export type MutationReportDineoutErrorArgs = {
+  input: ReportDineoutErrorInput;
 };
 
 
@@ -1503,6 +1653,11 @@ export type Query = {
   __typename?: 'Query';
   customerPlaceDetails?: Maybe<CustomerPlaceDetail>;
   customerPlacesAutocomplete: Array<CustomerPlacePrediction>;
+  dineoutAvailableSlots: DineoutSlotsResult;
+  dineoutBookingStatus: DineoutBookingStatusResult;
+  dineoutRestaurantDetails: DineoutDetailsResult;
+  dineoutSavedLocations: DineoutSavedLocationsResult;
+  dineoutTonightRail: DineoutTonightRailResult;
   eventPublicGuestlists: Array<PublicGuestlistView>;
   getActiveEventCategories: Array<EventCategory>;
   getActiveGenreTags: Array<GenreTag>;
@@ -1527,12 +1682,17 @@ export type Query = {
   guestlistByCode: GuestlistJoinView;
   isFollowingArtist: Scalars['Boolean']['output'];
   myArtistMerchOrders: Array<ArtistMerchOrder>;
+  myDineoutBookings: Array<DineoutBookingRecord>;
   myFollowedArtists: Array<Artist>;
   myGuestlistTickets: Array<GuestlistTicketView>;
+  myWaitlistStatus?: Maybe<WaitlistEntry>;
   offlinePaymentLink: OfflinePaymentLinkView;
   previewCoupon: CouponPreviewView;
   scannerEventManifest: ScannerManifest;
   scannerEventSummary: ScannerEventSummary;
+  searchDineoutRestaurants: DineoutSearchResult;
+  swiggyDineoutStatus: SwiggyDineoutStatusResponse;
+  venueCoupons: VenueCouponsView;
   venuePublicGuestlists: Array<VenuePublicGuestlistView>;
   visibleCouponsForEvent: Array<PublicCoupon>;
 };
@@ -1545,6 +1705,26 @@ export type QueryCustomerPlaceDetailsArgs = {
 
 export type QueryCustomerPlacesAutocompleteArgs = {
   input: Scalars['String']['input'];
+};
+
+
+export type QueryDineoutAvailableSlotsArgs = {
+  input: DineoutSlotsInput;
+};
+
+
+export type QueryDineoutBookingStatusArgs = {
+  orderId: Scalars['String']['input'];
+};
+
+
+export type QueryDineoutRestaurantDetailsArgs = {
+  input: DineoutRestaurantDetailsInput;
+};
+
+
+export type QueryDineoutTonightRailArgs = {
+  input: DineoutTonightRailInput;
 };
 
 
@@ -1629,6 +1809,11 @@ export type QueryIsFollowingArtistArgs = {
 };
 
 
+export type QueryMyWaitlistStatusArgs = {
+  eventId: Scalars['String']['input'];
+};
+
+
 export type QueryOfflinePaymentLinkArgs = {
   shortCode: Scalars['String']['input'];
 };
@@ -1636,6 +1821,16 @@ export type QueryOfflinePaymentLinkArgs = {
 
 export type QueryPreviewCouponArgs = {
   input: PreviewCouponInput;
+};
+
+
+export type QuerySearchDineoutRestaurantsArgs = {
+  input: DineoutSearchInput;
+};
+
+
+export type QueryVenueCouponsArgs = {
+  hostId: Scalars['String']['input'];
 };
 
 
@@ -1655,6 +1850,21 @@ export type RazorpayCheckoutPayload = {
   orderId: Scalars['String']['output'];
   razorpayKeyId: Scalars['String']['output'];
   razorpayOrderId: Scalars['String']['output'];
+};
+
+export type ReportDineoutErrorInput = {
+  errorMessage: Scalars['String']['input'];
+  flowDescription?: InputMaybe<Scalars['String']['input']>;
+  tool: Scalars['String']['input'];
+  userNotes?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type ReportDineoutErrorResult = {
+  __typename?: 'ReportDineoutErrorResult';
+  error?: Maybe<Scalars['String']['output']>;
+  message?: Maybe<Scalars['String']['output']>;
+  needsSwiggyAuth: Scalars['Boolean']['output'];
+  reportLink?: Maybe<Scalars['String']['output']>;
 };
 
 export enum ScanResultStatus {
@@ -1781,6 +1991,20 @@ export enum SignupProvider {
   Phone = 'PHONE'
 }
 
+/** Status of the Swiggy connection */
+export enum SwiggyConnectionStatus {
+  Connected = 'CONNECTED',
+  Expired = 'EXPIRED',
+  Revoked = 'REVOKED'
+}
+
+export type SwiggyDineoutStatusResponse = {
+  __typename?: 'SwiggyDineoutStatusResponse';
+  connected: Scalars['Boolean']['output'];
+  expiresAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  status?: Maybe<SwiggyConnectionStatus>;
+};
+
 export enum TicketCategory {
   Backstage = 'BACKSTAGE',
   Entry = 'ENTRY',
@@ -1820,18 +2044,37 @@ export type UpdateCustomerProfileInput = {
   city?: InputMaybe<Scalars['String']['input']>;
   email?: InputMaybe<Scalars['String']['input']>;
   emailMarketingOptIn?: InputMaybe<Scalars['Boolean']['input']>;
+  facebookHandle?: InputMaybe<Scalars['String']['input']>;
   firstName?: InputMaybe<Scalars['String']['input']>;
   gender?: InputMaybe<Gender>;
   genrePreferences?: InputMaybe<Array<Genre>>;
+  instagramHandle?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
   profilePic?: InputMaybe<Scalars['String']['input']>;
   pushNotificationMarketingOptIn?: InputMaybe<Scalars['Boolean']['input']>;
   smsMarketingOptIn?: InputMaybe<Scalars['Boolean']['input']>;
   whatsappMarketingOptIn?: InputMaybe<Scalars['Boolean']['input']>;
+  xHandle?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateInstagramVisibilityInput = {
   attendeeVisibility: Scalars['Boolean']['input'];
+};
+
+export type VenueCouponView = {
+  __typename?: 'VenueCouponView';
+  code?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  kind: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+  rewardId?: Maybe<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+};
+
+export type VenueCouponsView = {
+  __typename?: 'VenueCouponsView';
+  loyalty: Array<VenueCouponView>;
+  public: Array<VenueCouponView>;
 };
 
 export enum VenueLayout {
@@ -1851,6 +2094,34 @@ export type VenuePublicGuestlistView = {
   guestlistId: Scalars['String']['output'];
   isFull: Scalars['Boolean']['output'];
 };
+
+export type WaitlistEntry = {
+  __typename?: 'WaitlistEntry';
+  _id: Scalars['ID']['output'];
+  city?: Maybe<Scalars['String']['output']>;
+  createdAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  customerId: Scalars['String']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  eventId: Scalars['String']['output'];
+  facebookHandle?: Maybe<Scalars['String']['output']>;
+  instagramHandle?: Maybe<Scalars['String']['output']>;
+  invitedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  invitedOfflineOrderId?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  note?: Maybe<Scalars['String']['output']>;
+  partySize?: Maybe<Scalars['Int']['output']>;
+  phone?: Maybe<Scalars['String']['output']>;
+  status: WaitlistStatus;
+  updatedAt?: Maybe<Scalars['DateTimeISO']['output']>;
+  xHandle?: Maybe<Scalars['String']['output']>;
+};
+
+export enum WaitlistStatus {
+  Converted = 'CONVERTED',
+  Declined = 'DECLINED',
+  Invited = 'INVITED',
+  Waiting = 'WAITING'
+}
 
 export type CustomerRequestOtpMutationVariables = Exact<{
   input: CustomerOtpRequestInput;
@@ -1921,6 +2192,77 @@ export type ClearCartMutationVariables = Exact<{
 
 
 export type ClearCartMutation = { __typename?: 'Mutation', clearCart: boolean };
+
+export type SwiggyDineoutStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SwiggyDineoutStatusQuery = { __typename?: 'Query', swiggyDineoutStatus: { __typename?: 'SwiggyDineoutStatusResponse', connected: boolean, status?: SwiggyConnectionStatus | null, expiresAt?: any | null } };
+
+export type DisconnectSwiggyMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DisconnectSwiggyMutation = { __typename?: 'Mutation', disconnectSwiggy: boolean };
+
+export type DineoutRestaurantFieldsFragment = { __typename?: 'DineoutRestaurant', restaurantId: string, name?: string | null, cuisines: Array<string>, rating?: number | null, ratingCount?: number | null, costForTwo?: string | null, distance?: string | null, address?: string | null, highlights: Array<string>, offers: Array<string>, source?: string | null, imageUrl?: string | null, mastheadImages: Array<string> };
+
+export type SearchDineoutRestaurantsQueryVariables = Exact<{
+  input: DineoutSearchInput;
+}>;
+
+
+export type SearchDineoutRestaurantsQuery = { __typename?: 'Query', searchDineoutRestaurants: { __typename?: 'DineoutSearchResult', needsSwiggyAuth: boolean, error?: string | null, restaurants: Array<{ __typename?: 'DineoutRestaurant', restaurantId: string, name?: string | null, cuisines: Array<string>, rating?: number | null, ratingCount?: number | null, costForTwo?: string | null, distance?: string | null, address?: string | null, highlights: Array<string>, offers: Array<string>, source?: string | null, imageUrl?: string | null, mastheadImages: Array<string> }> } };
+
+export type DineoutRestaurantDetailsQueryVariables = Exact<{
+  input: DineoutRestaurantDetailsInput;
+}>;
+
+
+export type DineoutRestaurantDetailsQuery = { __typename?: 'Query', dineoutRestaurantDetails: { __typename?: 'DineoutDetailsResult', needsSwiggyAuth: boolean, error?: string | null, restaurant?: { __typename?: 'DineoutRestaurant', restaurantId: string, name?: string | null, cuisines: Array<string>, rating?: number | null, ratingCount?: number | null, costForTwo?: string | null, distance?: string | null, address?: string | null, highlights: Array<string>, offers: Array<string>, source?: string | null, imageUrl?: string | null, mastheadImages: Array<string> } | null } };
+
+export type DineoutAvailableSlotsQueryVariables = Exact<{
+  input: DineoutSlotsInput;
+}>;
+
+
+export type DineoutAvailableSlotsQuery = { __typename?: 'Query', dineoutAvailableSlots: { __typename?: 'DineoutSlotsResult', needsSwiggyAuth: boolean, error?: string | null, slotGroups: Array<{ __typename?: 'DineoutSlotGroup', name: string, slots: Array<{ __typename?: 'DineoutSlot', slotId: number, reservationTime?: number | null, itemId?: string | null, displayTime?: string | null, deals: Array<{ __typename?: 'DineoutDeal', title?: string | null, itemId?: string | null, slotId?: number | null, bookingPrice?: number | null, displayFee?: string | null, discountPercentage?: number | null, isFree: boolean }> }> }> } };
+
+export type DineoutSavedLocationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DineoutSavedLocationsQuery = { __typename?: 'Query', dineoutSavedLocations: { __typename?: 'DineoutSavedLocationsResult', needsSwiggyAuth: boolean, error?: string | null, locations: Array<{ __typename?: 'DineoutSavedLocation', id: string, addressLine?: string | null, latitude?: number | null, longitude?: number | null }> } };
+
+export type BookDineoutTableMutationVariables = Exact<{
+  input: BookDineoutTableInput;
+}>;
+
+
+export type BookDineoutTableMutation = { __typename?: 'Mutation', bookDineoutTable: { __typename?: 'DineoutBookingResult', needsSwiggyAuth: boolean, error?: string | null, confirming: boolean, booking?: { __typename?: 'DineoutBookingConfirmation', orderId: string, restaurantName?: string | null, restaurantAddress?: string | null, reservationTime?: number | null, guestCount?: number | null, dealTitle?: string | null, status?: string | null } | null } };
+
+export type DineoutBookingStatusQueryVariables = Exact<{
+  orderId: Scalars['String']['input'];
+}>;
+
+
+export type DineoutBookingStatusQuery = { __typename?: 'Query', dineoutBookingStatus: { __typename?: 'DineoutBookingStatusResult', needsSwiggyAuth: boolean, error?: string | null, booking?: { __typename?: 'DineoutBookingConfirmation', orderId: string, restaurantName?: string | null, restaurantAddress?: string | null, reservationTime?: number | null, guestCount?: number | null, dealTitle?: string | null, status?: string | null } | null } };
+
+export type MyDineoutBookingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyDineoutBookingsQuery = { __typename?: 'Query', myDineoutBookings: Array<{ __typename?: 'DineoutBookingRecord', swiggyOrderId: string, restaurantName: string, restaurantAddress?: string | null, reservationTime: any, guestCount: number, status: string, createdAt?: any | null }> };
+
+export type ReportDineoutErrorMutationVariables = Exact<{
+  input: ReportDineoutErrorInput;
+}>;
+
+
+export type ReportDineoutErrorMutation = { __typename?: 'Mutation', reportDineoutError: { __typename?: 'ReportDineoutErrorResult', needsSwiggyAuth: boolean, error?: string | null, reportLink?: string | null, message?: string | null } };
+
+export type DineoutTonightRailQueryVariables = Exact<{
+  input: DineoutTonightRailInput;
+}>;
+
+
+export type DineoutTonightRailQuery = { __typename?: 'Query', dineoutTonightRail: { __typename?: 'DineoutTonightRailResult', needsSwiggyAuth: boolean, error?: string | null, restaurants: Array<{ __typename?: 'DineoutRestaurant', restaurantId: string, name?: string | null, cuisines: Array<string>, rating?: number | null, ratingCount?: number | null, costForTwo?: string | null, distance?: string | null, address?: string | null, highlights: Array<string>, offers: Array<string>, source?: string | null, imageUrl?: string | null, mastheadImages: Array<string> }> } };
 
 export type GetPublishedEventsQueryVariables = Exact<{
   input?: InputMaybe<PublicEventFilterInput>;
@@ -2091,6 +2433,23 @@ export const CartFieldsFragmentDoc = gql`
   expiresAt
 }
     `;
+export const DineoutRestaurantFieldsFragmentDoc = gql`
+    fragment DineoutRestaurantFields on DineoutRestaurant {
+  restaurantId
+  name
+  cuisines
+  rating
+  ratingCount
+  costForTwo
+  distance
+  address
+  highlights
+  offers
+  source
+  imageUrl
+  mastheadImages
+}
+    `;
 export const OrderFieldsFragmentDoc = gql`
     fragment OrderFields on CustomerOrderView {
   _id
@@ -2218,6 +2577,151 @@ export const ClearCartDocument = gql`
   clearCart(eventId: $eventId)
 }
     `;
+export const SwiggyDineoutStatusDocument = gql`
+    query SwiggyDineoutStatus {
+  swiggyDineoutStatus {
+    connected
+    status
+    expiresAt
+  }
+}
+    `;
+export const DisconnectSwiggyDocument = gql`
+    mutation DisconnectSwiggy {
+  disconnectSwiggy
+}
+    `;
+export const SearchDineoutRestaurantsDocument = gql`
+    query SearchDineoutRestaurants($input: DineoutSearchInput!) {
+  searchDineoutRestaurants(input: $input) {
+    needsSwiggyAuth
+    error
+    restaurants {
+      ...DineoutRestaurantFields
+    }
+  }
+}
+    ${DineoutRestaurantFieldsFragmentDoc}`;
+export const DineoutRestaurantDetailsDocument = gql`
+    query DineoutRestaurantDetails($input: DineoutRestaurantDetailsInput!) {
+  dineoutRestaurantDetails(input: $input) {
+    needsSwiggyAuth
+    error
+    restaurant {
+      ...DineoutRestaurantFields
+    }
+  }
+}
+    ${DineoutRestaurantFieldsFragmentDoc}`;
+export const DineoutAvailableSlotsDocument = gql`
+    query DineoutAvailableSlots($input: DineoutSlotsInput!) {
+  dineoutAvailableSlots(input: $input) {
+    needsSwiggyAuth
+    error
+    slotGroups {
+      name
+      slots {
+        slotId
+        reservationTime
+        itemId
+        displayTime
+        deals {
+          title
+          itemId
+          slotId
+          bookingPrice
+          displayFee
+          discountPercentage
+          isFree
+        }
+      }
+    }
+  }
+}
+    `;
+export const DineoutSavedLocationsDocument = gql`
+    query DineoutSavedLocations {
+  dineoutSavedLocations {
+    needsSwiggyAuth
+    error
+    locations {
+      id
+      addressLine
+      latitude
+      longitude
+    }
+  }
+}
+    `;
+export const BookDineoutTableDocument = gql`
+    mutation BookDineoutTable($input: BookDineoutTableInput!) {
+  bookDineoutTable(input: $input) {
+    needsSwiggyAuth
+    error
+    confirming
+    booking {
+      orderId
+      restaurantName
+      restaurantAddress
+      reservationTime
+      guestCount
+      dealTitle
+      status
+    }
+  }
+}
+    `;
+export const DineoutBookingStatusDocument = gql`
+    query DineoutBookingStatus($orderId: String!) {
+  dineoutBookingStatus(orderId: $orderId) {
+    needsSwiggyAuth
+    error
+    booking {
+      orderId
+      restaurantName
+      restaurantAddress
+      reservationTime
+      guestCount
+      dealTitle
+      status
+    }
+  }
+}
+    `;
+export const MyDineoutBookingsDocument = gql`
+    query MyDineoutBookings {
+  myDineoutBookings {
+    swiggyOrderId
+    restaurantName
+    restaurantAddress
+    reservationTime
+    guestCount
+    status
+    createdAt
+  }
+}
+    `;
+export const ReportDineoutErrorDocument = gql`
+    mutation ReportDineoutError($input: ReportDineoutErrorInput!) {
+  reportDineoutError(input: $input) {
+    needsSwiggyAuth
+    error
+    reportLink
+    message
+  }
+}
+    `;
+export const DineoutTonightRailDocument = gql`
+    query DineoutTonightRail($input: DineoutTonightRailInput!) {
+  dineoutTonightRail(input: $input) {
+    needsSwiggyAuth
+    error
+    restaurants {
+      ...DineoutRestaurantFields
+    }
+  }
+}
+    ${DineoutRestaurantFieldsFragmentDoc}`;
 export const GetPublishedEventsDocument = gql`
     query GetPublishedEvents($input: PublicEventFilterInput) {
   getPublishedEvents(input: $input) {
@@ -2642,6 +3146,39 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     ClearCart(variables: ClearCartMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ClearCartMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<ClearCartMutation>({ document: ClearCartDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ClearCart', 'mutation', variables);
+    },
+    SwiggyDineoutStatus(variables?: SwiggyDineoutStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<SwiggyDineoutStatusQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<SwiggyDineoutStatusQuery>({ document: SwiggyDineoutStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'SwiggyDineoutStatus', 'query', variables);
+    },
+    DisconnectSwiggy(variables?: DisconnectSwiggyMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DisconnectSwiggyMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DisconnectSwiggyMutation>({ document: DisconnectSwiggyDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DisconnectSwiggy', 'mutation', variables);
+    },
+    SearchDineoutRestaurants(variables: SearchDineoutRestaurantsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<SearchDineoutRestaurantsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<SearchDineoutRestaurantsQuery>({ document: SearchDineoutRestaurantsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'SearchDineoutRestaurants', 'query', variables);
+    },
+    DineoutRestaurantDetails(variables: DineoutRestaurantDetailsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DineoutRestaurantDetailsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DineoutRestaurantDetailsQuery>({ document: DineoutRestaurantDetailsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DineoutRestaurantDetails', 'query', variables);
+    },
+    DineoutAvailableSlots(variables: DineoutAvailableSlotsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DineoutAvailableSlotsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DineoutAvailableSlotsQuery>({ document: DineoutAvailableSlotsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DineoutAvailableSlots', 'query', variables);
+    },
+    DineoutSavedLocations(variables?: DineoutSavedLocationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DineoutSavedLocationsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DineoutSavedLocationsQuery>({ document: DineoutSavedLocationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DineoutSavedLocations', 'query', variables);
+    },
+    BookDineoutTable(variables: BookDineoutTableMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<BookDineoutTableMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<BookDineoutTableMutation>({ document: BookDineoutTableDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'BookDineoutTable', 'mutation', variables);
+    },
+    DineoutBookingStatus(variables: DineoutBookingStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DineoutBookingStatusQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DineoutBookingStatusQuery>({ document: DineoutBookingStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DineoutBookingStatus', 'query', variables);
+    },
+    MyDineoutBookings(variables?: MyDineoutBookingsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyDineoutBookingsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyDineoutBookingsQuery>({ document: MyDineoutBookingsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyDineoutBookings', 'query', variables);
+    },
+    ReportDineoutError(variables: ReportDineoutErrorMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ReportDineoutErrorMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ReportDineoutErrorMutation>({ document: ReportDineoutErrorDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ReportDineoutError', 'mutation', variables);
+    },
+    DineoutTonightRail(variables: DineoutTonightRailQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DineoutTonightRailQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DineoutTonightRailQuery>({ document: DineoutTonightRailDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DineoutTonightRail', 'query', variables);
     },
     GetPublishedEvents(variables?: GetPublishedEventsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetPublishedEventsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetPublishedEventsQuery>({ document: GetPublishedEventsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetPublishedEvents', 'query', variables);

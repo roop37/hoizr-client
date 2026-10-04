@@ -86,13 +86,9 @@ export const HProfileSheet = () => {
               </Link>
             ))}
 
-            {/* ── SIGN-IN SWITCH (mobile profile sheet, hidden) ──────────────
-                Mobile mirror of the hidden sidebar foot. OTP delivery is gated
-                on WhatsApp (not integrated; SMS disabled), so the "Sign in"
-                button is hidden here too. Re-enable by replacing `null` with
-                the commented block below. */}
-            {null}
-            {/*
+            {/* ── SIGN-IN (mobile profile sheet) ─────────────────────────────
+                Re-enabled 2026-07-18 (Hoizr live): OTP delivers via MSG91
+                WhatsApp+SMS in prod; dev accepts 000000 (SERVER_ENV bypass). */}
             {!signedIn ? (
               <button
                 type="button"
@@ -105,7 +101,6 @@ export const HProfileSheet = () => {
                 Sign in
               </button>
             ) : null}
-            */}
           </div>
 
           {/* Hoizr Local — coming soon */}

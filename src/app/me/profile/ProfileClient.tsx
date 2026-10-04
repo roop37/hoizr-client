@@ -25,6 +25,7 @@ import {
   type CapturedAddress,
 } from "@/components/hoizr-ui/AddressSearchCard";
 import { InstagramConnectCard } from "@/components/hoizr-ui/InstagramConnectCard";
+import { SwiggyConnectCard } from "@/components/dineout/SwiggyConnectCard";
 import { gqlRequest } from "@/lib/graphql";
 import {
   MY_PROFILE_QUERY,
@@ -104,6 +105,9 @@ export const ProfileClient = () => {
   const [smsOpt, setSmsOpt] = useState(true);
   const [whatsappOpt, setWhatsappOpt] = useState(true);
   const [pushOpt, setPushOpt] = useState(true);
+  const [instagram, setInstagram] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [xHandle, setXHandle] = useState("");
 
   // Address — optional. Single source of truth: a `CapturedAddress`
   // produced by the AddressSearchCard (Google Places, server-side
@@ -177,6 +181,9 @@ export const ProfileClient = () => {
     setSmsOpt(profile.smsMarketingOptIn !== false);
     setWhatsappOpt(profile.whatsappMarketingOptIn !== false);
     setPushOpt(profile.pushNotificationMarketingOptIn !== false);
+    setInstagram(profile.instagramHandle ?? "");
+    setFacebook(profile.facebookHandle ?? "");
+    setXHandle(profile.xHandle ?? "");
     const addr = profile.address ?? null;
     if (addr) {
       const coords = Array.isArray(addr.coordinate?.coordinates)
@@ -270,6 +277,9 @@ export const ProfileClient = () => {
             smsMarketingOptIn: smsOpt,
             whatsappMarketingOptIn: whatsappOpt,
             pushNotificationMarketingOptIn: pushOpt,
+            instagramHandle: instagram.trim() || null,
+            facebookHandle: facebook.trim() || null,
+            xHandle: xHandle.trim() || null,
             // Address is saved separately via saveAddress() / its own button.
           },
         }
@@ -579,6 +589,33 @@ export const ProfileClient = () => {
               ))}
             </select>
           </label>
+          <label className="block text-sm">
+            <span className={labelClass}>Instagram</span>
+            <input
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              placeholder="@yourhandle"
+              className={inputClass}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className={labelClass}>Facebook</span>
+            <input
+              value={facebook}
+              onChange={(e) => setFacebook(e.target.value)}
+              placeholder="Profile URL or username"
+              className={inputClass}
+            />
+          </label>
+          <label className="block text-sm md:col-span-2">
+            <span className={labelClass}>X (Twitter)</span>
+            <input
+              value={xHandle}
+              onChange={(e) => setXHandle(e.target.value)}
+              placeholder="@yourhandle"
+              className={inputClass}
+            />
+          </label>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -672,6 +709,9 @@ export const ProfileClient = () => {
           </>
         )}
       </div>
+
+      {/* Dineout connection — feature-gated inside the card. */}
+      <SwiggyConnectCard />
 
       {/* Instagram connect — own card so the embedded media grid +
           visibility toggle has room and stays distinct from the

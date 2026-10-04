@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearActiveCart, readActiveCart, type ActiveCart } from "@/lib/active-cart";
-import { rupee } from "@/lib/format";
+import { rupeeOrFree } from "@/lib/format";
 import { track } from "@/lib/tracker";
 import { GlassSurface } from "./GlassSurface";
 import { HICONS } from "./icons";
@@ -77,7 +77,7 @@ export const HCartBar = () => {
               {cart.eventTitle ?? "Continue your order"}
             </div>
             <div className="h-cartbar__meta">
-              {rupee(cart.totalAmount)} · Ready for checkout
+              {rupeeOrFree(cart.totalAmount)} · Ready for checkout
             </div>
           </div>
           <div className="h-cartbar__actions">

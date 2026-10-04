@@ -21,7 +21,7 @@ export const SignInModal = () => {
       onClose={close}
       onAuthenticated={handleAuthenticated}
       headline="Sign in to Hoizr"
-      subheadline="Use phone OTP to continue. Google is available when this browser origin is configured."
+      subheadline="We'll send a one-time code to your phone to continue."
     />
   );
 };

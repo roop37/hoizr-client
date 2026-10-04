@@ -142,3 +142,44 @@ export const GET_PUBLIC_VENUE_BY_ID_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+// ── Loyalty / offers on a venue page ────────────────────────────────────────
+
+export type VenueCoupon = {
+  kind: string; // "public" | "loyalty"
+  code?: string | null;
+  rewardId?: string | null;
+  title: string;
+  label: string;
+  description?: string | null;
+};
+
+export type VenueCoupons = {
+  public: VenueCoupon[];
+  loyalty: VenueCoupon[];
+};
+
+/**
+ * Public promos + (signed-in only) the loyalty coupons this customer qualifies
+ * for. NO points figure is ever returned — the customer only sees what they can
+ * claim. Signed-out callers get an empty `loyalty` list.
+ */
+export const GET_VENUE_COUPONS_QUERY = /* GraphQL */ `
+  query VenueCoupons($hostId: String!) {
+    venueCoupons(hostId: $hostId) {
+      public { kind code title label description }
+      loyalty { kind rewardId title label description }
+    }
+  }
+`;
+
+export type ClaimRewardResult = { code: string; expiresAt: string };
+
+export const CLAIM_LOYALTY_REWARD_MUTATION = /* GraphQL */ `
+  mutation ClaimLoyaltyReward($rewardId: String!) {
+    claimLoyaltyReward(rewardId: $rewardId) {
+      code
+      expiresAt
+    }
+  }
+`;

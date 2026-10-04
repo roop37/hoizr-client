@@ -3,7 +3,7 @@
 import {
   fetchOfflinePaymentLink,
   type OfflinePaymentLinkView,
-} from "@/lib/guestCheckout";
+} from "@/lib/offline-link";
 import { gqlRequest } from "@/lib/graphql";
 import { SET_CART_MUTATION } from "@/lib/queries";
 import type { CartResponse } from "@/types/order";

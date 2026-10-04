@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { PostHogAnalytics } from "@/components/analytics/PostHogProvider";
@@ -10,16 +10,12 @@ import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/hoizr-ui/seo/Jso
 import { fetchCustomerMasters } from "@/lib/home-data";
 import "./globals.css";
 
-// Bundle SF Pro Display (local) so every platform — not just Apple — gets the
-// real Hoizr consumer typeface. Exposed as --font-sf-pro and consumed first in
-// the --h-font-* stacks (globals.css).
-const sfPro = localFont({
-  src: [
-    { path: "../fonts/SFProDisplay-Regular.otf", weight: "400", style: "normal" },
-    { path: "../fonts/SFProDisplay-Medium.otf", weight: "500", style: "normal" },
-    { path: "../fonts/SFProDisplay-Bold.otf", weight: "700", style: "normal" },
-  ],
-  variable: "--font-sf-pro",
+// Inter (OFL) for non-Apple platforms. Apple devices use their system SF font via
+// -apple-system first in the --h-font-* stacks (globals.css); SF Pro files are not
+// bundled because Apple's license does not allow redistributing them.
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -113,7 +109,7 @@ export default async function RootLayout({
   const masters = await fetchCustomerMasters();
 
   return (
-    <html lang="en" className={sfPro.variable}>
+    <html lang="en" className={inter.variable}>
       <body>
         <PostHogAnalytics>
           <OrganizationJsonLd />
